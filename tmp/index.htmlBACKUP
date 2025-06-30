@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pyodide Worker Timeout</title>
+    <style>
+
+
+body {
+}
+
+  #container {
+  display: grid;
+  grid-template-columns: 250px 2fr 2fr; /* Two equal-width columns */
+  grid-template-rows: 1fr 1fr 1fr 1fr; /* Four equal-height rows */
+  height: 90vh; /* Full viewport height */
+  width: 95vw; /* Full viewport width */
+  box-sizing: border-box; /* Optional: ensures padding/border are included in height/width */
+  margin: auto;
+  padding: 15px;
+  gap: 15px;
+}
+	.grid-item { border: 1px solid black; padding: 20px; }
+
+	#menu-area { grid-column: 1; grid-row: 1 / 5; }
+
+	#text-area-container { grid-column: 2; grid-row: 1 / 4; }
+
+	#pythonCode { height: 100%; width: 100%; resize: none; }
+	
+	#output-area { grid-column: 2/4; grid-row: 4  ; }
+
+	#view-container { grid-column: 3; grid-row: 1 / 4; display: flex;
+		          justify-content: center; align-items: center; }
+
+	#game-grid { display: grid; max-width: 90%; max-height: 90%; justify-content: center; align-items: center;}
+
+	.game-tile { border: 1px solid black; aspect-ratio: 1 / 1; }
+
+	#robot {position: absolute; transition: transform 0.3s ease;}
+
+	#caret-container {
+    position: absolute;
+    top: 50%; /* Start at the center of the robot */
+    left: 50%;
+    transform-origin: center center; /* Rotate around its center */
+    transition: transform 0.3s ease, top 0.3s ease, left 0.3s ease; /* Smooth movement and rotation */
+}
+
+    </style>
+	<!-----script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script--->
+</head>
+<body>
+<div id="container">
+
+	<div id="menu-area" class="grid-item"></div>
+
+	<div id="text-area-container" class="grid-item">
+
+		<textarea id="pythonCode">
+		</textarea>
+	</div>
+	<div id="view-container" class="grid-item">
+		<div id="game-grid">
+		</div>
+	</div>
+	<div id="output-area" class="grid-item"></div>
+</div>
+
+
+<script src="./utils.js"></script>
+<script src="./worker.js"></script>
+<script>
+	const default_levels = load_default_levels()
+	const worker = new Worker("worker.js");
+
+	function reload_level(level){
+		str = level.level.toLowerCase();
+		const view = document.getElementById("game-grid");
+		if (!view || typeof str !== 'string' || str.trim() === '') {
+			console.error("Error: could not build level");
+			return;
+		}
+		view.innerHTML = "";
+
+		const rows = str.trim().split("\n");
+		const n_rows = rows.length;
+		const n_cols = rows[0].length;
+		// regex matching any string that consists of only r, g, or b
+		const row_format = /^[rgb\.]*$/
+		const valid = rows.every( (r,i) => r.length === n_cols && row_format.test(r))
+		if (!valid) {
+			view.textContent = `Error: given invalid level '${str}'`;
+			return;
+		}
+
+		//view.style.gridTemplateColumns = `repeat(${n_cols}, minmax(60px, 1fr))`
+		//view.style.gridTemplateRows = `repeat(${n_rows}, minmax(60px, 1fr))`
+		view.style.gridTemplateColumns = `repeat(${n_cols}, 40px)`
+		view.style.gridTemplateRows = `repeat(${n_rows}, 40px)`
+		const color_map = {'b': 'blue', 'g': 'green', 'r': 'red', '.': 'white'}
+		const lvl = rows.join('')
+		for (let r = 0; r < n_rows; r++){
+			for (let c = 0; c < n_cols; c++){
+				const ch = lvl[r*n_cols + c];
+				const div = document.createElement("div");
+				div.style.backgroundColor = color_map[ch];
+				div.style.gridColumn = c + 1;
+				div.style.gridRow = r + 1;
+				div.classList.add("game-tile");
+				view.appendChild(div);
+			}
+		}
+
+		console.log("level =", level);
+		// TODO : do something about the horrible 0/1 issue 
+		// TODO : it's worse than I thought, the games uses cartesian coordinates.
+		const robot = make_robot(level.x0 + 1, level.y0 + 1, level.dir)
+		console.log(robot)
+		view.appendChild(robot);
+
+	}
+
+	
+	reload_level(default_levels[0])
+
+
+        function moveRobot(dir){
+		const cellSize = 40; // Example: Size of each grid cell in pixels
+
+		    const [dc, dr] = dir;
+		    const robot = document.getElementById("robot");
+
+		    // Get current position
+		    const currentX = parseInt(robot.dataset.x || 0);
+		    const currentY = parseInt(robot.dataset.y || 0);
+
+		    // Calculate new position
+		    const newX = currentX + dc;
+		    const newY = currentY + dr;
+
+		    // Update robot's transform position
+		    robot.style.transform = `translate(${newX * cellSize}px, ${newY * cellSize}px)`;
+
+		// Store new position in data attributes
+		 robot.dataset.x = newX;
+		 robot.dataset.y = newY;
+	}
+	
+	function rotate_caret(angle) {
+	    const caretContainer = document.querySelector("#caret-container");
+
+	    // Calculate the new position of the caret based on the angle
+	    const radius = 20; // Distance from the robot center to the caret
+	    const radians = (angle * Math.PI) / 180;
+	    const offsetX = radius * Math.cos(radians);
+	    const offsetY = radius * Math.sin(radians);
+
+	    // Update the caret's position and rotation
+	    caretContainer.style.top = `calc(50% + ${-offsetY}px)`;
+	    caretContainer.style.left = `calc(50% + ${offsetX}px)`;
+	    caretContainer.style.transform = `rotate(${angle}deg)`;
+	}
+
+
+	function asdmoveRobot(dir){
+		const [dc,dr] = dir
+		const robot = document.getElementById("robot");
+		console.log(robot, dc, dr);
+		robot.style.gridColumn = parseInt(robot.style.gridColumn) + dc; 
+		robot.style.gridRow = parseInt(robot.style.gridRow) + dr;
+		console.log(robot)
+	}
+	var last_r = false;
+	document.addEventListener('keydown', function(event) {
+	  const key = event.key; // "0" through "9", and other keys like "w", "a", "s", "d", "r"
+
+	  // Handle number keys
+	  if (key >= '0' && key <= '9') {
+	    reload_level(default_levels[key - '0']);
+	    return;
+	  }
+
+	  // Handle 'r' key
+	  if (key === 'r') {
+	    last_r = true; // Set the flag for one press
+	    return;
+	  }
+
+	  // Handle movement keys
+	  switch (key) {
+		case 'Enter':
+		const ta = document.getElementById("pythonCode")
+		const code = ta.value
+		worker.postMessage({code: code});
+		break;
+	    case 'w': // Move up or rotate up
+	      if (last_r) {
+		rotate_caret(270); // Rotate caret up
+		last_r = false; // Reset the flag
+	      } else {
+		moveRobot([0, -1]); // Move up
+	      }
+	      break;
+	    case 'a': // Move left or rotate left
+	      if (last_r) {
+		rotate_caret(0); // Rotate caret left
+		last_r = false; // Reset the flag
+	      } else {
+		moveRobot([-1, 0]); // Move left
+	      }
+	      break;
+	    case 's': // Move down or rotate down
+	      if (last_r) {
+		rotate_caret(90); // Rotate caret down
+		last_r = false; // Reset the flag
+	      } else {
+		moveRobot([0, 1]); // Move down
+	      }
+	      break;
+	    case 'd': // Move right or rotate right
+	      if (last_r) {
+		rotate_caret(180); // Rotate caret right
+		last_r = false; // Reset the flag
+	      } else {
+		moveRobot([1, 0]); // Move right
+	      }
+	      break;
+	    default:
+		last_r = false;
+		break;
+	  }
+	});
+
+</script>
+</body>
+</html>
+

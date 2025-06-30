@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pyodide Worker Timeout</title>
+    <style>
+        textarea { width: 80%; height: 150px; }
+        #output { border: 1px solid #ccc; padding: 10px; min-height: 50px; background-color: #f9f9f9; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<h1>Run Python Code with Timeout</h1>
+<textarea id="pythonCode">
+import asyncio
+import time
+from pyodide.ffi import to_js, js # If needed for JS interaction
+
+print("Python script starting in worker...")
+
+async def my_async_task():
+    print("Entering async task...")
+    await asyncio.sleep(1) # Yields control within the worker
+    print("Resumed after 1 second sleep.")
+    await asyncio.sleep(1)
+    print("Resumed after another 1 second sleep.")
+    return "Async task completed successfully!"
+
+# Using await at the top level is possible with runPythonAsync
+result = await my_async_task()
+print("Python script finished.")
+result # Return the result
+</textarea>
+<br>
+<button id="runButton">Run Python (5s Timeout)</button>
+<p>Output:</p>
+<pre id="output">Ready.</pre>
+
+<script>
+    const pythonCodeTextArea = document.getElementById('pythonCode');
+    const runButton = document.getElementById('runButton');
+    const outputDiv = document.getElementById('output');
+    const TIMEOUT_MS = 5000; // 5 seconds
+
+    let pyodideWorker = null;
+    let timeoutId = null;
+
+    runButton.onclick = () => {
+        if (pyodideWorker) {
+            // Terminate previous worker if still running (optional, depends on desired behavior)
+            console.log("Terminating previous worker...");
+            pyodideWorker.terminate();
+            clearTimeout(timeoutId);
+            pyodideWorker = null;
+        }
+
+        outputDiv.textContent = "Starting worker and loading Pyodide...";
+        runButton.disabled = true;
+
+        pyodideWorker = new Worker('worker.js');
+
+        pyodideWorker.onmessage = (event) => {
+            const msg = event.data;
+            if (msg.type === 'ready') {
+                 outputDiv.textContent = "Pyodide ready. Sending code...";
+                 const code = pythonCodeTextArea.value;
+                 pyodideWorker.postMessage({ pythonCode: code });
+
+                 // Start the timeout *after* Pyodide is ready and code is sent
+                 timeoutId = setTimeout(() => {
+                    outputDiv.textContent = `Timeout: Execution exceeded ${TIMEOUT_MS / 1000} seconds. Terminating worker.`;
+                    console.error("Timeout exceeded. Terminating worker.");
+                    pyodideWorker.terminate();
+                    pyodideWorker = null;
+                    runButton.disabled = false;
+                 }, TIMEOUT_MS);
+
+            } else if (msg.type === 'result') {
+                clearTimeout(timeoutId); // Success! Cancel the timeout
+                outputDiv.textContent = `Success:\n${msg.data}`;
+                pyodideWorker.terminate(); // Clean up worker
+                pyodideWorker = null;
+                runButton.disabled = false;
+            } else if (msg.type === 'error') {
+                clearTimeout(timeoutId); // Error occurred, cancel timeout
+                outputDiv.textContent = `Error:\n${msg.data}`;
+                pyodideWorker.terminate(); // Clean up worker
+                pyodideWorker = null;
+                runButton.disabled = false;
+            } else if (msg.type === 'stdout') {
+                // Append stdout messages
+                outputDiv.textContent += msg.data + '\n';
+            }
+        };
+
+        pyodideWorker.onerror = (error) => {
+            clearTimeout(timeoutId); // Error occurred, cancel timeout
+            outputDiv.textContent = `Worker Error:\n${error.message}`;
+            console.error("Worker error:", error);
+            pyodideWorker.terminate(); // Clean up worker
+            pyodideWorker = null;
+            runButton.disabled = false;
+        };
+    };
+</script>
+
+</body>
+</html>
+

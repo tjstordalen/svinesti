@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pyodide Worker Timeout</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header> </header>
+<div id="container">
+	<div id="level-selection-area">
+	<ul>
+	<li>Level 1</li>
+	<li>Level 2</li>
+	<li>Level 3</li>
+	<li>Level 4</li>
+	</ul>
+	</div>
+
+	<div id="code-area">
+		<textarea id="code-input" autofocus>await test()</textarea>
+		<div id="code-output"></div>
+	</div>
+	<div id="game-view">
+		<div id="agent"></div>
+		<div id="grid"></div>
+	</div>
+</div>
+</body>
+
+<script>
+
+console.log("The script is running");
+
+var currentGameState = exampleLevel();
+var currentCellSize = 0;
+populateGrid(currentGameState);
+
+function maximizeGridSize(state){
+	const grid = document.getElementById("grid");
+	const [nrows,ncols] = [state.grid.length, state.grid[0].length];
+	const [width, height] = [grid.parentElement.offsetWidth, grid.parentElement.offsetHeight];
+	const ratio = 0.95;
+	const cellSize = Math.min(width/ncols, height/nrows) * ratio; 
+	grid.style.gridTemplateColumns = `repeat(${ncols}, ${cellSize}px)` 
+	grid.style.gridTemplateRows    = `repeat(${nrows}, ${cellSize}px)`
+	currentCellSize = cellSize;
+}
+
+function populateGrid(state){
+	// Clear the grid
+	const grid = document.getElementById("grid");
+	grid.innerHTML = "";
+	
+	// Add the cells
+	const cells = state.grid.join("")
+	for (let c of cells) {
+		const div = document.createElement("div")
+		const isUpper = /^[A-Z]$/.test(c);
+		const isEmpty = c === '.';
+		const classes = 
+		    "game-tile "
+			+ (isUpper ? " target " : "")
+			+ (isEmpty ? " empty "  : "")
+			+ c.toLowerCase();
+		div.className = classes;
+		grid.appendChild(div);
+	}
+
+	// resize the grid to fit the current window size
+	maximizeGridSize(state);
+	
+	animateAgent(state, grid);
+}
+
+function animateAgent(state, grid){
+	//// Position
+	// Get the top-left cell (the first one added)
+	const origoCell = grid.firstElementChild;
+	const origoCellRect = origoCell.getBoundingClientRect();
+	const x0 = origoCellRect.x;
+	const y0 = origoCellRect.y;
+
+
+	const directions = ["right.png", "down.png", "left.png", "up.png"]
+	const path = "img/" + directions[state.dir]
+	console.log(path)
+	const agent = document.getElementById("agent")
+	console.log(agent)
+	agent.style.backgroundImage = `url("${path}")`;
+	console.log(agent.style)
+	console.log(agent.style.backgroundImage)
+	agent.style.height = `${currentCellSize}px`;
+	agent.style.width = `${currentCellSize}px`;
+	console.log(agent.style)
+	const row = state.pos[0];
+	const col = state.pos[1];
+	agent.style.top = `${row*currentCellSize + y0}px`
+	agent.style.left = `${col*currentCellSize + x0}px`
+
+}
+
+function exampleLevel(){
+    const level = `        {
+                 "grid": [
+                         ".rgrrgbB",
+                         ".....bb.",
+                         "....bb..",
+                         "...bb...",
+                         "..bb....",
+                         ".bb.....",
+                         "bb......"
+                 ],
+                 "pos": [6,0],
+                 "dir": 0
+         }`
+
+	return JSON.parse(level)
+}
+
+</script>
+</html>
+
