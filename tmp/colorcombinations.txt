@@ -1,5 +1,0 @@
-green:        #8be01a
-yellow:       #fdff15
-blue:         #99d9ea
-background:   #e3e3e3
-
