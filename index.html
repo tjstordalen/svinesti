@@ -48,6 +48,10 @@ function startOrRestartPyodideWorker(){
 	});
 }
 
+function setCssProperty(prop, val){
+    document.documentElement.style.setProperty(prop, val.toString())
+}
+
 startOrRestartPyodideWorker();
 
 document.addEventListener('keydown', (event) => {
@@ -104,20 +108,23 @@ function maximizeGridSize(){
 	const ratio = 0.95;
 	viewState.cellSize = Math.min(width/ncols, height/nrows) * ratio; 
 
-	grid.style.gridTemplateColumns = `repeat(${ncols}, ${viewState.cellSize}px)` 
-	grid.style.gridTemplateRows    = `repeat(${nrows}, ${viewState.cellSize}px)`
+	//grid.style.gridTemplateColumns = `repeat(${ncols}, ${viewState.cellSize}px)` 
+	//grid.style.gridTemplateRows    = `repeat(${nrows}, ${viewState.cellSize}px)`
 
-	viewState.agent.style.height = `${viewState.cellSize}px`;
-	viewState.agent.style.width = `${viewState.cellSize}px`;
+	
+	//viewState.agent.style.height = `${viewState.cellSize}px`;
+	//viewState.agent.style.width = `${viewState.cellSize}px`;
+
+	viewState.agent.style.height = "100%";
+	viewState.agent.style.width = "100%";
 }
 
 // The agent is placed in the top left cell, so we translate it 
 // to the appropriate row/col
 function moveAgent(pos){
-	const [row, col] = pos;	
-	const newX = col * viewState.cellSize;
-	const newY = row * viewState.cellSize;
-	agent.style.transform = `translate(${newX}px, ${newY}px)` 
+	const [row,col] = pos;
+	setCssProperty("--agent-row", row);
+	setCssProperty("--agent-col", col);
 }
 
 function rotateAgent(dir){

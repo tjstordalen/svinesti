@@ -1,5 +1,18 @@
+
+/* The css is written so that we can modify the variables below from
+ * JS, and the changes automatically apply to the grid dimensions and
+ * the position of the agent without any tinkering in javascript. 
+ */ 
+:root {
+	--grid-n-rows: 7;
+	--grid-n-cols: 8;
+	--agent-row: 5;
+	--agent-col: 0;
+}
+
+/* For development purposes only */
 * {
-	border: 1px solid black;
+	outline: 1px solid black;
 } 
 
 #container {
@@ -37,30 +50,48 @@
 	justify-content: center;
 	align-items: center;
 	box-sizing: border-box;
+	container-type: size;
 }
 
 #game-view #grid {
-	position: absolute;
 	box-sizing: border-box;
+
 	display: grid;
+
+	/* The grid dimensions, and also the aspect ratio, gets updated
+	 * automatically when we change the two variables below from
+	 * Javascript */
+	grid-template-columns: repeat(var(--grid-n-cols), 1fr);
+	grid-template-rows:    repeat(var(--grid-n-rows), 1fr);
+
+	/* Ensure that the grid has an aspect ratio that allows all the cells to 
+	 * be square. cqw/cqh are container size queries that refers to the closest
+	 * ancestor in the DOM that has the container-type  css property set.*/ 
+	width: min(100cqw, 100cqh * (var(--grid-n-cols) / var(--grid-n-rows)));
+	height: min(100cqw * (var(--grid-n-rows) / var(--grid-n-cols)), 100cqh);
 }
 
 .game-tile {
-	border: 1px solid black;
+	box-sizing: border-box;
 	background-color: #b0b0b0;
 	aspect-ratio: 1 / 1;
+	width: 100%;
 }
 
 .r { background-color: #fdff15; }
 .g { background-color: #8be01a; }
 .b { background-color: #99d9ea; }
 
-
+/* The agent needs to be placed INSIDE the top-left grid cell 
+ * in the grid for the calculations to work properly */
 #agent {
-	background-size: 100% 100%;
-	top: 0;
-	left: 0;
-	position: absolute;
+	box-sizing: border-box;
+	background-size: 100%;
+	position: relative;
 	transition: transform 0.3s ease;
 	z-index: 100;
+
+	/* Since the agent is inside a grid cell and its size is 100% of its 
+	 * parents size, translating by 100% moves exactly one grid cell over*/
+	transform: translate(calc(var(--agent-col)*100%), calc(var(--agent-row)*100%));
 }
