@@ -1,20 +1,5 @@
-async function update_game_state(state){
-	self.postMessage({type: "game-state", state: state});
-
-	// This stops the python code from executing until it receives a 
-	return await new Promise((resolve) => {
-        setTimeout(() => resolve(true), 400);
-    });
-}
-
 const log = (msg) => console.log("Worker:", msg)
 const err = (msg) => console.error("Worker:",msg)
-
-function pythonReallyNeedsToSay(str){
-	console.log("Message from python:");
-    console.log("PYTHON:", str);
-}
-
 
 try {
 	importScripts("https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js");
@@ -25,7 +10,7 @@ try {
 		pyodide = await loadPyodide();
 		log("Pyodide loaded");
 		
-		log("Running robuzzle.py"); 
+		log("Running svinesti.py"); 
 		log("    Fetching file.");
 
 		const pythonScriptPath = "./svinesti.py";
@@ -40,7 +25,7 @@ try {
 
 
 		pyodide.setStdout({ batched: (str) => log("Python stdout:", str) });
-		pyodide.setStderr({ batched: (str) => err("Python stdout:", str) });
+		pyodide.setStderr({ batched: (str) => err("Python stderr:", str) });
 		
 		log("Ready");
 		self.postMessage({type: 'ready'})
@@ -75,7 +60,8 @@ try {
 				log("Executing python script in isolated namespace")
 				const result = pyodide.runPython(code, {globals: isolated_namespace});
 				log("Script terminated") 
-			    self.postMessage({type: "execution-trace", data: result});	
+				self.postMessage({type: "execution-trace", trace: result.toJs({dict_converter: Object.fromEntries})});	
+				
 			} catch (e) {
 				err("Script execution failed with message:", e.message);
 				console.log(e)
@@ -112,5 +98,5 @@ except SystemExit:
 finally:
     sys.settrace(None)
 
-json.dumps(state.messages)` // the last statement gets returned to pyodide
+state.messages` // the last statement gets returned to pyodide
 }

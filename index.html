@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+
+
 <html>
 <head>
     <title>Pyodide Worker Timeout</title>
@@ -17,7 +19,11 @@
 	</div>
 
 	<div id="code-area">
-		<textarea id="code-input" autofocus>await test()</textarea>
+		<textarea id="code-input" autofocus>
+move()
+turnLeft()
+move()
+turnRight()</textarea>
 		<div id="code-output"></div>
 	</div>
 	<div id="game-view">
@@ -30,18 +36,40 @@
 
 
 var viewState = null;
+var pyodideWorker = null;
 
-// We assume that the game state is valid
-function initView(initialGameState){
+function startOrRestartPyodideWorker(){
+	if (pyodideWorker) pyodideWorker.terminate()
+	pyodideWorker = new Worker("worker.js");
+	pyodideWorker.addEventListener("message", (event) => {
+		if (event.data.type === "execution-trace"){
+			initView(event.data.trace);	
+		}
+	});
+}
 
+startOrRestartPyodideWorker();
+
+document.addEventListener('keydown', (event) => {
+	if (event.ctrlKey && event.key === "Enter"){
+		const code = document.getElementById("code-input").value;
+		pyodideWorker.postMessage({ code: code});
+	}
+});
+
+// We assume that the entire trace is valid
+function initView(trace){
+		
 	viewState = {};
+	viewState.trace = trace;
+
+	const initialGameState = trace[0].level;
 
 	viewState.nRows = initialGameState.grid.length;
 	viewState.nCols = initialGameState.grid[0].length;
 
     viewState.grid = document.getElementById("grid");
 
-	console.log(viewState.grid);
 	// Populate the grid
 	viewState.grid.innerHTML = "";
 	const cells = initialGameState.grid.join("")
@@ -123,17 +151,17 @@ function highlightLineOfCode(lineno){
 
 function handleTraceMessage(msg){
 	switch (msg.type) {
-    case "initial_configuration":
+    case "initial-configuration":
 	viewState = null;
-	initView(msg.data);
+	initView(msg.level);
 	break;
 
 	case "move": 
-	moveAgent(msg.data)
+	moveAgent(msg.pos)
 	break
 
 	case "collected":
-	consumeTarget(msg);
+	consumeTarget(msg.pos);
 
 	break;
 	case "gameover":
@@ -141,7 +169,7 @@ function handleTraceMessage(msg){
 	break;
 	
 	case "turn":
-	rotateAgent(msg.data);
+	rotateAgent(msg.dir);
 	break;
 	
 	case "isColor":
@@ -151,6 +179,14 @@ function handleTraceMessage(msg){
 	case "lineExecuted":
 	highlightLineOfCode(msg.lineno);
 	break;
+	}
+}
+
+function runTrace(executionTrace){
+    //const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+	
+	for (let msg of executionTrace){
+		handleTraceMessage(msg);
 	}
 }
 

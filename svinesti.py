@@ -33,6 +33,8 @@ import json
 class State():
     # We assume the input has been checked and is valid
     def __init__(self, level): 
+
+
         self.messages = []
         # make each entry in the dict into a class member for convenience
         for key,value in level.items():
@@ -40,15 +42,14 @@ class State():
         
         self.grid = [list(s) for s in self.grid]
         self.dirs = [(0,1),(1,0),(0,-1),(-1,0)]
-        self.dirs_to_string = ["right", "down", "left", "up"]
         self.pos  = tuple(self.pos) 
         self.LEFT = -1
         self.RIGHT = 1
 
-        self.trace({"type": "initial_configuration", "data": json.dumps(level)}) 
+        self.trace({"type": "initial-configuration", "level": level}) 
 
     def trace(self, msg):
-       self.messages.append(json.dumps(msg))
+       self.messages.append(msg)
 
     def __getitem__(self, key):
         r,c = key
@@ -63,7 +64,7 @@ def move_aux(s):
     dr,dc = s.dirs[s.dir]
     r,c = s.pos
     s.pos = (r+dr, c+dc)
-    s.trace({"type": "move", "newPos": s.pos})
+    s.trace({"type": "move", "pos": s.pos})
 
     ch = s[s.pos]
     if ch.isupper():
@@ -82,7 +83,7 @@ def move_aux(s):
 def turn_aux(s,direction):
     s.dir += direction
     s.dir %= len(s.dirs)
-    s.trace({"type": "turn", "new_direction": s.dirs_to_string[s.dir]})
+    s.trace({"type": "turn", "dir": s.dir})
 
 def is_color_aux(s, c):
     result = s[s.pos].lower() == c.lower()
