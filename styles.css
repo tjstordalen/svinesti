@@ -76,6 +76,7 @@
 	background-color: #b0b0b0;
 	aspect-ratio: 1 / 1;
 	width: 100%;
+	position: relative;
 }
 
 .r { background-color: #fdff15; }
@@ -90,6 +91,9 @@
 	position: relative;
 	transition: transform 0.3s ease;
 	z-index: 100;
+
+	height: 100%;
+	width: 100%;
 
 	/* Since the agent is inside a grid cell and its size is 100% of its 
 	 * parents size, translating by 100% moves exactly one grid cell over*/

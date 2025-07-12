@@ -48,7 +48,7 @@ function startOrRestartPyodideWorker(){
 	});
 }
 
-function setCssProperty(prop, val){
+function setCssVariable(prop, val){
     document.documentElement.style.setProperty(prop, val.toString())
 }
 
@@ -63,74 +63,48 @@ document.addEventListener('keydown', (event) => {
 
 // We assume that the entire trace is valid
 function initView(trace){
-		
-	viewState = {};
-	viewState.trace = trace;
-
-	const initialGameState = trace[0].level;
-
-	viewState.nRows = initialGameState.grid.length;
-	viewState.nCols = initialGameState.grid[0].length;
-
-    viewState.grid = document.getElementById("grid");
-
-	// Populate the grid
-	viewState.grid.innerHTML = "";
-	const cells = initialGameState.grid.join("")
-	for (let c of cells) {
-		const div = document.createElement("div")
-		const isUpper = 'A' <= c && c <= 'Z'; 
-		const isEmpty = c === '.';
-		const classes = 
-		    "game-tile "
-			+ (isUpper ? " target " : "")
-			+ (isEmpty ? " empty "  : c.toLowerCase());
-		div.className = classes;
-		viewState.grid.appendChild(div);
-	}
-	
-	viewState.agent = document.createElement("div");
-	viewState.agent.setAttribute("id", "agent");	
-
-	viewState.grid.firstElementChild.appendChild(viewState.agent);
-	
-	maximizeGridSize();
-	moveAgent(initialGameState.pos);
-	rotateAgent(initialGameState.dir);
+	resetGameState(trace[0].level)		
 }
 
-function maximizeGridSize(){
-	
-	const [nrows,ncols] = [viewState.nRows, viewState.nCols];
+function resetGameState(state){
+	populateGrid(state);
+	moveAgent(state.pos);
+	rotateAgent(state.dir);
+}
 
-	const gridParent = viewState.grid.parentElement;
-	const [width, height] = [gridParent.offsetWidth, gridParent.offsetHeight];
-	const ratio = 0.95;
-	viewState.cellSize = Math.min(width/ncols, height/nrows) * ratio; 
+function populateGrid(state){
+	setCssVariable("--grid-n-rows", state.grid.length); 
+	setCssVariable("--grid-n-cols", state.grid[0].length);
 
-	//grid.style.gridTemplateColumns = `repeat(${ncols}, ${viewState.cellSize}px)` 
-	//grid.style.gridTemplateRows    = `repeat(${nrows}, ${viewState.cellSize}px)`
+	const grid = document.getElementById("grid");
+	const cells = state.grid.join("");
+	for (let c of cells) {
+		const div = document.createElement("div");
+		const isTarget = ["R", "G", "B"].includes(c); 
+		const isEmpty  = c === ".";
+		if (isTarget) div.classList.add("target");
+		if (isEmpty)  div.classList.add("empty");
+		else div.classList.add(c.toLowerCase());
+		grid.appendChild(div);
+	}
 
-	
-	//viewState.agent.style.height = `${viewState.cellSize}px`;
-	//viewState.agent.style.width = `${viewState.cellSize}px`;
-
-	viewState.agent.style.height = "100%";
-	viewState.agent.style.width = "100%";
+	const agent = document.createElement("div");
+	agent.setAttribute("id", "agent");
+	grid.firstElementChild.appendChild(agent);
 }
 
 // The agent is placed in the top left cell, so we translate it 
-// to the appropriate row/col
+// to the appropriate row/col using css
 function moveAgent(pos){
 	const [row,col] = pos;
-	setCssProperty("--agent-row", row);
-	setCssProperty("--agent-col", col);
+	setCssVariable("--agent-row", row);
+	setCssVariable("--agent-col", col);
 }
 
 function rotateAgent(dir){
 	const directions = ["img/right.png", "img/down.png", "img/left.png", "img/up.png"]
 	const path = directions[dir];
-	viewState.agent.style.backgroundImage = `url("${path}")`;
+	document.getElementById("agent").style.backgroundImage = `url("${path}")`;
 }
 
 // Anticlimactic. Do something cooler later
