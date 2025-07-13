@@ -19,12 +19,8 @@
 	</div>
 
 	<div id="code-area">
-		<textarea id="code-input" autofocus>
-move()
-turnLeft()
-move()
-turnRight()</textarea>
-		<div id="code-output"></div>
+		<div id="code-input"> </div>
+		<div id="code-output"> </div>
 	</div>
 	<div id="game-view">
 		<div id="grid"></div>
@@ -32,10 +28,17 @@ turnRight()</textarea>
 </div>
 </body>
 
+<script src="BoardView.js"></script>
+<script src="TextHighlighter.js"></script>
 <script>
 
+const grid = document.getElementById("grid");
+const boardView = new BoardView(grid);
 
-var viewState = null;
+
+const codeInput = document.getElementById("code-input");
+const highlighter = new TextHighlighter(codeInput);
+
 var pyodideWorker = null;
 
 function startOrRestartPyodideWorker(){
@@ -48,10 +51,6 @@ function startOrRestartPyodideWorker(){
 	});
 }
 
-function setCssVariable(prop, val){
-    document.documentElement.style.setProperty(prop, val.toString())
-}
-
 startOrRestartPyodideWorker();
 
 document.addEventListener('keydown', (event) => {
@@ -59,62 +58,34 @@ document.addEventListener('keydown', (event) => {
 		const code = document.getElementById("code-input").value;
 		pyodideWorker.postMessage({ code: code});
 	}
+
+	const k = event.key;
+	switch(k){
+	case '0':	
+	case '1':	
+	case '2':	
+	case '3':	
+	case '4':	
+	case '5':	
+	case '6':	
+	case '7':	
+	case '8':	
+	case '9':	
+	const line = parseInt(k);
+	highlighter.highlightLine(k);
+	break;
+
+	case 't':
+	highlighter.toggleMode();
+	break;
+
+	}
 });
 
 // We assume that the entire trace is valid
 function initView(trace){
-	resetGameState(trace[0].level)		
+	boardView.resetGameState(trace[0].level)		
 }
-
-function resetGameState(state){
-	populateGrid(state);
-	moveAgent(state.pos);
-	rotateAgent(state.dir);
-}
-
-function populateGrid(state){
-	setCssVariable("--grid-n-rows", state.grid.length); 
-	setCssVariable("--grid-n-cols", state.grid[0].length);
-
-	const grid = document.getElementById("grid");
-	const cells = state.grid.join("");
-	for (let c of cells) {
-		const div = document.createElement("div");
-		const isTarget = ["R", "G", "B"].includes(c); 
-		const isEmpty  = c === ".";
-		if (isTarget) div.classList.add("target");
-		if (isEmpty)  div.classList.add("empty");
-		else div.classList.add(c.toLowerCase());
-		grid.appendChild(div);
-	}
-
-	const agent = document.createElement("div");
-	agent.setAttribute("id", "agent");
-	grid.firstElementChild.appendChild(agent);
-}
-
-// The agent is placed in the top left cell, so we translate it 
-// to the appropriate row/col using css
-function moveAgent(pos){
-	const [row,col] = pos;
-	setCssVariable("--agent-row", row);
-	setCssVariable("--agent-col", col);
-}
-
-function rotateAgent(dir){
-	const directions = ["img/right.png", "img/down.png", "img/left.png", "img/up.png"]
-	const path = directions[dir];
-	document.getElementById("agent").style.backgroundImage = `url("${path}")`;
-}
-
-// Anticlimactic. Do something cooler later
-function consumeTarget(pos){
-	const [r,c] = pos;
-	const nc = viewState.nCols;
-	const index = nc * r + c;
-	viewState.grid.children[index].classList.remove("target");
-}
-
 
 function gameover(win){
 	console.log("Game over");
@@ -133,7 +104,6 @@ function highlightLineOfCode(lineno){
 function handleTraceMessage(msg){
 	switch (msg.type) {
     case "initial-configuration":
-	viewState = null;
 	initView(msg.level);
 	break;
 

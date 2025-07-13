@@ -37,6 +37,63 @@
 	height: 70%;
 }
 
+.edit-window, .display-window {
+	height: 100%;
+	width: 100%;
+	box-sizing: border-box;
+
+	font-family: monospace; 
+	font-size: 14px;
+	line-height: 1.4;
+	border: 1px solid #ccc;
+	white-space: pre-wrap; 
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+
+	margin: 0px;
+	padding: 8px;
+
+	overflow: scroll;
+	resize: none;
+}
+
+.display-window {
+	counter-reset: line-number 0;
+}
+
+.display-window span {
+	width: 100%;
+	display: block;
+	word-wrap: break-word;
+	outline: none;
+}
+
+.display-window span::before {
+	counter-increment: line-number;
+	content: counter(line-number);
+	display: inline-block;
+	width: 3em;
+	text-align: right;
+	margin-right: 1em;
+	color: #666;
+	
+}
+
+.display-window span.highlight {
+	background: yellow;
+}
+
+.display-window span:empty::before {
+	/* Insert a non-breaking space into the empty spans
+	 * to prevent empty lines from disappearing when we switch
+	 * to display mode */
+	content: '\00A0'; 
+}
+
+.hidden {
+	display: none;
+}
+
 #code-output {
 	height: 30%;	
 }
