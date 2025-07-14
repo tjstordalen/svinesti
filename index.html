@@ -29,7 +29,33 @@
 		need
 		some
 		lines</textarea>
-		<div id="code-output" contenteditable="true"> </div>
+		<div id="playback-controls">
+			<button id="playback-step-backward">
+				<svg class="icon"><use href="img/icons.svg#skip-backward"></use></svg>   
+			</button>
+			<button id="playback-slower"> 
+				<svg class="icon"><use href="img/icons.svg#dash"></use></svg>   
+			</button>
+			
+			<button id="playback-play-pause"> 
+				<svg class="icon"><use href="img/icons.svg#play"></use></svg>	
+			</button>
+			
+			<button id="playback-faster"> 
+				<svg class="icon"><use href="img/icons.svg#plus"></use></svg>   
+			</button>
+
+			<button id="playback-step-forward">
+				<svg class="icon"><use href="img/icons.svg#skip-forward"></use></svg>   
+			</button>
+		</div>
+		<div id="code-output" contenteditable="true">
+	<!--svg class="icon"><use href="img/icons.svg#pause"></use></svg-->   
+
+
+
+
+		</div>
 	</div>
 	<div id="game-view">
 		<div id="grid"></div>
@@ -72,8 +98,10 @@ startOrRestartPyodideWorker();
 
 document.addEventListener('keydown', (event) => {
 	if (event.ctrlKey && event.key === "Enter"){
-		const code = document.getElementById("code-input").value;
+		const code = editor.getValue();
+		console.log(code);
 		pyodideWorker.postMessage({ code: code});
+		// TODO: handle the timeout in case of infinite loops, etc
 	}
 
 	const k = event.key;
