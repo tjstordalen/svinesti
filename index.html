@@ -5,6 +5,12 @@
 <head>
     <title>Pyodide Worker Timeout</title>
 	<link rel="stylesheet" href="styles.css">
+	<!-- Core CodeMirror -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"></script>
+
+	<!-- Language mode (optional) -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/python/python.min.js"></script>
 </head>
 <body>
 <header> </header>
@@ -19,8 +25,11 @@
 	</div>
 
 	<div id="code-area">
-		<div id="code-input"> </div>
-		<div id="code-output"> </div>
+		<textarea id="code-input"> i 
+		need
+		some
+		lines</textarea>
+		<div id="code-output" contenteditable="true"> </div>
 	</div>
 	<div id="game-view">
 		<div id="grid"></div>
@@ -29,15 +38,23 @@
 </body>
 
 <script src="BoardView.js"></script>
-<script src="TextHighlighter.js"></script>
+<!--script src="TextHighlighter.js"></script--->
 <script>
 
 const grid = document.getElementById("grid");
 const boardView = new BoardView(grid);
 
-
 const codeInput = document.getElementById("code-input");
-const highlighter = new TextHighlighter(codeInput);
+
+const editor = CodeMirror.fromTextArea(codeInput, {
+	lineNumbers: true,
+	lineWrapping: true,
+	mode: "python",
+	tjeme: "default"
+
+});
+let highlightedLine = 1;
+editor.addLineClass(0, "background", "highlighted-line");
 
 var pyodideWorker = null;
 
@@ -72,12 +89,11 @@ document.addEventListener('keydown', (event) => {
 	case '8':	
 	case '9':	
 	const line = parseInt(k);
-	highlighter.highlightLine(k);
+	editor.removeLineClass(highlightedLine-1, "background", "highlighted-line");
+	highlightedLine = line;
+	editor.addLineClass(highlightedLine-1, "background", "highlighted-line");
 	break;
 
-	case 't':
-	highlighter.toggleMode();
-	break;
 
 	}
 });
