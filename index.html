@@ -16,19 +16,19 @@
 <header> </header>
 <div id="container">
 	<div id="level-selection-area">
-	<ul>
-	<li>Level 1</li>
-	<li>Level 2</li>
-	<li>Level 3</li>
-	<li>Level 4</li>
+	<ul id="level-list">
 	</ul>
 	</div>
 
 	<div id="code-area">
-		<textarea id="code-input"> i 
-		need
-		some
-		lines</textarea>
+		<textarea id="code-input">
+while True:
+    move()
+    turnLeft()
+    move()
+    turnRight()
+
+		</textarea>
 		<div id="playback-controls">
 			<button id="playback-step-backward">
 				<svg class="icon"><use href="img/icons.svg#skip-backward"></use></svg>   
@@ -64,11 +64,36 @@
 </body>
 
 <script src="BoardView.js"></script>
-<!--script src="TextHighlighter.js"></script--->
+<script src="PlaybackHandler.js"></script>
+<script src="levels.js"></script>
 <script>
 
 const grid = document.getElementById("grid");
 const boardView = new BoardView(grid);
+
+const levelList = document.getElementById("level-list");
+let selectedLevel = null; 
+
+for (let lvl of levels) {
+	const name = lvl.name;
+	const item = document.createElement("li");
+	item.textContent = name;
+	item.level = lvl;
+	levelList.appendChild(item);
+
+	item.addEventListener("click", event => {
+		selectedLevel = item.level;	
+		boardView.resetGameState(item.level);
+
+	});
+}
+levelList.firstElementChild.click();
+
+
+
+console.log(levels)
+
+
 
 const codeInput = document.getElementById("code-input");
 
@@ -79,8 +104,25 @@ const editor = CodeMirror.fromTextArea(codeInput, {
 	tjeme: "default"
 
 });
-let highlightedLine = 1;
-editor.addLineClass(0, "background", "highlighted-line");
+
+editor.highlightLine = (lineno) => {
+	lineno-- // lines are zero-indexed
+	const prev = editor.highlightedLine;
+	if (prev) {
+		editor.removeLineClass(prev, "background", "highlighted-line");
+	}
+	if (lineno < 0 || lineno > editor.lineCount()) {
+		editor.highlightedLine = null;
+		return;
+	}
+	editor.highlightedLine = lineno;
+	editor.addLineClass(lineno, "background", "highlighted-line");
+}
+
+
+
+const controlsDiv = document.getElementById("playback-controls");
+const controls    = new PlaybackHandler(controlsDiv, editor, boardView)
 
 var pyodideWorker = null;
 
@@ -89,7 +131,7 @@ function startOrRestartPyodideWorker(){
 	pyodideWorker = new Worker("worker.js");
 	pyodideWorker.addEventListener("message", (event) => {
 		if (event.data.type === "execution-trace"){
-			initView(event.data.trace);	
+			controls.init(event.data.trace);
 		}
 	});
 }
@@ -100,36 +142,11 @@ document.addEventListener('keydown', (event) => {
 	if (event.ctrlKey && event.key === "Enter"){
 		const code = editor.getValue();
 		console.log(code);
-		pyodideWorker.postMessage({ code: code});
+		pyodideWorker.postMessage({ code: code, level: exampleLevel()});
 		// TODO: handle the timeout in case of infinite loops, etc
-	}
-
-	const k = event.key;
-	switch(k){
-	case '0':	
-	case '1':	
-	case '2':	
-	case '3':	
-	case '4':	
-	case '5':	
-	case '6':	
-	case '7':	
-	case '8':	
-	case '9':	
-	const line = parseInt(k);
-	editor.removeLineClass(highlightedLine-1, "background", "highlighted-line");
-	highlightedLine = line;
-	editor.addLineClass(highlightedLine-1, "background", "highlighted-line");
-	break;
-
-
 	}
 });
 
-// We assume that the entire trace is valid
-function initView(trace){
-	boardView.resetGameState(trace[0].level)		
-}
 
 function gameover(win){
 	console.log("Game over");
@@ -146,35 +163,6 @@ function highlightLineOfCode(lineno){
 }	
 
 function handleTraceMessage(msg){
-	switch (msg.type) {
-    case "initial-configuration":
-	initView(msg.level);
-	break;
-
-	case "move": 
-	moveAgent(msg.pos)
-	break
-
-	case "collected":
-	consumeTarget(msg.pos);
-
-	break;
-	case "gameover":
-	gameover(msg.win);
-	break;
-	
-	case "turn":
-	rotateAgent(msg.dir);
-	break;
-	
-	case "isColor":
-	notifyResultOfIsColor(msg.color, msg.result);
-	break;
-	
-	case "lineExecuted":
-	highlightLineOfCode(msg.lineno);
-	break;
-	}
 }
 
 function runTrace(executionTrace){
@@ -188,7 +176,7 @@ function runTrace(executionTrace){
 function exampleLevel(){
     const level = `        {
                  "grid": [
-                         ".rgrrgbB",
+                         ".rgrrGRB",
                          ".....bb.",
                          "....bb..",
                          "...bb...",
@@ -200,7 +188,7 @@ function exampleLevel(){
                  "dir": 0
          }`
 
-	return JSON.parse(level)
+	return level; 
 }
 
 </script>

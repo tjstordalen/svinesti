@@ -27,6 +27,7 @@
 	outline: 1px solid black;
 }
 
+
 #code-area {
 	display: flex;
 	outline: 1px solid black;
@@ -119,6 +120,20 @@
 	width: 100%;
 	position: relative;
 }
+
+
+.game-tile.target::before {
+	content: "";
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 50%;
+	background-image: url("img/apple.png");
+	background-size: cover;
+	background-position: center;
+}
+
 
 .r { background-color: #fdff15; }
 .g { background-color: #8be01a; }

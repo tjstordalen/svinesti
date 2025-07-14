@@ -1,5 +1,6 @@
-[
+const levels = [
 	{
+		 "name": "Level 1",
 		 "grid": [
 			 "......bB",
 			 ".....bb.",
@@ -13,6 +14,7 @@
 		 "dir": 0
 	 },
 	 {
+		 "name": "Level 2",
 		 "grid": [
 			 "rrrrrrrrrr",
 			 "BbBbBbBbbb",
@@ -25,6 +27,7 @@
 		 "dir": 0
 	 },
 	 {
+		 "name": "Level 3",
 		 "grid": [
 			 "....R",
 			 "....b",
@@ -38,6 +41,7 @@
 		 "dir": 0
 	 },
 	 {
+		 "name": "Level 4",
 		 "grid": [
 			 "bbbR.....",
 			 "...b.....",
@@ -48,6 +52,7 @@
 		 "dir": 0
 	 },
 	 {
+		 "name": "Level 5",
 		 "grid": [
 			 "bbbbR........",
 			 "....b........",
@@ -63,6 +68,7 @@
 		 "dir": 0
 	 },
 	 {
+		 "name": "Level 6",
 		 "grid": [
 			 "R..R.......",
 			 "B..B.R.R...",
@@ -76,6 +82,7 @@
 		 "dir": 0
 	 },
 	 {
+		 "name": "Level 7",
 		 "grid": [
 			 "..GbbbbbbG",
 			 "..b......b",
@@ -90,6 +97,7 @@
 		 "dir": 0
 	 },
 	 {
+		 "name": "Level 8",
 		 "grid": [
 			 "....G...",
 			 ".RbrbbR.",

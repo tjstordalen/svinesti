@@ -18,6 +18,7 @@ function BoardView(gridDiv){
 		const cells = state.grid.join("");
 		for (let c of cells) {
 			const div = document.createElement("div");
+			div.classList.add("game-tile");
 			const isTarget = ["R", "G", "B"].includes(c); 
 			if (c === ".") {
 				div.classList.add("empty");

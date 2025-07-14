@@ -32,7 +32,8 @@ try {
 
 		
 		self.onmessage = async (event) => {
-		
+	
+		/*
 		const level = `{
 			"grid": [
 				"......bB",
@@ -46,6 +47,7 @@ try {
 			"pos": [6,0],
 			"dir": 0
 		}`
+		*/
 
 		log("Message received");
 		let isolated_namespace = null;
@@ -55,7 +57,7 @@ try {
 				// pollute the namespace. 
 				isolated_namespace = pyodide.globals.copy();
 
-				const code = injectUserCode(level, event.data.code);
+				const code = injectUserCode(event.data.level, event.data.code);
 
 				log("Executing python script in isolated namespace")
 				const result = pyodide.runPython(code, {globals: isolated_namespace});
