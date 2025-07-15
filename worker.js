@@ -97,8 +97,6 @@ try:
     submitted_code()
 except SystemExit:
     pass
-finally:
-    sys.settrace(None)
 
 state.messages` // the last statement gets returned to pyodide
 }

@@ -3,13 +3,10 @@
 
 <html>
 <head>
-    <title>Pyodide Worker Timeout</title>
+    <title>Svinesti</title>
 	<link rel="stylesheet" href="styles.css">
-	<!-- Core CodeMirror -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.css">
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"></script>
-
-	<!-- Language mode (optional) -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/python/python.min.js"></script>
 </head>
 <body>
@@ -30,15 +27,13 @@ while True:
 
 		</textarea>
 		<div id="playback-controls">
-			<button id="playback-step-backward">
-				<svg class="icon"><use href="img/icons.svg#skip-backward"></use></svg>   
-			</button>
 			<button id="playback-slower"> 
 				<svg class="icon"><use href="img/icons.svg#dash"></use></svg>   
 			</button>
 			
 			<button id="playback-play-pause"> 
 				<svg class="icon"><use href="img/icons.svg#play"></use></svg>	
+				<svg class="icon"><use href="img/icons.svg#pause"></use></svg>   
 			</button>
 			
 			<button id="playback-faster"> 
@@ -48,9 +43,12 @@ while True:
 			<button id="playback-step-forward">
 				<svg class="icon"><use href="img/icons.svg#skip-forward"></use></svg>   
 			</button>
+			<button id="playback-run-code">
+				GO!
+				<!--svg class="icon"><use href="img/icons.svg#skip-backward"></use></svg-->   
+			</button>
 		</div>
 		<div id="code-output" contenteditable="true">
-	<!--svg class="icon"><use href="img/icons.svg#pause"></use></svg-->   
 
 
 
@@ -68,8 +66,15 @@ while True:
 <script src="levels.js"></script>
 <script>
 
+
+// Initialize the part showing the actual game board
+
 const grid = document.getElementById("grid");
 const boardView = new BoardView(grid);
+
+
+
+// Initialize the list of levels
 
 const levelList = document.getElementById("level-list");
 let selectedLevel = null; 
@@ -87,110 +92,70 @@ for (let lvl of levels) {
 
 	});
 }
+// Select the first level
 levelList.firstElementChild.click();
 
 
-
-console.log(levels)
-
-
+// Code editor
 
 const codeInput = document.getElementById("code-input");
-
 const editor = CodeMirror.fromTextArea(codeInput, {
 	lineNumbers: true,
 	lineWrapping: true,
 	mode: "python",
-	tjeme: "default"
+	theme: "default"
 
 });
 
 editor.highlightLine = (lineno) => {
 	lineno-- // lines are zero-indexed
 	const prev = editor.highlightedLine;
-	if (prev) {
+	if (prev !== undefined && prev >= 0) {
 		editor.removeLineClass(prev, "background", "highlighted-line");
 	}
 	if (lineno < 0 || lineno > editor.lineCount()) {
-		editor.highlightedLine = null;
+		editor.highlightedLine = undefined;
 		return;
 	}
 	editor.highlightedLine = lineno;
 	editor.addLineClass(lineno, "background", "highlighted-line");
 }
 
-
-
 const controlsDiv = document.getElementById("playback-controls");
 const controls    = new PlaybackHandler(controlsDiv, editor, boardView)
 
-var pyodideWorker = null;
+let worker = null;
+let rebootTimeout = null;
 
-function startOrRestartPyodideWorker(){
-	if (pyodideWorker) pyodideWorker.terminate()
-	pyodideWorker = new Worker("worker.js");
-	pyodideWorker.addEventListener("message", (event) => {
+function reboot(){
+	controls.stop();	
+	console.log("Rebooting worker!");
+	if (worker) worker.terminate();
+	worker = new Worker("worker.js");
+	worker.onmessage = (event) => {
 		if (event.data.type === "execution-trace"){
 			controls.init(event.data.trace);
 		}
-	});
+		clearTimeout(rebootTimeout);
+	}
 }
 
-startOrRestartPyodideWorker();
+reboot();
+
+const submitCode = () => {
+	worker.postMessage({ code: editor.getValue(), level: JSON.stringify(selectedLevel)});
+
+	// Reboot the worker if it runs for too long, due to e.g., infinte loops in student code
+	rebootTimeout = setTimeout(() => reboot(), 1000);
+}
 
 document.addEventListener('keydown', (event) => {
 	if (event.ctrlKey && event.key === "Enter"){
-		const code = editor.getValue();
-		console.log(code);
-		pyodideWorker.postMessage({ code: code, level: JSON.stringify(selectedLevel)});
-		// TODO: handle the timeout in case of infinite loops, etc
+		submitCode()
 	}
 });
 
-
-function gameover(win){
-	console.log("Game over");
-	console.log(win ? "WINNER"  : "LOSER");
-}
-
-function notifyResultOfIsColor(color, result){
-	console.log(`Is current cell ${color}? ${result? "yes" : "no"}`) 
-
-}
-
-function highlightLineOfCode(lineno){
-	console.log(`Executing line number ${lineno}`);
-}	
-
-function handleTraceMessage(msg){
-}
-
-function runTrace(executionTrace){
-    //const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-	
-	for (let msg of executionTrace){
-		handleTraceMessage(msg);
-	}
-}
-
-function exampleLevel(){
-    const level = `        {
-                 "grid": [
-                         ".rgrrGRB",
-                         ".....bb.",
-                         "....bb..",
-                         "...bb...",
-                         "..bb....",
-                         ".bb.....",
-                         "bb......"
-                 ],
-                 "pos": [6,0],
-                 "dir": 0
-         }`
-
-	return level; 
-}
-
+document.getElementById("playback-run-code").onclick = (event) => submitCode();
 </script>
 </html>
 

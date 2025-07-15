@@ -1,4 +1,30 @@
 
+function scheduler(task, interval) {
+    let intervalId = null;
+    let currentInterval = interval;
+
+    return {
+        start: () => intervalId = setInterval(task, currentInterval),
+        stop: () => clearInterval(intervalId),
+		toggle: () => {
+			if (intervalId){
+				clearInterval(intervalId)
+				intervalId = null;
+			}
+			else {
+				intervalId = setInterval(task, currentInterval);
+			}
+		},
+        setInterval: (newInterval) => {
+            currentInterval = newInterval;
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = setInterval(task, currentInterval);
+            }
+        }
+    };
+}
+
 
 
 function PlaybackHandler(playbackControls, editor, boardView){
@@ -9,35 +35,28 @@ function PlaybackHandler(playbackControls, editor, boardView){
 	this.faster       = document.getElementById("playback-faster");
 	this.slower       = document.getElementById("playback-slower");
 	this.stepForward  = document.getElementById("playback-step-forward");
-	this.stepBackward = document.getElementById("playback-step-backward");
+	this.runCode      = document.getElementById("playback-run-code");
+
+
 
 	this.isPlayingBack = false;
 	this.buttons = this.controls.querySelectorAll("button");
-	this.buttons.forEach((b) => b.disabled = true);
+
+	this.disableButtons = () => {
+		this.buttons.forEach((b) => b.disabled = true);
+		this.runCode.disabled = false;
+		console.log(this.runCode);
+	}
+
+	this.enableButtons = () => this.buttons.forEach((b) => b.disabled = false);
+
+	console.log("what?")
+	this.disableButtons();
+	console.log(this.runCode.disabled);
 
 	this.trace = null;
 	this.traceIndex = 0;
 
-	this.init = (trace) => {
-		console.log("Calling init with trace")
-		console.log(trace);
-		this.traceIndex = 0;
-		this.trace = trace;
-		this.isPlayingBack = true;
-		this.buttons.forEach((b) => b.disabled = false);
-
-
-		this.view.resetGameState(trace[0].level);
-		this.traceIndex = 1;
-	}
-	
-
-	this.stop = () => {
-		this.isPlayingBack = false;
-		this.buttons.forEach((b) => b.disabled = true);
-		this.trace = null;
-		this.traceIndex = 0;
-	}
 
 
 	this.step = () => {
@@ -77,5 +96,38 @@ function PlaybackHandler(playbackControls, editor, boardView){
 	}
 
 	this.stepForward.addEventListener("click", () => this.step());
+	
+	// milliseconds between each step through the trace
+	this.currentAutoplayInterval = 300;
+	this.autoplay = scheduler(() => this.step(), this.currentAutoplayInterval);
+	this.playOrPause.addEventListener("click", () => this.autoplay.toggle());
+	this.faster.addEventListener("click", () => {
+		this.currentAutoplayInterval = Math.max(100, this.currentAutoplayInterval - 100);
+		this.autoplay.setInterval(this.currentAutoplayInterval);
+	});
+	this.slower.addEventListener("click", () => {
+		this.currentAutoplayInterval = Math.min(1200, this.currentAutoplayInterval + 100);
+		this.autoplay.setInterval(this.currentAutoplayInterval);
+	});
+
+	this.init = (trace) => {
+		this.traceIndex = 0;
+		this.trace = trace;
+		this.isPlayingBack = true;
+		this.enableButtons();
+
+		this.view.resetGameState(trace[0].level);
+		this.traceIndex = 1;
+		this.autoplay.toggle();
+	}
+	
+
+	this.stop = () => {
+		this.isPlayingBack = false;
+		this.disableButtons();
+		this.trace = null;
+		this.traceIndex = 0;
+	}
+
 
 }

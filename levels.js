@@ -1,6 +1,6 @@
 const levels = [
 	{
-		 "name": "Svinesti 1",
+		 "name": "Level 1",
 		 "grid": [
 			 "......bB",
 			 ".....bb.",
@@ -14,7 +14,7 @@ const levels = [
 		 "dir": 0
 	 },
 	 {
-		 "name": "Svinesti 2",
+		 "name": "Level 2",
 		 "grid": [
 			 "rrrrrrrrrr",
 			 "BbBbBbBbbb",
@@ -27,7 +27,7 @@ const levels = [
 		 "dir": 0
 	 },
 	 {
-		 "name": "Svinesti 3",
+		 "name": "Level 3",
 		 "grid": [
 			 "....R",
 			 "....b",
@@ -41,7 +41,7 @@ const levels = [
 		 "dir": 0
 	 },
 	 {
-		 "name": "Svinesti 4",
+		 "name": "Level 4",
 		 "grid": [
 			 "bbbR.....",
 			 "...b.....",
@@ -52,7 +52,7 @@ const levels = [
 		 "dir": 0
 	 },
 	 {
-		 "name": "Svinesti 5",
+		 "name": "Level 5",
 		 "grid": [
 			 "bbbbR........",
 			 "....b........",
@@ -68,7 +68,7 @@ const levels = [
 		 "dir": 0
 	 },
 	 {
-		 "name": "Svinesti 6",
+		 "name": "Level 6",
 		 "grid": [
 			 "R..R.......",
 			 "B..B.R.R...",
@@ -82,7 +82,7 @@ const levels = [
 		 "dir": 0
 	 },
 	 {
-		 "name": "Svinesti 7",
+		 "name": "Level 7",
 		 "grid": [
 			 "..GbbbbbbG",
 			 "..b......b",
@@ -97,7 +97,7 @@ const levels = [
 		 "dir": 0
 	 },
 	 {
-		 "name": "Svinesti 8",
+		 "name": "Level 8",
 		 "grid": [
 			 "....G...",
 			 ".RbrbbR.",
