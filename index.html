@@ -142,7 +142,7 @@ document.addEventListener('keydown', (event) => {
 	if (event.ctrlKey && event.key === "Enter"){
 		const code = editor.getValue();
 		console.log(code);
-		pyodideWorker.postMessage({ code: code, level: exampleLevel()});
+		pyodideWorker.postMessage({ code: code, level: JSON.stringify(selectedLevel)});
 		// TODO: handle the timeout in case of infinite loops, etc
 	}
 });

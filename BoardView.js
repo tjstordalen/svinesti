@@ -9,6 +9,8 @@ function BoardView(gridDiv){
 	}
 
 	this.populateGrid = (state) => {
+		
+		this.grid.innerHTML = "";
 
 		this.nRows = state.grid.length;
 		this.nCols = state.grid[0].length;

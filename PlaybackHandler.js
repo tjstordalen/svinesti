@@ -45,7 +45,7 @@ function PlaybackHandler(playbackControls, editor, boardView){
 			return;
 		}
 		const msg = this.trace[this.traceIndex++];
-
+		if (!msg) return;
 		switch (msg.type) {
 		case "initial-configuration":
 			console.err("This should never happen");
