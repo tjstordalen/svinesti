@@ -18,18 +18,16 @@ const ui = {
 // --- State ---
 
 const state = {
-    selectedLevel: null,
+    level: null,
     worker: null,
-    rebootTimeout: null,
-    // playback
-    trace: null,
-    traceIndex: 0,
-    isPlayingBack: false,
-    isPaused: false,
-    codeWhenStarted: null,
-    autoplayIntervalId: null,
-    // board
-    nCols: 0,
+    workerTimeout: null,
+    playback: {
+        status: "idle", // "idle" | "playing" | "paused"
+        trace: null,
+        index: 0,
+        codeWhenStarted: null,
+        intervalId: null,
+    },
 };
 
 // --- Utilities ---
@@ -48,11 +46,8 @@ const AGENT_DIRS = ["img/right.png", "img/down.png", "img/left.png", "img/up.png
 
 function drawLevel(level) {
     ui.grid.innerHTML = "";
-
-    const nRows = level.grid.length;
-    state.nCols = level.grid[0].length;
-    setCssVar("--grid-n-rows", nRows);
-    setCssVar("--grid-n-cols", state.nCols);
+    setCssVar("--grid-n-rows", level.nRows);
+    setCssVar("--grid-n-cols", level.nCols);
 
     const cells = level.grid.join("");
     for (let c of cells) {
@@ -86,7 +81,7 @@ function rotateAgent(dir) {
 
 function consumeTarget(pos) {
     const [r, c] = pos;
-    const index = state.nCols * r + c;
+    const index = state.level.nCols * r + c;
     ui.grid.children[index].classList.remove("target");
 }
 
@@ -128,15 +123,15 @@ function updateEditorMode() {
 
 // --- Code storage ---
 
-function storeCode() {
-    if (!state.selectedLevel) return;
-    const key = state.selectedLevel.name + selectedLanguage();
+function storeCode(lang = selectedLanguage()) {
+    if (!state.level) return;
+    const key = state.level.name + lang;
     localStorage.setItem(key, ui.editor.getValue());
 }
 
-function loadCode() {
-    if (!state.selectedLevel) return;
-    const key = state.selectedLevel.name + selectedLanguage();
+function loadCode(lang = selectedLanguage()) {
+    if (!state.level) return;
+    const key = state.level.name + lang;
     const code = localStorage.getItem(key) ?? "";
     ui.editor.setValue(code);
 }
@@ -145,25 +140,25 @@ function loadCode() {
 
 function autoplayStart() {
     const interval = ui.speedSlider.max - ui.speedSlider.value;
-    state.autoplayIntervalId = setInterval(step, interval);
+    state.playback.intervalId = setInterval(step, interval);
 }
 
 function autoplayStop() {
-    clearInterval(state.autoplayIntervalId);
-    state.autoplayIntervalId = null;
+    clearInterval(state.playback.intervalId);
+    state.playback.intervalId = null;
 }
 
 function autoplayUpdateSpeed() {
-    if (state.autoplayIntervalId) {
+    if (state.playback.intervalId) {
         autoplayStop();
         autoplayStart();
     }
 }
 
 function step() {
-    if (!state.isPlayingBack) return;
+    if (state.playback.status === "idle") return;
 
-    const msg = state.trace[state.traceIndex++];
+    const msg = state.playback.trace[state.playback.index++];
     if (!msg) return;
 
     switch (msg.type) {
@@ -175,9 +170,9 @@ function step() {
             break;
         case "gameover":
             console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-            state.trace = null;
-            state.traceIndex = 0;
-            state.isPlayingBack = false;
+            state.playback.trace = null;
+            state.playback.index = 0;
+            state.playback.status = "idle";
             highlightLine(-1);
             break;
         case "turn":
@@ -193,32 +188,31 @@ function step() {
 }
 
 function playbackInit(trace) {
-    state.codeWhenStarted = ui.editor.getValue();
-    state.traceIndex = 0;
-    state.trace = trace;
-    state.isPlayingBack = true;
-    state.isPaused = false;
+    state.playback.codeWhenStarted = ui.editor.getValue();
+    state.playback.index = 0;
+    state.playback.trace = trace;
+    state.playback.status = "playing";
     ui.stopOrStepBtn.disabled = false;
 
     resetBoard(trace[0].level);
-    state.traceIndex = 1;
+    state.playback.index = 1;
     autoplayStop();
     autoplayStart();
 }
 
 function playbackStop() {
-    state.codeWhenStarted = null;
+    state.playback.codeWhenStarted = null;
     autoplayStop();
-    state.isPlayingBack = false;
-    state.trace = null;
-    state.traceIndex = 0;
+    state.playback.status = "idle";
+    state.playback.trace = null;
+    state.playback.index = 0;
     ui.stopOrStepBtn.disabled = true;
 }
 
 function playbackResume() {
-    if (ui.editor.getValue() !== state.codeWhenStarted) return false;
-    if (state.isPlayingBack && state.isPaused) {
-        state.isPaused = false;
+    if (ui.editor.getValue() !== state.playback.codeWhenStarted) return false;
+    if (state.playback.status === "paused") {
+        state.playback.status = "playing";
         autoplayStart();
         return true;
     }
@@ -241,7 +235,7 @@ function initWorker() {
             ui.codeOutput.textContent = event.data.errorMessage;
             ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
         }
-        clearTimeout(state.rebootTimeout);
+        clearTimeout(state.workerTimeout);
     };
 }
 
@@ -249,10 +243,18 @@ function initWorker() {
 
 function selectLevel(level) {
     storeCode();
-    state.selectedLevel = level;
+    state.level = level;
     loadCode();
     resetBoard(level);
     ui.codeOutput.textContent = "";
+    updateEditorMode();
+}
+
+function switchLanguage() {
+    const currentLang = selectedLanguage();
+    const otherLang = currentLang === "python" ? "java" : "python";
+    storeCode(otherLang);
+    loadCode(currentLang);
     updateEditorMode();
 }
 
@@ -274,10 +276,10 @@ function submitCode() {
 
     state.worker.postMessage({
         code: program,
-        level: JSON.stringify(state.selectedLevel)
+        level: JSON.stringify(state.level)
     });
 
-    state.rebootTimeout = setTimeout(initWorker, 1000);
+    state.workerTimeout = setTimeout(initWorker, 1000);
 }
 
 // --- Initialize ---
@@ -317,9 +319,9 @@ ui.levelList.querySelector("li button").click();
 ui.runCodeBtn.onclick = submitCode;
 
 ui.stopOrStepBtn.onclick = () => {
-    if (!state.isPlayingBack) return;
-    if (!state.isPaused) {
-        state.isPaused = true;
+    if (state.playback.status === "idle") return;
+    if (state.playback.status === "playing") {
+        state.playback.status = "paused";
         autoplayStop();
     }
     step();
@@ -339,11 +341,7 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("change", (e) => {
     if (e.target.type === "radio" && e.target.name === "language-choice") {
-        const other = selectedLanguage() === "python" ? "java" : "python";
-        const key = state.selectedLevel.name + other;
-        localStorage.setItem(key, ui.editor.getValue());
-        loadCode();
-        updateEditorMode();
+        switchLanguage();
     }
 });
 
