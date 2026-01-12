@@ -12,7 +12,7 @@ const levels = [
             ".bb.....",
             "bb......"
         ],
-        pos: [6, 0],
+        start: [6, 0],
         dir: 0
     },
     {
@@ -22,7 +22,7 @@ const levels = [
         grid: [
             "BbbbbbbbbbR"
         ],
-        pos: [0, 5],
+        start: [0, 5],
         dir: 0
     },
     {
@@ -38,7 +38,7 @@ const levels = [
             "..b.b.b.",
             "bbR.RbR."
         ],
-        pos: [6, 0],
+        start: [6, 0],
         dir: 0
     },
     {
@@ -53,7 +53,7 @@ const levels = [
             "bbbBbBbBbB",
             "gggggggggg"
         ],
-        pos: [5, 0],
+        start: [5, 0],
         dir: 0
     },
     {
@@ -69,7 +69,7 @@ const levels = [
             "...G.G..b.",
             "bbGR.RbGR."
         ],
-        pos: [6, 0],
+        start: [6, 0],
         dir: 0
     },
     {
@@ -85,7 +85,7 @@ const levels = [
             "...G.G..b.",
             "bbGR.RbGR."
         ],
-        pos: [6, 0],
+        start: [6, 0],
         dir: 0
     },
     {
@@ -99,7 +99,7 @@ const levels = [
             "...b..b.",
             "...bbbb."
         ],
-        pos: [0, 0],
+        start: [0, 0],
         dir: 0
     },
     {
@@ -116,7 +116,7 @@ const levels = [
             ".RbbrbR.",
             "...G...."
         ],
-        pos: [4, 3],
+        start: [4, 3],
         dir: 0
     },
     {
@@ -129,7 +129,7 @@ const levels = [
             "...b.....",
             "...bBbbbB"
         ],
-        pos: [0, 0],
+        start: [0, 0],
         dir: 0
     },
     {
@@ -144,7 +144,7 @@ const levels = [
             ".....b.....",
             ".....bbbbBb"
         ],
-        pos: [0, 0],
+        start: [0, 0],
         dir: 0
     },
     {
@@ -156,7 +156,7 @@ const levels = [
             "..b.",
             "..bB"
         ],
-        pos: [0, 0],
+        start: [0, 0],
         dir: 0
     },
     {
@@ -174,7 +174,7 @@ const levels = [
             ".........b...",
             ".........bbbB"
         ],
-        pos: [0, 0],
+        start: [0, 0],
         dir: 0
     },
     {
@@ -190,7 +190,7 @@ const levels = [
             "BBRBBBBBBBR",
             "bBBBBBBBBBB"
         ],
-        pos: [6, 0],
+        start: [6, 0],
         dir: 0
     },
     {
@@ -206,7 +206,7 @@ const levels = [
             "..b.b.b.",
             "bbR.RbR."
         ],
-        pos: [6, 0],
+        start: [6, 0],
         dir: 0
     }
 ];

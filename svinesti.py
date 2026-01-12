@@ -21,7 +21,7 @@ import js
 #         ".bb.....",       Collecting all the stars wins the game.
 #         "bb......"
 #     ],
-#     "pos": [6,0],   starting position [row,col] for robot
+#     "start": [6,0], starting position [row,col] for robot
 #     "dir": 0        the direction the bot is facing, 0,1,2,3 = right,down,left,up
 # }
 # 
@@ -51,7 +51,7 @@ class State():
         
         self.grid = [list(s) for s in self.grid]
         self.dirs = [(0,1),(1,0),(0,-1),(-1,0)]
-        self.pos  = tuple(self.pos) 
+        self.pos  = tuple(self.start)  # current position, initialized from start 
         self.LEFT = -1
         self.RIGHT = 1
         self.nOps = 0

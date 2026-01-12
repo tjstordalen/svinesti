@@ -209,10 +209,9 @@
 }
 
 
-.r { background-color: #fdff15; 
-	 background-color: #f77878;}
-.g { background-color: #8be01a; }
-.b { background-color: #99d9ea; }
+.red   { background-color: #f77878; }
+.green { background-color: #8be01a; }
+.blue  { background-color: #99d9ea; }
 
 /* The agent needs to be placed INSIDE the top-left grid cell 
  * in the grid for the calculations to work properly */

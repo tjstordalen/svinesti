@@ -44,6 +44,22 @@ function selectedLanguage() {
 
 const AGENT_DIRS = ["img/right.png", "img/down.png", "img/left.png", "img/up.png"];
 
+const TILE_CLASSES = {
+    ".": ["empty"],
+    "r": ["red"],
+    "g": ["green"],
+    "b": ["blue"],
+    "R": ["red", "target"],
+    "G": ["green", "target"],
+    "B": ["blue", "target"],
+};
+
+const WITHOUT_TARGET = {
+    "R": "r",
+    "G": "g",
+    "B": "b",
+};
+
 function drawLevel(level) {
     ui.grid.innerHTML = "";
     setCssVar("--grid-n-rows", level.nRows);
@@ -52,15 +68,7 @@ function drawLevel(level) {
     const cells = level.grid.join("");
     for (let c of cells) {
         const div = document.createElement("div");
-        div.classList.add("game-tile");
-        if (c === ".") {
-            div.classList.add("empty");
-        } else {
-            div.classList.add(c.toLowerCase());
-            if (c.toUpperCase() === c) {
-                div.classList.add("target");
-            }
-        }
+        div.classList.add("game-tile", ...TILE_CLASSES[c]);
         ui.grid.appendChild(div);
     }
 
@@ -87,7 +95,7 @@ function consumeTarget(pos) {
 
 function resetBoard(level) {
     drawLevel(level);
-    moveAgent(level.pos);
+    moveAgent(level.start);
     rotateAgent(level.dir);
 }
 
@@ -288,12 +296,13 @@ setupEditor();
 initWorker();
 ui.stopOrStepBtn.disabled = true;
 
-// Prepare levels (remove target from starting position)
+// Prepare levels: if the starting position has a star (uppercase letter),
+// convert it to just the tile (lowercase) so the pig doesn't start on a star.
 for (let lvl of levels) {
-    const [r, c] = lvl.pos;
-    const tmp = [...lvl.grid[r]];
-    tmp[c] = tmp[c].toLowerCase();
-    lvl.grid[r] = tmp.join("");
+    const [r, c] = lvl.start;
+    const row = lvl.grid[r].split("");
+    row[c] = WITHOUT_TARGET[row[c]] || row[c];
+    lvl.grid[r] = row.join("");
 }
 
 // Build level list
