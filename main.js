@@ -1,269 +1,290 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
 
+// --- UI elements ---
+
+const ui = {
+    grid: document.getElementById("grid"),
+    codeInput: document.getElementById("code-input"),
+    codeOutput: document.getElementById("code-output"),
+    levelList: document.getElementById("level-list"),
+    stopOrStepBtn: document.getElementById("playback-stop-or-step"),
+    speedSlider: document.getElementById("playback-speed"),
+    runCodeBtn: document.getElementById("playback-run-code"),
+    fontSizeSlider: document.getElementById("editor-font-size-slider"),
+    editor: null,
+    agent: null,
+};
+
 // --- State ---
 
-const app = {
+const state = {
     selectedLevel: null,
     worker: null,
-    rebootTimeout: null
+    rebootTimeout: null,
+    // playback
+    trace: null,
+    traceIndex: 0,
+    isPlayingBack: false,
+    isPaused: false,
+    codeWhenStarted: null,
+    autoplayIntervalId: null,
+    // board
+    nCols: 0,
 };
+
+// --- Utilities ---
+
+function setCssVar(id, val) {
+    document.documentElement.style.setProperty(id, val.toString());
+}
+
+function selectedLanguage() {
+    return document.querySelector('input[name="language-choice"]:checked').value;
+}
 
 // --- Board rendering ---
 
-function createBoardView(gridDiv) {
-    const setCssVar = (id, val) => document.documentElement.style.setProperty(id, val.toString());
-    const dirs = ["img/right.png", "img/down.png", "img/left.png", "img/up.png"];
-    let agent = null;
-    let nCols = 0;
+const AGENT_DIRS = ["img/right.png", "img/down.png", "img/left.png", "img/up.png"];
 
-    function populateGrid(state) {
-        gridDiv.innerHTML = "";
+function drawLevel(level) {
+    ui.grid.innerHTML = "";
 
-        const nRows = state.grid.length;
-        nCols = state.grid[0].length;
-        setCssVar("--grid-n-rows", nRows);
-        setCssVar("--grid-n-cols", nCols);
+    const nRows = level.grid.length;
+    state.nCols = level.grid[0].length;
+    setCssVar("--grid-n-rows", nRows);
+    setCssVar("--grid-n-cols", state.nCols);
 
-        const cells = state.grid.join("");
-        for (let c of cells) {
-            const div = document.createElement("div");
-            div.classList.add("game-tile");
-            if (c === ".") {
-                div.classList.add("empty");
-            } else {
-                div.classList.add(c.toLowerCase());
-                if (c.toUpperCase() === c) {
-                    div.classList.add("target");
-                }
-            }
-            gridDiv.appendChild(div);
-        }
-
-        agent = document.createElement("div");
-        agent.setAttribute("id", "agent");
-        gridDiv.firstElementChild.appendChild(agent);
-    }
-
-    function moveAgent(pos) {
-        const [row, col] = pos;
-        setCssVar("--agent-row", row);
-        setCssVar("--agent-col", col);
-    }
-
-    function rotateAgent(dir) {
-        agent.style.backgroundImage = `url("${dirs[dir]}")`;
-    }
-
-    function consumeTarget(pos) {
-        const [r, c] = pos;
-        const index = nCols * r + c;
-        gridDiv.children[index].classList.remove("target");
-    }
-
-    function resetGameState(state) {
-        populateGrid(state);
-        moveAgent(state.pos);
-        rotateAgent(state.dir);
-    }
-
-    return { resetGameState, moveAgent, rotateAgent, consumeTarget };
-}
-
-// --- Playback control ---
-
-function createScheduler(task, interval) {
-    let intervalId = null;
-    let currentInterval = interval;
-
-    return {
-        start: () => intervalId = setInterval(task, currentInterval),
-        stop: () => { clearInterval(intervalId); intervalId = null; },
-        setInterval: (newInterval) => {
-            currentInterval = newInterval;
-            if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = setInterval(task, currentInterval);
+    const cells = level.grid.join("");
+    for (let c of cells) {
+        const div = document.createElement("div");
+        div.classList.add("game-tile");
+        if (c === ".") {
+            div.classList.add("empty");
+        } else {
+            div.classList.add(c.toLowerCase());
+            if (c.toUpperCase() === c) {
+                div.classList.add("target");
             }
         }
-    };
+        ui.grid.appendChild(div);
+    }
+
+    ui.agent = document.createElement("div");
+    ui.agent.setAttribute("id", "agent");
+    ui.grid.firstElementChild.appendChild(ui.agent);
 }
 
-function createPlaybackHandler(editor, boardView) {
-    const stopOrStepBtn = document.getElementById("playback-stop-or-step");
-    const speedSlider = document.getElementById("playback-speed");
-
-    let trace = null;
-    let traceIndex = 0;
-    let isPlayingBack = false;
-    let isPaused = false;
-    let codeWhenStarted = null;
-
-    stopOrStepBtn.disabled = true;
-
-    function step() {
-        if (!isPlayingBack) return;
-
-        const msg = trace[traceIndex++];
-        if (!msg) return;
-
-        switch (msg.type) {
-            case "move":
-                boardView.moveAgent(msg.pos);
-                break;
-            case "collected":
-                boardView.consumeTarget(msg.pos);
-                break;
-            case "gameover":
-                console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-                trace = null;
-                traceIndex = 0;
-                isPlayingBack = false;
-                editor.highlightLine(-1);
-                break;
-            case "turn":
-                boardView.rotateAgent(msg.dir);
-                break;
-            case "isColor":
-                console.log(`Is color ${msg.color}? ${msg.result}!`);
-                break;
-            case "lineExecuted":
-                editor.highlightLine(msg.lineno);
-                break;
-        }
-    }
-
-    const currentAutoplayInterval = () => speedSlider.max - speedSlider.value;
-    const autoplay = createScheduler(step, currentAutoplayInterval());
-
-    speedSlider.addEventListener("input", () => {
-        autoplay.setInterval(currentAutoplayInterval());
-    });
-
-    stopOrStepBtn.onclick = () => {
-        if (!isPlayingBack) return;
-        if (!isPaused) {
-            isPaused = true;
-            autoplay.stop();
-        }
-        step();
-    };
-
-    function init(newTrace) {
-        codeWhenStarted = editor.getValue();
-        traceIndex = 0;
-        trace = newTrace;
-        isPlayingBack = true;
-        isPaused = false;
-        stopOrStepBtn.disabled = false;
-
-        boardView.resetGameState(trace[0].level);
-        traceIndex = 1;
-        autoplay.stop();
-        autoplay.start();
-    }
-
-    function stop() {
-        codeWhenStarted = null;
-        autoplay.stop();
-        isPlayingBack = false;
-        trace = null;
-        traceIndex = 0;
-        stopOrStepBtn.disabled = true;
-    }
-
-    function resume() {
-        if (editor.getValue() !== codeWhenStarted) return false;
-        if (isPlayingBack && isPaused) {
-            isPaused = false;
-            autoplay.start();
-            return true;
-        }
-        return false;
-    }
-
-    return { init, stop, resume };
+function moveAgent(pos) {
+    const [row, col] = pos;
+    setCssVar("--agent-row", row);
+    setCssVar("--agent-col", col);
 }
 
-// --- Editor setup ---
+function rotateAgent(dir) {
+    ui.agent.style.backgroundImage = `url("${AGENT_DIRS[dir]}")`;
+}
 
-function setupEditor(codeInput) {
-    const editor = CodeMirror.fromTextArea(codeInput, {
+function consumeTarget(pos) {
+    const [r, c] = pos;
+    const index = state.nCols * r + c;
+    ui.grid.children[index].classList.remove("target");
+}
+
+function resetBoard(level) {
+    drawLevel(level);
+    moveAgent(level.pos);
+    rotateAgent(level.dir);
+}
+
+// --- Editor ---
+
+function setupEditor() {
+    ui.editor = CodeMirror.fromTextArea(ui.codeInput, {
         lineNumbers: true,
         lineWrapping: true,
         mode: "python",
         theme: "default"
     });
-
-    editor.highlightLine = (lineno) => {
-        lineno--;
-        const prev = editor.highlightedLine;
-        if (prev !== undefined && prev >= 0) {
-            editor.removeLineClass(prev, "background", "highlighted-line");
-        }
-        if (lineno < 0 || lineno > editor.lineCount()) {
-            editor.highlightedLine = undefined;
-            return;
-        }
-        editor.highlightedLine = lineno;
-        editor.addLineClass(lineno, "background", "highlighted-line");
-    };
-
-    return editor;
 }
 
-// --- Worker management ---
+function highlightLine(lineno) {
+    lineno--;
+    const prev = ui.editor.highlightedLine;
+    if (prev !== undefined && prev >= 0) {
+        ui.editor.removeLineClass(prev, "background", "highlighted-line");
+    }
+    if (lineno < 0 || lineno > ui.editor.lineCount()) {
+        ui.editor.highlightedLine = undefined;
+        return;
+    }
+    ui.editor.highlightedLine = lineno;
+    ui.editor.addLineClass(lineno, "background", "highlighted-line");
+}
 
-function initWorker(playback, codeOutput) {
-    if (playback) playback.stop();
-
-    console.log("Initializing worker");
-    if (app.worker) app.worker.terminate();
-
-    app.worker = new Worker("worker.js");
-    app.worker.onmessage = (event) => {
-        if (event.data.type === "execution-trace") {
-            playback.init(event.data.trace);
-        } else if (event.data.type === "execution-failed") {
-            codeOutput.textContent = event.data.errorMessage;
-            codeOutput.scrollTop = codeOutput.scrollHeight;
-        }
-        clearTimeout(app.rebootTimeout);
-    };
+function updateEditorMode() {
+    const mode = selectedLanguage() === "java" ? "text/x-java" : "python";
+    ui.editor.setOption("mode", mode);
 }
 
 // --- Code storage ---
 
-function selectedLanguage() {
-    const selectedRadio = document.querySelector('input[name="language-choice"]:checked');
-    return selectedRadio.value;
+function storeCode() {
+    if (!state.selectedLevel) return;
+    const key = state.selectedLevel.name + selectedLanguage();
+    localStorage.setItem(key, ui.editor.getValue());
 }
 
-function storeCode(editor) {
-    if (!app.selectedLevel) return;
-    const key = app.selectedLevel.name + selectedLanguage();
-    localStorage.setItem(key, editor.getValue());
-}
-
-function loadCode(editor) {
-    if (!app.selectedLevel) return;
-    const key = app.selectedLevel.name + selectedLanguage();
+function loadCode() {
+    if (!state.selectedLevel) return;
+    const key = state.selectedLevel.name + selectedLanguage();
     const code = localStorage.getItem(key) ?? "";
-    editor.setValue(code);
+    ui.editor.setValue(code);
 }
 
-function updateEditorMode(editor) {
-    const mode = selectedLanguage() === "java" ? "text/x-java" : "python";
-    editor.setOption("mode", mode);
+// --- Playback ---
+
+function autoplayStart() {
+    const interval = ui.speedSlider.max - ui.speedSlider.value;
+    state.autoplayIntervalId = setInterval(step, interval);
+}
+
+function autoplayStop() {
+    clearInterval(state.autoplayIntervalId);
+    state.autoplayIntervalId = null;
+}
+
+function autoplayUpdateSpeed() {
+    if (state.autoplayIntervalId) {
+        autoplayStop();
+        autoplayStart();
+    }
+}
+
+function step() {
+    if (!state.isPlayingBack) return;
+
+    const msg = state.trace[state.traceIndex++];
+    if (!msg) return;
+
+    switch (msg.type) {
+        case "move":
+            moveAgent(msg.pos);
+            break;
+        case "collected":
+            consumeTarget(msg.pos);
+            break;
+        case "gameover":
+            console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
+            state.trace = null;
+            state.traceIndex = 0;
+            state.isPlayingBack = false;
+            highlightLine(-1);
+            break;
+        case "turn":
+            rotateAgent(msg.dir);
+            break;
+        case "isColor":
+            console.log(`Is color ${msg.color}? ${msg.result}!`);
+            break;
+        case "lineExecuted":
+            highlightLine(msg.lineno);
+            break;
+    }
+}
+
+function playbackInit(trace) {
+    state.codeWhenStarted = ui.editor.getValue();
+    state.traceIndex = 0;
+    state.trace = trace;
+    state.isPlayingBack = true;
+    state.isPaused = false;
+    ui.stopOrStepBtn.disabled = false;
+
+    resetBoard(trace[0].level);
+    state.traceIndex = 1;
+    autoplayStop();
+    autoplayStart();
+}
+
+function playbackStop() {
+    state.codeWhenStarted = null;
+    autoplayStop();
+    state.isPlayingBack = false;
+    state.trace = null;
+    state.traceIndex = 0;
+    ui.stopOrStepBtn.disabled = true;
+}
+
+function playbackResume() {
+    if (ui.editor.getValue() !== state.codeWhenStarted) return false;
+    if (state.isPlayingBack && state.isPaused) {
+        state.isPaused = false;
+        autoplayStart();
+        return true;
+    }
+    return false;
+}
+
+// --- Worker management ---
+
+function initWorker() {
+    playbackStop();
+
+    console.log("Initializing worker");
+    if (state.worker) state.worker.terminate();
+
+    state.worker = new Worker("worker.js");
+    state.worker.onmessage = (event) => {
+        if (event.data.type === "execution-trace") {
+            playbackInit(event.data.trace);
+        } else if (event.data.type === "execution-failed") {
+            ui.codeOutput.textContent = event.data.errorMessage;
+            ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
+        }
+        clearTimeout(state.rebootTimeout);
+    };
+}
+
+// --- Actions ---
+
+function selectLevel(level) {
+    storeCode();
+    state.selectedLevel = level;
+    loadCode();
+    resetBoard(level);
+    ui.codeOutput.textContent = "";
+    updateEditorMode();
+}
+
+function submitCode() {
+    if (playbackResume()) return;
+
+    ui.codeOutput.textContent = "";
+    let program = ui.editor.getValue();
+
+    if (selectedLanguage() === "java") {
+        const [success, error, code] = PigJatin.generatePythonCode(program);
+        if (!success) {
+            ui.codeOutput.textContent = error.msg;
+            ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
+            return;
+        }
+        program = code;
+    }
+
+    state.worker.postMessage({
+        code: program,
+        level: JSON.stringify(state.selectedLevel)
+    });
+
+    state.rebootTimeout = setTimeout(initWorker, 1000);
 }
 
 // --- Initialize ---
 
-const codeOutput = document.getElementById("code-output");
-const editor = setupEditor(document.getElementById("code-input"));
-const boardView = createBoardView(document.getElementById("grid"));
-const playback = createPlaybackHandler(editor, boardView);
-
-initWorker(playback, codeOutput);
+setupEditor();
+initWorker();
+ui.stopOrStepBtn.disabled = true;
 
 // Prepare levels (remove target from starting position)
 for (let lvl of levels) {
@@ -274,76 +295,55 @@ for (let lvl of levels) {
 }
 
 // Build level list
-const levelList = document.getElementById("level-list");
-
 for (let lvl of levels) {
     const item = document.createElement("li");
     const btn = document.createElement("button");
     item.appendChild(btn);
     btn.textContent = lvl.name;
-    btn.level = lvl;
-    levelList.appendChild(item);
+    ui.levelList.appendChild(item);
 
     btn.addEventListener("click", () => {
-        storeCode(editor);
-        app.selectedLevel = btn.level;
-        loadCode(editor);
-        boardView.resetGameState(btn.level);
-        levelList.querySelectorAll("li button").forEach(b => b.classList.remove("selected"));
+        selectLevel(lvl);
+        ui.levelList.querySelectorAll("li button").forEach(b => b.classList.remove("selected"));
         btn.classList.add("selected");
-        codeOutput.textContent = "";
-        updateEditorMode(editor);
     });
 }
 
 // Select first level
-levelList.querySelector("li button").click();
+ui.levelList.querySelector("li button").click();
 
 // --- Event handlers ---
 
-function submitCode() {
-    if (playback.resume()) return;
+ui.runCodeBtn.onclick = submitCode;
 
-    codeOutput.textContent = "";
-    let program = editor.getValue();
-
-    if (selectedLanguage() === "java") {
-        const [success, error, code] = PigJatin.generatePythonCode(program);
-        if (!success) {
-            codeOutput.textContent = error.msg;
-            codeOutput.scrollTop = codeOutput.scrollHeight;
-            return;
-        }
-        program = code;
+ui.stopOrStepBtn.onclick = () => {
+    if (!state.isPlayingBack) return;
+    if (!state.isPaused) {
+        state.isPaused = true;
+        autoplayStop();
     }
+    step();
+};
 
-    app.worker.postMessage({
-        code: program,
-        level: JSON.stringify(app.selectedLevel)
-    });
+ui.speedSlider.addEventListener("input", autoplayUpdateSpeed);
 
-    app.rebootTimeout = setTimeout(() => initWorker(playback, codeOutput), 1000);
-}
+ui.fontSizeSlider.addEventListener("input", (e) => {
+    ui.editor.getWrapperElement().style.fontSize = e.target.value + "px";
+});
 
-document.getElementById("playback-run-code").onclick = submitCode;
+ui.editor.on("change", storeCode);
 
 document.addEventListener("keydown", (event) => {
     if (event.ctrlKey && event.key === "Enter") submitCode();
 });
 
-editor.on("change", () => storeCode(editor));
-
-document.getElementById("editor-font-size-slider").addEventListener("input", (e) => {
-    editor.getWrapperElement().style.fontSize = e.target.value + "px";
-});
-
 document.addEventListener("change", (e) => {
     if (e.target.type === "radio" && e.target.name === "language-choice") {
         const other = selectedLanguage() === "python" ? "java" : "python";
-        const key = app.selectedLevel.name + other;
-        localStorage.setItem(key, editor.getValue());
-        loadCode(editor);
-        updateEditorMode(editor);
+        const key = state.selectedLevel.name + other;
+        localStorage.setItem(key, ui.editor.getValue());
+        loadCode();
+        updateEditorMode();
     }
 });
 
