@@ -2,16 +2,23 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 
 // --- UI elements ---
 
+const gid = (id) => document.getElementById(id);
 const ui = {
-    grid: document.getElementById("grid"),
-    codeInput: document.getElementById("code-input"),
-    codeOutput: document.getElementById("code-output"),
-    levelList: document.getElementById("level-list"),
-    stopOrStepBtn: document.getElementById("playback-stop-or-step"),
-    speedSlider: document.getElementById("playback-speed"),
-    runCodeBtn: document.getElementById("playback-run-code"),
-    fontSizeSlider: document.getElementById("editor-font-size-slider"),
-    editor: null,
+    grid:			gid("grid"),
+    codeInput:		gid("code-input"),
+    codeOutput:		gid("code-output"),
+    levelList:		gid("level-list"),
+    stepBtn:		gid("playback-step"),
+    stopBtn:		gid("playback-stop"),
+    speedSlider:	gid("playback-speed"),
+    runCodeBtn:		gid("playback-run-code"),
+    fontSizeSlider: gid("editor-font-size-slider"),
+    editor: CodeMirror.fromTextArea(gid("code-input"), {
+        lineNumbers: true,
+        lineWrapping: true,
+        mode: "python",
+        theme: "default"
+    }),
     agent: null,
 };
 
@@ -32,7 +39,7 @@ const state = {
 
 // --- Utilities ---
 
-function setCssVar(id, val) {
+function setCssVariable(id, val) {
     document.documentElement.style.setProperty(id, val.toString());
 }
 
@@ -42,45 +49,48 @@ function selectedLanguage() {
 
 // --- Board rendering ---
 
+// Direction 0 is right, 1 is down, and so on.
 const AGENT_DIRS = ["img/right.png", "img/down.png", "img/left.png", "img/up.png"];
 
+// Maps each character in a level to the relevant CSS classes
 const TILE_CLASSES = {
-    ".": ["empty"],
-    "r": ["red"],
-    "g": ["green"],
-    "b": ["blue"],
-    "R": ["red", "target"],
-    "G": ["green", "target"],
-    "B": ["blue", "target"],
-};
-
-const WITHOUT_TARGET = {
-    "R": "r",
-    "G": "g",
-    "B": "b",
+    ".": "empty",
+    "r": "red",
+    "g": "green",
+    "b": "blue",
+    "R": "red target",
+    "G": "green target",
+    "B": "blue target",
 };
 
 function drawLevel(level) {
     ui.grid.innerHTML = "";
-    setCssVar("--grid-n-rows", level.nRows);
-    setCssVar("--grid-n-cols", level.nCols);
+
+	// The layout of the grid is handled in CSS
+    setCssVariable("--grid-n-rows", level.nRows);
+    setCssVariable("--grid-n-cols", level.nCols);
 
     const cells = level.grid.join("");
     for (let c of cells) {
         const div = document.createElement("div");
-        div.classList.add("game-tile", ...TILE_CLASSES[c]);
+        div.className = "game-tile " + TILE_CLASSES[c];
         ui.grid.appendChild(div);
     }
 
     ui.agent = document.createElement("div");
     ui.agent.setAttribute("id", "agent");
+
+	// The pig needs to be added to the top left grid cell for
+	// the CSS animatins to work correctly.
     ui.grid.firstElementChild.appendChild(ui.agent);
 }
 
 function moveAgent(pos) {
     const [row, col] = pos;
-    setCssVar("--agent-row", row);
-    setCssVar("--agent-col", col);
+
+	// The movement of the pig is animated in CSS
+    setCssVariable("--agent-row", row);
+    setCssVariable("--agent-col", col);
 }
 
 function rotateAgent(dir) {
@@ -100,16 +110,6 @@ function resetBoard(level) {
 }
 
 // --- Editor ---
-
-function setupEditor() {
-    ui.editor = CodeMirror.fromTextArea(ui.codeInput, {
-        lineNumbers: true,
-        lineWrapping: true,
-        mode: "python",
-        theme: "default"
-    });
-}
-
 function highlightLine(lineno) {
     lineno--;
     const prev = ui.editor.highlightedLine;
@@ -166,7 +166,9 @@ function autoplayUpdateSpeed() {
 function step() {
     if (state.playback.status === "idle") return;
 
-    const msg = state.playback.trace[state.playback.index++];
+    const msg = state.playback.trace[state.playback.index];
+	state.playback.index++;
+
     if (!msg) return;
 
     switch (msg.type) {
@@ -178,10 +180,15 @@ function step() {
             break;
         case "gameover":
             console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
+            autoplayStop();
             state.playback.trace = null;
             state.playback.index = 0;
             state.playback.status = "idle";
             highlightLine(-1);
+            ui.stepBtn.disabled = true;
+            ui.stopBtn.disabled = true;
+            ui.runCodeBtn.textContent = "Run";
+            ui.stopBtn.textContent = "Stop";
             break;
         case "turn":
             rotateAgent(msg.dir);
@@ -200,7 +207,8 @@ function playbackInit(trace) {
     state.playback.index = 0;
     state.playback.trace = trace;
     state.playback.status = "playing";
-    ui.stopOrStepBtn.disabled = false;
+    ui.stepBtn.disabled = false;
+    ui.stopBtn.disabled = false;
 
     resetBoard(trace[0].level);
     state.playback.index = 1;
@@ -214,7 +222,10 @@ function playbackStop() {
     state.playback.status = "idle";
     state.playback.trace = null;
     state.playback.index = 0;
-    ui.stopOrStepBtn.disabled = true;
+    ui.stepBtn.disabled = true;
+    ui.stopBtn.disabled = true;
+    ui.runCodeBtn.textContent = "Run";
+    ui.stopBtn.textContent = "Stop";
 }
 
 function playbackResume() {
@@ -222,6 +233,9 @@ function playbackResume() {
     if (state.playback.status === "paused") {
         state.playback.status = "playing";
         autoplayStart();
+        ui.runCodeBtn.textContent = "Run";
+        ui.stopBtn.textContent = "Stop";
+        ui.stopBtn.disabled = false;
         return true;
     }
     return false;
@@ -250,6 +264,7 @@ function initWorker() {
 // --- Actions ---
 
 function selectLevel(level) {
+    playbackStop();
     storeCode();
     state.level = level;
     loadCode();
@@ -292,16 +307,16 @@ function submitCode() {
 
 // --- Initialize ---
 
-setupEditor();
 initWorker();
-ui.stopOrStepBtn.disabled = true;
+ui.stepBtn.disabled = true;
+ui.stopBtn.disabled = true;
 
 // Prepare levels: if the starting position has a star (uppercase letter),
 // convert it to just the tile (lowercase) so the pig doesn't start on a star.
 for (let lvl of levels) {
     const [r, c] = lvl.start;
     const row = lvl.grid[r].split("");
-    row[c] = WITHOUT_TARGET[row[c]] || row[c];
+    row[c] = row[c].toLowerCase() || row[c];
     lvl.grid[r] = row.join("");
 }
 
@@ -327,13 +342,32 @@ ui.levelList.querySelector("li button").click();
 
 ui.runCodeBtn.onclick = submitCode;
 
-ui.stopOrStepBtn.onclick = () => {
+ui.stepBtn.onclick = () => {
     if (state.playback.status === "idle") return;
     if (state.playback.status === "playing") {
         state.playback.status = "paused";
         autoplayStop();
+        ui.runCodeBtn.textContent = "Resume";
+        ui.stopBtn.textContent = "Reset";
     }
     step();
+};
+
+ui.stopBtn.onclick = () => {
+    if (state.playback.status === "playing") {
+        // Pause playback and offer Resume/Reset
+        state.playback.status = "paused";
+        autoplayStop();
+        ui.runCodeBtn.textContent = "Resume";
+        ui.stopBtn.textContent = "Reset";
+    } else if (state.playback.status === "paused") {
+        // Reset everything
+        playbackStop();
+        resetBoard(state.level);
+        highlightLine(-1);
+        ui.runCodeBtn.textContent = "Run";
+        ui.stopBtn.textContent = "Stop";
+    }
 };
 
 ui.speedSlider.addEventListener("input", autoplayUpdateSpeed);
