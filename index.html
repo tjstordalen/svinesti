@@ -11,6 +11,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/clike/clike.min.js"></script>
 </head>
 <body>
+    <!-- Preload splash screen images -->
+    <link rel="preload" href="pigs/right-1.png" as="image">
+    <link rel="preload" href="pigs/right-2.png" as="image">
+    <link rel="preload" href="pigs/right-3.png" as="image">
+
+    <div id="splash-screen">
+        <h1>Svinesti</h1>
+        <div class="splash-pig-container">
+            <div class="splash-pig-shadow"></div>
+            <div class="splash-pig-face"></div>
+        </div>
+    </div>
+
     <header class="app-header">
         <button id="sidebar-toggle" class="icon-btn" title="Toggle Levels">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -1,5 +1,8 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
 
+// Set to false to disable splash screen for faster debugging
+const ENABLE_SPLASH_SCREEN = true;
+
 // --- UI elements ---
 
 const gid = (id) => document.getElementById(id);
@@ -15,6 +18,7 @@ const ui = {
     fontSizeSlider: gid("editor-font-size-slider"),
     sidebar:        gid("sidebar"),
     sidebarToggle:  gid("sidebar-toggle"),
+    splashScreen:   gid("splash-screen"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
         lineNumbers: true,
         lineWrapping: true,
@@ -30,6 +34,9 @@ const state = {
     level: null,
     worker: null,
     workerTimeout: null,
+    currentDir: 0, // Current agent direction (0=right, 1=down, 2=left, 3=up)
+    movementInProgress: false, // Track if pig is currently animating movement
+    turnInProgress: false, // Track if pig is currently in turn delay
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
@@ -49,10 +56,31 @@ function selectedLanguage() {
     return document.querySelector('input[name="language-choice"]:checked').value;
 }
 
+function parseCssTime(cssValue) {
+    // Parse CSS time value (e.g., "0.9s" or "900ms") and return milliseconds
+    const value = parseFloat(cssValue);
+    if (cssValue.includes('ms')) {
+        return value;
+    } else {
+        return value * 1000; // assume seconds
+    }
+}
+
+function syncAnimationSpeed() {
+    // Match animation duration to playback interval, slowed to 70%
+    const interval = ui.speedSlider.max - ui.speedSlider.value;
+    const duration = interval / 0.7; // Slow down to ~70% speed
+    setCssVariable("--agent-move-duration", `${duration}ms`);
+}
+
 // --- Board rendering ---
 
-// Direction 0 is right, 1 is down, and so on.
-const AGENT_DIRS = ["img/right.png", "img/down.png", "img/left.png", "img/up.png"];
+// Direction 0 is right, 1 is down, 2 is left, 3 is up
+// Idle frame for each direction
+const AGENT_DIRS = ["pigs/right-1.png", "pigs/down-1.png", "pigs/left-1.png", "pigs/up-1.png"];
+
+// Direction names for walking animation classes
+const DIR_NAMES = ["right", "down", "left", "up"];
 
 // Maps each character in a level to the relevant CSS classes
 const TILE_CLASSES = {
@@ -96,6 +124,7 @@ function moveAgent(pos) {
 }
 
 function rotateAgent(dir) {
+    state.currentDir = dir;
     ui.agent.style.backgroundImage = `url("${AGENT_DIRS[dir]}")`;
 }
 
@@ -159,6 +188,7 @@ function autoplayStop() {
 }
 
 function autoplayUpdateSpeed() {
+    syncAnimationSpeed();
     if (state.playback.intervalId) {
         autoplayStop();
         autoplayStart();
@@ -168,6 +198,9 @@ function autoplayUpdateSpeed() {
 function step() {
     if (state.playback.status === "idle") return;
 
+    // Don't process next event if turn or movement is still in progress
+    if (state.turnInProgress || state.movementInProgress) return;
+
     const msg = state.playback.trace[state.playback.index];
 	state.playback.index++;
 
@@ -175,7 +208,23 @@ function step() {
 
     switch (msg.type) {
         case "move":
+            // Add walking animation for current direction
+            const walkClass = `walking-${DIR_NAMES[state.currentDir]}`;
+            ui.agent.classList.add(walkClass);
+
             moveAgent(msg.pos);
+
+            // Track movement state
+            state.movementInProgress = true;
+
+            // Remove animation class and clear movement flag after it completes
+            const durationCss = getComputedStyle(document.documentElement)
+                .getPropertyValue('--agent-move-duration').trim();
+            const duration = parseCssTime(durationCss);
+            setTimeout(() => {
+                ui.agent.classList.remove(walkClass);
+                state.movementInProgress = false;
+            }, duration);
             break;
         case "collected":
             consumeTarget(msg.pos);
@@ -193,7 +242,24 @@ function step() {
             ui.stopBtn.textContent = "Stop";
             break;
         case "turn":
+            // Wait for movement to complete before turning
+            if (state.movementInProgress) {
+                // Decrement index to retry this turn event on next step
+                state.playback.index--;
+                return;
+            }
+
             rotateAgent(msg.dir);
+
+            // Set turn in progress and clear after turn duration
+            state.turnInProgress = true;
+            const turnDurationCss = getComputedStyle(document.documentElement)
+                .getPropertyValue('--agent-turn-duration').trim();
+            const turnDuration = parseCssTime(turnDurationCss);
+
+            setTimeout(() => {
+                state.turnInProgress = false;
+            }, turnDuration);
             break;
         case "isColor":
             console.log(`Is color ${msg.color}? ${msg.result}!`);
@@ -211,7 +277,10 @@ function playbackInit(trace) {
     state.playback.status = "playing";
     ui.stepBtn.disabled = false;
     ui.stopBtn.disabled = false;
+    state.movementInProgress = false;
+    state.turnInProgress = false;
 
+    syncAnimationSpeed();
     resetBoard(trace[0].level);
     state.playback.index = 1;
     autoplayStop();
@@ -224,6 +293,8 @@ function playbackStop() {
     state.playback.status = "idle";
     state.playback.trace = null;
     state.playback.index = 0;
+    state.movementInProgress = false;
+    state.turnInProgress = false;
     ui.stepBtn.disabled = true;
     ui.stopBtn.disabled = true;
     ui.runCodeBtn.textContent = "Run";
@@ -245,6 +316,15 @@ function playbackResume() {
 
 // --- Worker management ---
 
+function hideSplashScreen() {
+    if (!ENABLE_SPLASH_SCREEN || !ui.splashScreen) return;
+
+    ui.splashScreen.classList.add("fade-out");
+    setTimeout(() => {
+        ui.splashScreen.style.display = "none";
+    }, 500); // Match CSS transition duration
+}
+
 function initWorker() {
     playbackStop();
 
@@ -253,7 +333,12 @@ function initWorker() {
 
     state.worker = new Worker("worker.js");
     state.worker.onmessage = (event) => {
-        if (event.data.type === "execution-trace") {
+        if (event.data.type === "ready") {
+            // Hide splash screen when worker is ready (after minimum 1.5s)
+            setTimeout(() => {
+                hideSplashScreen();
+            }, 1500);
+        } else if (event.data.type === "execution-trace") {
             playbackInit(event.data.trace);
         } else if (event.data.type === "execution-failed") {
             ui.codeOutput.textContent = event.data.errorMessage;
@@ -309,9 +394,15 @@ function submitCode() {
 
 // --- Initialize ---
 
+// Hide splash screen immediately if disabled
+if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
+    ui.splashScreen.style.display = "none";
+}
+
 initWorker();
 ui.stepBtn.disabled = true;
 ui.stopBtn.disabled = true;
+syncAnimationSpeed();
 
 // Prepare levels: if the starting position has a star (uppercase letter),
 // convert it to just the tile (lowercase) so the pig doesn't start on a star.

@@ -93,7 +93,11 @@ Tests run automatically on page load. Check browser console for results.
     nRows: 7,
     nCols: 8,
     grid: ["......bB", ...],  // r,g,b = tiles; R,G,B = tiles with stars; . = empty
-    pos: [6, 0],              // starting [row, col]
+    start: [6, 0],            // starting [row, col]
     dir: 0                    // 0=right, 1=down, 2=left, 3=up
 }
 ```
+
+## Keyboard Shortcuts
+
+- `Ctrl+Enter` - Run code

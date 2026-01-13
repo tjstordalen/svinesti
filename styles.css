@@ -12,6 +12,9 @@
     --grid-n-cols: 8;
     --agent-row: 5;
     --agent-col: 0;
+    --agent-move-duration: 1.75s;
+    --agent-walk-cycles: 2;
+    --agent-turn-duration: 0.25s;
 
     /* Color palette - Soft Sage Green */
     --color-header: #7eb09b;
@@ -54,6 +57,89 @@ body {
     color: var(--color-text);
     line-height: 1.5;
     overflow: hidden;
+}
+
+/* ============================================
+   Splash Screen
+   ============================================ */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--color-interactive);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+#splash-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#splash-screen h1 {
+    margin: 0;
+    font-size: 5rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 2px;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.splash-pig-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.splash-pig-face {
+    width: 450px;
+    height: 225px;
+    background-image: url("pigs/right-1.png");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+    animation: splash-walk 0.8s steps(4) infinite;
+}
+
+.splash-pig-shadow {
+    position: absolute;
+    bottom: -5%;
+    width: 200px;
+    height: 40px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 70%);
+    animation: splash-shadow 0.8s steps(4) infinite;
+    z-index: 0;
+}
+
+@keyframes splash-walk {
+    0%, 100% { background-image: url("pigs/right-1.png"); }
+    25%, 75% { background-image: url("pigs/right-2.png"); }
+    50% { background-image: url("pigs/right-3.png"); }
+}
+
+@keyframes splash-shadow {
+    0%, 100% {
+        width: 200px;
+        opacity: 0.6;
+    }
+    25%, 75% {
+        width: 220px;
+        opacity: 0.55;
+    }
+    50% {
+        width: 200px;
+        opacity: 0.6;
+    }
 }
 
 /* ============================================
@@ -495,13 +581,43 @@ body {
     background-repeat: no-repeat;
     background-position: center;
     position: relative;
-    transition: transform 0.25s ease-out;
+    transition: transform var(--agent-move-duration) ease-out;
     z-index: 100;
     height: 100%;
     width: 100%;
     transform: translate(calc(var(--agent-col)*100%), calc(var(--agent-row)*100%));
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
+
+/* Walking animations - cycle through 4 steps (1-2-3-2 pattern) for each direction */
+@keyframes walk-right {
+    0%, 100% { background-image: url("pigs/right-1.png"); }
+    25%, 75% { background-image: url("pigs/right-2.png"); }
+    50% { background-image: url("pigs/right-3.png"); }
+}
+
+@keyframes walk-down {
+    0%, 100% { background-image: url("pigs/down-1.png"); }
+    25%, 75% { background-image: url("pigs/down-2.png"); }
+    50% { background-image: url("pigs/down-3.png"); }
+}
+
+@keyframes walk-left {
+    0%, 100% { background-image: url("pigs/left-1.png"); }
+    25%, 75% { background-image: url("pigs/left-2.png"); }
+    50% { background-image: url("pigs/left-3.png"); }
+}
+
+@keyframes walk-up {
+    0%, 100% { background-image: url("pigs/up-1.png"); }
+    25%, 75% { background-image: url("pigs/up-2.png"); }
+    50% { background-image: url("pigs/up-3.png"); }
+}
+
+#agent.walking-right { animation: walk-right calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
+#agent.walking-down { animation: walk-down calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
+#agent.walking-left { animation: walk-left calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
+#agent.walking-up { animation: walk-up calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
 
 /* ============================================
    Scrollbar Styling
