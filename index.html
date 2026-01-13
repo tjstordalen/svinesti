@@ -20,7 +20,7 @@
         <h1>Svinesti</h1>
         <div class="splash-pig-container">
             <div class="splash-pig-shadow"></div>
-            <div class="splash-pig-face"></div>
+            <div class="splash-screen-pig"></div>
         </div>
     </div>
 
@@ -70,7 +70,7 @@
                 <div class="editor-wrapper">
                     <textarea id="code-input"></textarea>
                     <div id="editor-readonly-notification" class="editor-notification">
-                        Pause program to edit code
+                        Click to pause and edit code
                     </div>
                 </div>
 
@@ -92,6 +92,13 @@
 
             <section id="game-section">
                 <div id="grid"></div>
+                <div id="agent">
+                    <div id="color-comparison-hud">
+                        <div id="comparison-tile" class="game-tile"></div>
+                        <div id="comparison-question">?</div>
+                        <div id="comparison-answer"></div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>

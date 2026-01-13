@@ -104,7 +104,7 @@ def turn_aux(s,direction):
 
 def is_color_aux(s, c):
     s.count_op()
-    result = s[s.pos].lower() == c.lower()
+    result = s[s.pos].lower() == c[0].lower()
     s.trace({"type": "isColor", "color": c, "result": result});
     return result
 
@@ -120,13 +120,13 @@ def turnLeft():
     turn_aux(state, state.LEFT)
 
 def isRed():
-    return is_color_aux(state, "r")
+    return is_color_aux(state, "red")
 
 def isGreen():
-    return is_color_aux(state, "g")
+    return is_color_aux(state, "green")
 
 def isBlue():
-    return is_color_aux(state, "b")
+    return is_color_aux(state, "blue")
 
 
 def traceLineToExecute(lineno):

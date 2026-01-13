@@ -26,32 +26,10 @@ const ui = {
         mode: "python",
         theme: "default"
     }),
-    agent: (() => {
-        const div = document.createElement("div");
-        div.setAttribute("id", "agent");
-        return div;
-    })(),
-    colorComparison: (() => {
-        const div = document.createElement("div");
-        div.className = "color-comparison";
-        return div;
-    })(),
-    comparisonQueried: (() => {
-        const div = document.createElement("div");
-        div.className = "comparison-tile";
-        return div;
-    })(),
-    comparisonActual: (() => {
-        const div = document.createElement("div");
-        div.className = "comparison-tile";
-        return div;
-    })(),
-    comparisonOperator: (() => {
-        const div = document.createElement("div");
-        div.className = "comparison-operator";
-        div.textContent = "==";
-        return div;
-    })(),
+    agent: gid("agent"),
+    colorComparison: gid("color-comparison-hud"),
+    comparisonTile: gid("comparison-tile"),
+    comparisonAnswer: gid("comparison-answer"),
 };
 
 // --- State ---
@@ -62,14 +40,11 @@ const state = {
     workerTimeout: null,
     currentDir: 0, // Current agent direction (0=right, 1=down, 2=left, 3=up)
     currentPos: [0, 0], // Current agent position [row, col]
-    movementInProgress: false, // Track if pig is currently animating movement
-    turnInProgress: false, // Track if pig is currently in turn delay
     highlightedLine: -1, // Currently highlighted line in editor
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
         index: 0,
-        intervalId: null,
         startPaused: false, // If true, start in paused mode instead of playing
     },
 };
@@ -82,16 +57,6 @@ function setCssVariable(id, val) {
 
 function selectedLanguage() {
     return document.querySelector('input[name="language-choice"]:checked').value;
-}
-
-function parseCssTime(cssValue) {
-    // Parse CSS time value (e.g., "0.9s" or "900ms") and return milliseconds
-    const value = parseFloat(cssValue);
-    if (cssValue.includes('ms')) {
-        return value;
-    } else {
-        return value * 1000; // assume seconds
-    }
 }
 
 function syncAnimationSpeed() {
@@ -143,7 +108,6 @@ const COLOR_MAP = {
     "red": "#FF8A8A",
     "green": "#58E0B8",
     "blue": "#85D0FF",
-    "empty": "#FAF7F2",
 };
 
 function drawLevel(level) {
@@ -229,28 +193,20 @@ function loadCode(lang = selectedLanguage()) {
 // --- Playback ---
 
 function autoplayStart() {
-    const interval = ui.speedSlider.max - ui.speedSlider.value;
-    state.playback.intervalId = setInterval(step, interval);
+    step(); // Kick off the chain - animationend events continue it
 }
 
 function autoplayStop() {
-    clearInterval(state.playback.intervalId);
-    state.playback.intervalId = null;
+    // Nothing to do - animationend handler checks status before calling step()
 }
 
 function autoplayUpdateSpeed() {
     syncAnimationSpeed();
-    if (state.playback.intervalId) {
-        autoplayStop();
-        autoplayStart();
-    }
+    // CSS variable is updated - next animation will use new duration
 }
 
 function step() {
     if (state.playback.status === "idle") return;
-
-    // Don't process next event if turn or movement is still in progress
-    if (state.turnInProgress || state.movementInProgress) return;
 
     const msg = state.playback.trace[state.playback.index];
 	state.playback.index++;
@@ -267,27 +223,15 @@ function step() {
 
     switch (msg.type) {
         case "move":
-            // Add walking animation for current direction
-            const walkClass = `walking-${DIR_NAMES[state.currentDir]}`;
-            ui.agent.classList.add(walkClass);
-
+            // Add walking animation - animationend handler cleans up and triggers next step
+            ui.agent.classList.add(`walking-${DIR_NAMES[state.currentDir]}`);
             moveAgent(msg.pos);
             state.currentPos = msg.pos;
-
-            // Track movement state
-            state.movementInProgress = true;
-
-            // Remove animation class and clear movement flag after it completes
-            const durationCss = getComputedStyle(document.documentElement)
-                .getPropertyValue('--agent-move-duration').trim();
-            const duration = parseCssTime(durationCss);
-            setTimeout(() => {
-                ui.agent.classList.remove(walkClass);
-                state.movementInProgress = false;
-            }, duration);
             break;
         case "collected":
             consumeTarget(msg.pos);
+            // No animation - immediately continue the chain
+            if (state.playback.status === "playing") step();
             break;
         case "gameover":
             console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
@@ -295,49 +239,26 @@ function step() {
             highlightLine(-1);
             break;
         case "turn":
-            // Wait for movement to complete before turning
-            if (state.movementInProgress) {
-                // Decrement index to retry this turn event on next step
-                state.playback.index--;
-                return;
-            }
-
+            // Add turning animation - animationend handler cleans up and triggers next step
             rotateAgent(msg.dir);
-
-            // Set turn in progress and clear after turn duration
-            state.turnInProgress = true;
-            const turnDurationCss = getComputedStyle(document.documentElement)
-                .getPropertyValue('--agent-turn-duration').trim();
-            const turnDuration = parseCssTime(turnDurationCss);
-
-            setTimeout(() => {
-                state.turnInProgress = false;
-            }, turnDuration);
+            ui.agent.classList.add("turning");
             break;
         case "isColor":
             console.log(`Is color ${msg.color}? ${msg.result}!`);
 
-            // Get the actual tile color from the grid
-            const [r, c] = state.currentPos;
-            const tileChar = state.level.grid[r][c];
-            const actualColor = tileChar.toLowerCase() === 'r' ? 'red' :
-                               tileChar.toLowerCase() === 'g' ? 'green' :
-                               tileChar.toLowerCase() === 'b' ? 'blue' : 'empty';
-
-            // Set the comparison tiles colors (use lowercase for lookup)
-            ui.comparisonQueried.style.backgroundColor = COLOR_MAP[msg.color.toLowerCase()];
-            ui.comparisonActual.style.backgroundColor = COLOR_MAP[actualColor];
-
-            // Set the operator
-            ui.comparisonOperator.textContent = msg.result ? "==" : "!=";
+            // Set the tile to show the queried color
+            ui.comparisonTile.className = 'game-tile ' + msg.color.toLowerCase();
+            ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
 
             // Show the HUD with fade in
             ui.colorComparison.classList.add('show');
 
-            // Hide after 1.5 seconds
+            // Hide after move duration (same timing as agent movement)
+            const interval = ui.speedSlider.max - ui.speedSlider.value;
+            const hudDuration = interval / 0.7;
             setTimeout(() => {
                 ui.colorComparison.classList.remove('show');
-            }, 1500);
+            }, hudDuration);
             break;
     }
 }
@@ -347,8 +268,6 @@ function playbackInit(trace) {
     state.playback.trace = trace;
     ui.stepBtn.disabled = false;
     ui.stopBtn.disabled = false;
-    state.movementInProgress = false;
-    state.turnInProgress = false;
 
     syncAnimationSpeed();
     resetBoard(trace[0].level);
@@ -374,8 +293,6 @@ function playbackStop() {
     state.playback.status = "idle";
     state.playback.trace = null;
     state.playback.index = 0;
-    state.movementInProgress = false;
-    state.turnInProgress = false;
     // Step button stays enabled (can start single-step mode from idle)
     ui.stopBtn.disabled = true;
     ui.runCodeBtn.textContent = "Run";
@@ -481,12 +398,6 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     ui.splashScreen.style.display = "none";
 }
 
-// Assemble color comparison HUD and add to agent
-ui.colorComparison.appendChild(ui.comparisonQueried);
-ui.colorComparison.appendChild(ui.comparisonOperator);
-ui.colorComparison.appendChild(ui.comparisonActual);
-ui.agent.appendChild(ui.colorComparison);
-
 initWorker();
 ui.stepBtn.disabled = false; // Step button always enabled (starts single-step mode when idle)
 ui.stopBtn.disabled = true;
@@ -559,6 +470,42 @@ ui.stopBtn.onclick = () => {
 };
 
 ui.speedSlider.addEventListener("input", autoplayUpdateSpeed);
+
+// Event-driven playback: when animations complete, trigger next step
+ui.agent.addEventListener("animationend", (e) => {
+    // Clean up animation classes
+    if (e.animationName.startsWith("walk-")) {
+        ui.agent.classList.remove(`walking-${e.animationName.split("-")[1]}`);
+    } else if (e.animationName === "turn-bounce") {
+        ui.agent.classList.remove("turning");
+    }
+    // Continue playback chain
+    if (state.playback.status === "playing") {
+        step();
+    }
+});
+
+// HUD uses CSS transition - continue playback when fade-out completes
+ui.colorComparison.addEventListener("transitionend", (e) => {
+    // Only trigger on fade-out (opacity going to 0), not fade-in
+    if (e.propertyName === "opacity" && !ui.colorComparison.classList.contains("show")) {
+        if (state.playback.status === "playing") {
+            step();
+        }
+    }
+});
+
+ui.readOnlyNotification.onclick = () => {
+    if (state.playback.status === "playing") {
+        // Pause playback to allow editing
+        state.playback.status = "paused";
+        autoplayStop();
+        ui.runCodeBtn.textContent = "Resume";
+        ui.stopBtn.textContent = "Reset";
+        ui.editor.setOption("readOnly", false);
+        ui.readOnlyNotification.classList.remove("show");
+    }
+};
 
 ui.fontSizeSlider.addEventListener("input", (e) => {
     ui.editor.getWrapperElement().style.fontSize = e.target.value + "px";

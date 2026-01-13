@@ -91,7 +91,7 @@ body {
     align-items: center;
 }
 
-.splash-pig-face {
+.splash-screen-pig {
     width: 450px;
     height: 225px;
     background-image: url("pigs/right-1.png");
@@ -401,6 +401,12 @@ body {
 
 .editor-notification.show {
     opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.editor-notification.show:hover {
+    background: rgba(90, 145, 120, 1);
 }
 
 #code-input, .CodeMirror {
@@ -636,10 +642,18 @@ body {
 #agent.walking-left { animation: walk-left calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
 #agent.walking-up { animation: walk-up calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
 
+/* Turn animation - little bounce effect */
+@keyframes turn-bounce {
+    0%, 100% { scale: 1; }
+    50% { scale: 1.15; }
+}
+
+#agent.turning { animation: turn-bounce var(--agent-turn-duration) ease-in-out; }
+
 /* ============================================
    Color Comparison HUD
    ============================================ */
-.color-comparison {
+#color-comparison-hud {
     position: absolute;
     left: 110%;
     top: 0%;
@@ -657,18 +671,19 @@ body {
     white-space: nowrap;
 }
 
-.color-comparison.show {
+#color-comparison-hud.show {
     opacity: 1;
 }
 
-.comparison-tile {
+#comparison-tile {
     width: 32px;
     height: 32px;
     border-radius: 6px;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+    flex-shrink: 0;
 }
 
-.comparison-operator {
+#comparison-question,
+#comparison-answer {
     font-family: 'SF Mono', 'Consolas', monospace;
     font-size: 1.2rem;
     font-weight: 700;

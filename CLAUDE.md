@@ -26,11 +26,14 @@ const state = {
     level: null,
     worker: null,
     workerTimeout: null,
+    currentDir: 0,        // Current pig direction (0=right, 1=down, 2=left, 3=up)
+    currentPos: [0, 0],   // Current pig position [row, col]
+    highlightedLine: -1,  // Currently highlighted line in editor
     playback: {
-        status: "idle", // "idle" | "playing" | "paused"
-        trace: null,
-        index: 0,
-        ...
+        status: "idle",   // "idle" | "playing" | "paused"
+        trace: null,      // Array of events from execution
+        index: 0,         // Current position in trace
+        startPaused: false,
     },
 };
 ```
@@ -40,13 +43,46 @@ Sections:
 - **State** - All mutable state
 - **Utilities** - `setCssVar()`, `selectedLanguage()`
 - **Board rendering** - `drawLevel()`, `moveAgent()`, `rotateAgent()`, `consumeTarget()`, `resetBoard()`
-- **Editor** - `setupEditor()`, `highlightLine()`, `updateEditorMode()`
+- **Editor** - `highlightLine()`
 - **Code storage** - `storeCode()`, `loadCode()` (localStorage persistence)
 - **Playback** - `autoplayStart/Stop()`, `step()`, `playbackInit/Stop/Resume()`
 - **Worker management** - `initWorker()`
 - **Actions** - `selectLevel()`, `switchLanguage()`, `submitCode()`
 - **Initialize** - Setup code
 - **Event handlers** - UI event wiring
+
+### Event-Driven Playback
+
+The playback system uses **browser animation events** instead of timers to coordinate animations. This ensures animations never overlap and timing stays synchronized regardless of system load.
+
+**How it works:**
+
+1. `step()` processes one trace event and triggers a CSS animation (e.g., walking, turning)
+2. When the animation completes, the browser fires `animationend` on `#agent`
+3. The event listener checks if `state.playback.status === "playing"`
+4. If yes, it calls `step()` again, creating a chain
+
+```
+step() → CSS animation → animationend → step() → CSS animation → ...
+```
+
+**Animation types:**
+
+| Event | Animation | Trigger for next step |
+|-------|-----------|----------------------|
+| `move` | `walking-*` class (walk cycle) | `animationend` |
+| `turn` | `turning` class (bounce effect) | `animationend` |
+| `isColor` | HUD opacity transition | `transitionend` (on fade-out) |
+| `collected` | None | Immediate `step()` call |
+| `gameover` | None | Stops playback |
+| `lineExecuted` | None | Immediate recursive `step()` call |
+
+**Why this design:**
+
+- **No timing bugs**: The browser tells us when animations finish, rather than guessing with `setTimeout`
+- **Speed slider works instantly**: CSS variable `--agent-move-duration` is read fresh for each animation
+- **Pause/resume is simple**: Just check `status` before calling `step()` - no intervals to manage
+- **Clean code**: No flags like `movementInProgress` to track manually
 
 ### PigJatin Language (Java-like alternative)
 
