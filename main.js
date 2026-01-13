@@ -13,6 +13,8 @@ const ui = {
     speedSlider:	gid("playback-speed"),
     runCodeBtn:		gid("playback-run-code"),
     fontSizeSlider: gid("editor-font-size-slider"),
+    sidebar:        gid("sidebar"),
+    sidebarToggle:  gid("sidebar-toggle"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
         lineNumbers: true,
         lineWrapping: true,
@@ -387,6 +389,10 @@ document.addEventListener("change", (e) => {
         switchLanguage();
     }
 });
+
+ui.sidebarToggle.onclick = () => {
+    ui.sidebar.classList.toggle("collapsed");
+};
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);

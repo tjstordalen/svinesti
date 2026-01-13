@@ -1,75 +1,93 @@
 <!DOCTYPE html>
-
-
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Svinesti</title>
-	<link rel="stylesheet" href="styles.css">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.css">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/python/python.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/clike/clike.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/clike/clike.min.js"></script>
 </head>
 <body>
-<header> </header>
-<div id="menu">
-</div>
-<div id="container">
-	<div id="level-selection-area">
-	<ul id="level-list">
-	</ul>
-	</div>
+    <header class="app-header">
+        <button id="sidebar-toggle" class="icon-btn" title="Toggle Levels">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <h1 class="app-title">Svinesti</h1>
+        <div class="header-spacer"></div>
+    </header>
 
-	<div id="code-area">
-		<textarea id="code-input"></textarea>
-		<div id="controls">
-			<div id="editor-controls">
-				<fieldset id="editor-font-size">
-				<legend>Font size:</legend>
-				<input id="editor-font-size-slider" type="range" min="6" max="35" value="15" step="1">
-				</fieldset>
+    <div id="app-container">
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h2>Levels</h2>
+            </div>
+            <ul id="level-list"></ul>
+        </aside>
 
-				<fieldset id="editor-language-selection">
-				<legend>Language:</legend>
-					<label>
-					<input id="select-lang-python" type="radio" name="language-choice" value="python" checked>
-					Python 3
-					</label>
-	  
-					<label>
-					<input id="select-lang-java" type="radio" name="language-choice" value="java">
-					Java 
-					</label>
-				</fieldset>	
-			</div>
+        <main id="main-content">
+            <section id="code-section">
+                <div class="editor-header">
+                    <div class="language-tabs">
+                        <label class="lang-tab">
+                            <input id="select-lang-python" type="radio" name="language-choice" value="python" checked>
+                            <span>Python 3</span>
+                        </label>
+                        <label class="lang-tab">
+                            <input id="select-lang-java" type="radio" name="language-choice" value="java">
+                            <span>Java</span>
+                        </label>
+                    </div>
+                    <div class="font-size-control">
+                        <label for="editor-font-size-slider" title="Font Size">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"/>
+                            </svg>
+                        </label>
+                        <input id="editor-font-size-slider" type="range" min="12" max="28" value="16" step="1">
+                    </div>
+                </div>
 
-			<div id="playback-controls">
-				<fieldset>
-				<legend>Animation speed:</legend>
-				<input type="range" id="playback-speed" min="10" max="400" value="150" step="10">
-				</fieldset>
+                <div class="editor-wrapper">
+                    <textarea id="code-input"></textarea>
+                </div>
 
-				<button id="playback-run-code">Run</button>
-				<button id="playback-step">Step</button>
-				<button id="playback-stop">Stop</button>
-			</div>
-		</div>
-<pre id="code-output"> </pre>
-	</div>
-	<div id="game-view">
-		<div id="grid"></div>
-	</div>
-</div>
+                <div class="playback-toolbar">
+                    <div class="button-group">
+                        <button id="playback-run-code" class="btn btn-primary">Run</button>
+                        <button id="playback-step" class="btn btn-secondary">Step</button>
+                        <button id="playback-stop" class="btn btn-secondary">Stop</button>
+                    </div>
+                    <div class="speed-control">
+                        <span class="speed-label">Slow</span>
+                        <input type="range" id="playback-speed" min="10" max="400" value="150" step="10">
+                        <span class="speed-label">Fast</span>
+                    </div>
+                </div>
+
+                <pre id="code-output"></pre>
+            </section>
+
+            <section id="game-section">
+                <div id="grid"></div>
+            </section>
+        </main>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "antlr4": "https://cdn.jsdelivr.net/npm/antlr4@4.13.2/+esm"
+        }
+    }
+    </script>
+    <script src="levels.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
-
-<script type="importmap">
-{ 
-	"imports": {
-		"antlr4": "https://cdn.jsdelivr.net/npm/antlr4@4.13.2/+esm"
-	}
-}
-</script>
-<script src="levels.js"></script>
-<script type="module" src="main.js"></script>
 </html>
-
