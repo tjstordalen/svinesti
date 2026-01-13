@@ -19,13 +19,18 @@ const ui = {
     sidebar:        gid("sidebar"),
     sidebarToggle:  gid("sidebar-toggle"),
     splashScreen:   gid("splash-screen"),
+    readOnlyNotification: gid("editor-readonly-notification"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
         lineNumbers: true,
         lineWrapping: true,
         mode: "python",
         theme: "default"
     }),
-    agent: null,
+    agent: (() => {
+        const div = document.createElement("div");
+        div.setAttribute("id", "agent");
+        return div;
+    })(),
 };
 
 // --- State ---
@@ -35,13 +40,14 @@ const state = {
     worker: null,
     workerTimeout: null,
     currentDir: 0, // Current agent direction (0=right, 1=down, 2=left, 3=up)
+    currentPos: [0, 0], // Current agent position [row, col]
     movementInProgress: false, // Track if pig is currently animating movement
     turnInProgress: false, // Track if pig is currently in turn delay
+    highlightedLine: -1, // Currently highlighted line in editor
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
         index: 0,
-        codeWhenStarted: null,
         intervalId: null,
     },
 };
@@ -71,6 +77,23 @@ function syncAnimationSpeed() {
     const interval = ui.speedSlider.max - ui.speedSlider.value;
     const duration = interval / 0.7; // Slow down to ~70% speed
     setCssVariable("--agent-move-duration", `${duration}ms`);
+}
+
+let notificationTimeout = null;
+function showReadOnlyNotification() {
+    // Clear any existing timeout
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
+
+    // Show notification
+    ui.readOnlyNotification.classList.add("show");
+
+    // Hide after 2 seconds
+    notificationTimeout = setTimeout(() => {
+        ui.readOnlyNotification.classList.remove("show");
+        notificationTimeout = null;
+    }, 2000);
 }
 
 // --- Board rendering ---
@@ -107,11 +130,8 @@ function drawLevel(level) {
         ui.grid.appendChild(div);
     }
 
-    ui.agent = document.createElement("div");
-    ui.agent.setAttribute("id", "agent");
-
 	// The pig needs to be added to the top left grid cell for
-	// the CSS animatins to work correctly.
+	// the CSS animations to work correctly.
     ui.grid.firstElementChild.appendChild(ui.agent);
 }
 
@@ -138,20 +158,21 @@ function resetBoard(level) {
     drawLevel(level);
     moveAgent(level.start);
     rotateAgent(level.dir);
+    state.currentPos = level.start;
 }
 
 // --- Editor ---
 function highlightLine(lineno) {
     lineno--;
-    const prev = ui.editor.highlightedLine;
-    if (prev !== undefined && prev >= 0) {
+    const prev = state.highlightedLine;
+    if (prev >= 0) {
         ui.editor.removeLineClass(prev, "background", "highlighted-line");
     }
     if (lineno < 0 || lineno > ui.editor.lineCount()) {
-        ui.editor.highlightedLine = undefined;
+        state.highlightedLine = -1;
         return;
     }
-    ui.editor.highlightedLine = lineno;
+    state.highlightedLine = lineno;
     ui.editor.addLineClass(lineno, "background", "highlighted-line");
 }
 
@@ -213,6 +234,7 @@ function step() {
             ui.agent.classList.add(walkClass);
 
             moveAgent(msg.pos);
+            state.currentPos = msg.pos;
 
             // Track movement state
             state.movementInProgress = true;
@@ -231,15 +253,8 @@ function step() {
             break;
         case "gameover":
             console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-            autoplayStop();
-            state.playback.trace = null;
-            state.playback.index = 0;
-            state.playback.status = "idle";
+            playbackStop();
             highlightLine(-1);
-            ui.stepBtn.disabled = true;
-            ui.stopBtn.disabled = true;
-            ui.runCodeBtn.textContent = "Run";
-            ui.stopBtn.textContent = "Stop";
             break;
         case "turn":
             // Wait for movement to complete before turning
@@ -263,6 +278,14 @@ function step() {
             break;
         case "isColor":
             console.log(`Is color ${msg.color}? ${msg.result}!`);
+            // Flash the current tile to show color check
+            const [r, c] = state.currentPos;
+            const tileIndex = state.level.nCols * r + c;
+            const tile = ui.grid.children[tileIndex];
+            tile.classList.add(msg.result ? "color-check-true" : "color-check-false");
+            setTimeout(() => {
+                tile.classList.remove("color-check-true", "color-check-false");
+            }, 400);
             break;
         case "lineExecuted":
             highlightLine(msg.lineno);
@@ -271,7 +294,6 @@ function step() {
 }
 
 function playbackInit(trace) {
-    state.playback.codeWhenStarted = ui.editor.getValue();
     state.playback.index = 0;
     state.playback.trace = trace;
     state.playback.status = "playing";
@@ -279,6 +301,7 @@ function playbackInit(trace) {
     ui.stopBtn.disabled = false;
     state.movementInProgress = false;
     state.turnInProgress = false;
+    ui.editor.setOption("readOnly", "nocursor");
 
     syncAnimationSpeed();
     resetBoard(trace[0].level);
@@ -288,7 +311,6 @@ function playbackInit(trace) {
 }
 
 function playbackStop() {
-    state.playback.codeWhenStarted = null;
     autoplayStop();
     state.playback.status = "idle";
     state.playback.trace = null;
@@ -298,17 +320,18 @@ function playbackStop() {
     ui.stepBtn.disabled = true;
     ui.stopBtn.disabled = true;
     ui.runCodeBtn.textContent = "Run";
-    ui.stopBtn.textContent = "Stop";
+    ui.stopBtn.textContent = "Pause";
+    ui.editor.setOption("readOnly", false);
 }
 
 function playbackResume() {
-    if (ui.editor.getValue() !== state.playback.codeWhenStarted) return false;
     if (state.playback.status === "paused") {
         state.playback.status = "playing";
         autoplayStart();
         ui.runCodeBtn.textContent = "Run";
-        ui.stopBtn.textContent = "Stop";
+        ui.stopBtn.textContent = "Pause";
         ui.stopBtn.disabled = false;
+        ui.editor.setOption("readOnly", "nocursor");
         return true;
     }
     return false;
@@ -442,6 +465,7 @@ ui.stepBtn.onclick = () => {
         autoplayStop();
         ui.runCodeBtn.textContent = "Resume";
         ui.stopBtn.textContent = "Reset";
+        ui.editor.setOption("readOnly", false);
     }
     step();
 };
@@ -453,13 +477,14 @@ ui.stopBtn.onclick = () => {
         autoplayStop();
         ui.runCodeBtn.textContent = "Resume";
         ui.stopBtn.textContent = "Reset";
+        ui.editor.setOption("readOnly", false);
     } else if (state.playback.status === "paused") {
         // Reset everything
         playbackStop();
         resetBoard(state.level);
         highlightLine(-1);
         ui.runCodeBtn.textContent = "Run";
-        ui.stopBtn.textContent = "Stop";
+        ui.stopBtn.textContent = "Pause";
     }
 };
 
@@ -469,7 +494,29 @@ ui.fontSizeSlider.addEventListener("input", (e) => {
     ui.editor.getWrapperElement().style.fontSize = e.target.value + "px";
 });
 
-ui.editor.on("change", storeCode);
+ui.editor.on("change", () => {
+    storeCode();
+
+    // If paused and user edits code, automatically reset
+    if (state.playback.status === "paused") {
+        playbackStop();
+        resetBoard(state.level);
+        highlightLine(-1);
+    }
+});
+
+// Show notification when trying to interact with read-only editor
+ui.editor.on("mousedown", (cm, event) => {
+    if (cm.getOption("readOnly")) {
+        showReadOnlyNotification();
+    }
+});
+
+ui.editor.on("keydown", (cm, event) => {
+    if (cm.getOption("readOnly")) {
+        showReadOnlyNotification();
+    }
+});
 
 document.addEventListener("keydown", (event) => {
     if (event.ctrlKey && event.key === "Enter") submitCode();

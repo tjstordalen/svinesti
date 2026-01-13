@@ -69,13 +69,16 @@
 
                 <div class="editor-wrapper">
                     <textarea id="code-input"></textarea>
+                    <div id="editor-readonly-notification" class="editor-notification">
+                        Pause program to edit code
+                    </div>
                 </div>
 
                 <div class="playback-toolbar">
                     <div class="button-group">
                         <button id="playback-run-code" class="btn btn-primary">Run</button>
                         <button id="playback-step" class="btn btn-secondary">Step</button>
-                        <button id="playback-stop" class="btn btn-secondary">Stop</button>
+                        <button id="playback-stop" class="btn btn-secondary">Pause</button>
                     </div>
                     <div class="speed-control">
                         <span class="speed-label">Slow</span>
