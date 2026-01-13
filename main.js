@@ -31,6 +31,27 @@ const ui = {
         div.setAttribute("id", "agent");
         return div;
     })(),
+    colorComparison: (() => {
+        const div = document.createElement("div");
+        div.className = "color-comparison";
+        return div;
+    })(),
+    comparisonQueried: (() => {
+        const div = document.createElement("div");
+        div.className = "comparison-tile";
+        return div;
+    })(),
+    comparisonActual: (() => {
+        const div = document.createElement("div");
+        div.className = "comparison-tile";
+        return div;
+    })(),
+    comparisonOperator: (() => {
+        const div = document.createElement("div");
+        div.className = "comparison-operator";
+        div.textContent = "==";
+        return div;
+    })(),
 };
 
 // --- State ---
@@ -49,6 +70,7 @@ const state = {
         trace: null,
         index: 0,
         intervalId: null,
+        startPaused: false, // If true, start in paused mode instead of playing
     },
 };
 
@@ -114,6 +136,14 @@ const TILE_CLASSES = {
     "R": "red target",
     "G": "green target",
     "B": "blue target",
+};
+
+// Maps color names to CSS background colors for comparison HUD
+const COLOR_MAP = {
+    "red": "#FF8A8A",
+    "green": "#58E0B8",
+    "blue": "#85D0FF",
+    "empty": "#FAF7F2",
 };
 
 function drawLevel(level) {
@@ -227,6 +257,14 @@ function step() {
 
     if (!msg) return;
 
+    // If this is a lineExecuted event, highlight the line and process the next event immediately
+    if (msg.type === "lineExecuted") {
+        highlightLine(msg.lineno);
+        // Recursively process the next event without delay
+        step();
+        return;
+    }
+
     switch (msg.type) {
         case "move":
             // Add walking animation for current direction
@@ -278,17 +316,28 @@ function step() {
             break;
         case "isColor":
             console.log(`Is color ${msg.color}? ${msg.result}!`);
-            // Flash the current tile to show color check
+
+            // Get the actual tile color from the grid
             const [r, c] = state.currentPos;
-            const tileIndex = state.level.nCols * r + c;
-            const tile = ui.grid.children[tileIndex];
-            tile.classList.add(msg.result ? "color-check-true" : "color-check-false");
+            const tileChar = state.level.grid[r][c];
+            const actualColor = tileChar.toLowerCase() === 'r' ? 'red' :
+                               tileChar.toLowerCase() === 'g' ? 'green' :
+                               tileChar.toLowerCase() === 'b' ? 'blue' : 'empty';
+
+            // Set the comparison tiles colors (use lowercase for lookup)
+            ui.comparisonQueried.style.backgroundColor = COLOR_MAP[msg.color.toLowerCase()];
+            ui.comparisonActual.style.backgroundColor = COLOR_MAP[actualColor];
+
+            // Set the operator
+            ui.comparisonOperator.textContent = msg.result ? "==" : "!=";
+
+            // Show the HUD with fade in
+            ui.colorComparison.classList.add('show');
+
+            // Hide after 1.5 seconds
             setTimeout(() => {
-                tile.classList.remove("color-check-true", "color-check-false");
-            }, 400);
-            break;
-        case "lineExecuted":
-            highlightLine(msg.lineno);
+                ui.colorComparison.classList.remove('show');
+            }, 1500);
             break;
     }
 }
@@ -296,18 +345,28 @@ function step() {
 function playbackInit(trace) {
     state.playback.index = 0;
     state.playback.trace = trace;
-    state.playback.status = "playing";
     ui.stepBtn.disabled = false;
     ui.stopBtn.disabled = false;
     state.movementInProgress = false;
     state.turnInProgress = false;
-    ui.editor.setOption("readOnly", "nocursor");
 
     syncAnimationSpeed();
     resetBoard(trace[0].level);
     state.playback.index = 1;
     autoplayStop();
-    autoplayStart();
+
+    // Check if we should start in paused mode (for single-stepping)
+    if (state.playback.startPaused) {
+        state.playback.status = "paused";
+        state.playback.startPaused = false; // Reset flag
+        ui.runCodeBtn.textContent = "Resume";
+        ui.stopBtn.textContent = "Reset";
+        ui.editor.setOption("readOnly", false);
+    } else {
+        state.playback.status = "playing";
+        ui.editor.setOption("readOnly", "nocursor");
+        autoplayStart();
+    }
 }
 
 function playbackStop() {
@@ -317,7 +376,7 @@ function playbackStop() {
     state.playback.index = 0;
     state.movementInProgress = false;
     state.turnInProgress = false;
-    ui.stepBtn.disabled = true;
+    // Step button stays enabled (can start single-step mode from idle)
     ui.stopBtn.disabled = true;
     ui.runCodeBtn.textContent = "Run";
     ui.stopBtn.textContent = "Pause";
@@ -422,8 +481,14 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     ui.splashScreen.style.display = "none";
 }
 
+// Assemble color comparison HUD and add to agent
+ui.colorComparison.appendChild(ui.comparisonQueried);
+ui.colorComparison.appendChild(ui.comparisonOperator);
+ui.colorComparison.appendChild(ui.comparisonActual);
+ui.agent.appendChild(ui.colorComparison);
+
 initWorker();
-ui.stepBtn.disabled = true;
+ui.stepBtn.disabled = false; // Step button always enabled (starts single-step mode when idle)
 ui.stopBtn.disabled = true;
 syncAnimationSpeed();
 
@@ -459,7 +524,12 @@ ui.levelList.querySelector("li button").click();
 ui.runCodeBtn.onclick = submitCode;
 
 ui.stepBtn.onclick = () => {
-    if (state.playback.status === "idle") return;
+    if (state.playback.status === "idle") {
+        // Start execution in single-step mode
+        state.playback.startPaused = true;
+        submitCode();
+        return;
+    }
     if (state.playback.status === "playing") {
         state.playback.status = "paused";
         autoplayStop();
