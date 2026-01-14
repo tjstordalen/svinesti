@@ -46,7 +46,7 @@ const state = {
     workerTimeout: null,
     isSingleStepping: false, // Flag to indicate single-step execution mode
     currentAnimation: null, // Track running animation for cancel on stop
-    editorHadFocusBeforeHelp: false, // Track if editor should regain focus after help
+    focusedElementBeforeHelp: null, // Track which element to refocus after help closes
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
@@ -97,20 +97,17 @@ function getAnimSpeed() {
 }
 
 function showHelp() {
-    // Track if editor has focus so we can restore it on close
-    state.editorHadFocusBeforeHelp = ui.editor.hasFocus();
-    if (state.editorHadFocusBeforeHelp) {
-        ui.editor.getInputField().blur();
-    }
+    // Save currently focused element to restore later
+    state.focusedElementBeforeHelp = document.activeElement;
     ui.helpModal.classList.add("show");
 }
 
 function hideHelp() {
     ui.helpModal.classList.remove("show");
-    // Restore focus to editor if it had it before
-    if (state.editorHadFocusBeforeHelp) {
-        ui.editor.focus();
-        state.editorHadFocusBeforeHelp = false;
+    // Restore focus to previously focused element
+    if (state.focusedElementBeforeHelp && state.focusedElementBeforeHelp.focus) {
+        state.focusedElementBeforeHelp.focus();
+        state.focusedElementBeforeHelp = null;
     }
 }
 
