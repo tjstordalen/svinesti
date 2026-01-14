@@ -46,6 +46,7 @@ const state = {
     workerTimeout: null,
     isSingleStepping: false, // Flag to indicate single-step execution mode
     currentAnimation: null, // Track running animation for cancel on stop
+    editorHadFocusBeforeHelp: false, // Track if editor should regain focus after help
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
@@ -96,11 +97,21 @@ function getAnimSpeed() {
 }
 
 function showHelp() {
+    // Track if editor has focus so we can restore it on close
+    state.editorHadFocusBeforeHelp = ui.editor.hasFocus();
+    if (state.editorHadFocusBeforeHelp) {
+        ui.editor.getInputField().blur();
+    }
     ui.helpModal.classList.add("show");
 }
 
 function hideHelp() {
     ui.helpModal.classList.remove("show");
+    // Restore focus to editor if it had it before
+    if (state.editorHadFocusBeforeHelp) {
+        ui.editor.focus();
+        state.editorHadFocusBeforeHelp = false;
+    }
 }
 
 // TODO: can't this more easily be done using a css transformation?
@@ -601,12 +612,9 @@ document.addEventListener("keydown", (event) => {
         return;
     }
 
-    // Show help (unfocus editor if focused)
+    // Show help
     if (event.key === "?") {
         event.preventDefault();
-        if (ui.editor.hasFocus()) {
-            ui.editor.getInputField().blur();
-        }
         showHelp();
         return;
     }
