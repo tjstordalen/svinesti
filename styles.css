@@ -672,10 +672,10 @@ body {
     50% { background-image: url("pigs/up-3.png"); }
 }
 
-#agent.walking-right { animation: walk-right calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
-#agent.walking-down { animation: walk-down calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
-#agent.walking-left { animation: walk-left calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
-#agent.walking-up { animation: walk-up calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
+#agent.anim-walking-right { animation: walk-right calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
+#agent.anim-walking-down { animation: walk-down calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
+#agent.anim-walking-left { animation: walk-left calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
+#agent.anim-walking-up { animation: walk-up calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
 
 /* Turn animation - hop effect split into two parts with squash & stretch */
 @keyframes turn-hop-up {
@@ -702,8 +702,8 @@ body {
     }
 }
 
-#agent.hopping-up { animation: turn-hop-up calc(var(--animation-speed) * var(--turn-multiplier) * 0.33) ease-out; }
-#agent.hopping-down { animation: turn-hop-down calc(var(--animation-speed) * var(--turn-multiplier) * 0.66) ease-in; }
+#agent.anim-hopping-up { animation: turn-hop-up calc(var(--animation-speed) * var(--turn-multiplier) * 0.33) ease-out; }
+#agent.anim-hopping-down { animation: turn-hop-down calc(var(--animation-speed) * var(--turn-multiplier) * 0.66) ease-in; }
 
 /* ============================================
    Color Comparison HUD
@@ -732,7 +732,7 @@ body {
     100% { opacity: 0; }
 }
 
-#color-comparison-hud.show-hud {
+#color-comparison-hud.anim-show-hud {
     animation: hud-flash calc(var(--animation-speed) * var(--hud-multiplier)) ease-in-out;
 }
 

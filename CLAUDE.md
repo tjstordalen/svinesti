@@ -57,32 +57,41 @@ The playback system uses **browser animation events** instead of timers to coord
 
 **How it works:**
 
-1. `step()` processes one trace event and triggers a CSS animation (e.g., walking, turning)
-2. When the animation completes, the browser fires `animationend` on `#agent`
-3. The event listener checks if `state.playback.status === "playing"`
-4. If yes, it calls `step()` again, creating a chain
+1. `step()` processes one trace event and triggers a CSS animation by adding an `anim-*` class
+2. When the animation completes, the browser fires `animationend` (bubbles up to `#agent` listener)
+3. The event listener removes all `anim-*` classes from `e.target` (generic prefix-based cleanup)
+4. The event listener checks if `state.playback.status === "playing"`
+5. If yes, it calls `step()` again, creating a chain
 
 ```
-step() → CSS animation → animationend → step() → CSS animation → ...
+step() → CSS animation → animationend → cleanup → step() → CSS animation → ...
 ```
 
 **Animation types:**
 
-| Event | Animation | Trigger for next step |
-|-------|-----------|----------------------|
-| `move` | `walking-*` class (walk cycle) | `animationend` on `#agent` |
-| `turn` | `turning` class (bounce effect) | `animationend` on `#agent` |
-| `isColor` | `show-hud` class (`hud-flash` keyframes) | `animationend` on `#color-comparison-hud` |
-| `collected` | None | Immediate `step()` call |
-| `gameover` | None | Stops playback |
-| `lineExecuted` | None | Immediate recursive `step()` call |
+| Event | Animation Class | Keyframes | Trigger for next step |
+|-------|-----------------|-----------|----------------------|
+| `move` | `anim-walking-{dir}` | `walk-{dir}` | `animationend` bubbles to `#agent` |
+| `turn` | `anim-hopping-up` → `anim-hopping-down` | `turn-hop-up` → `turn-hop-down` | Two-phase: image swap at peak, then continue |
+| `isColor` | `anim-show-hud` | `hud-flash` | `animationend` bubbles from `#color-comparison-hud` to `#agent` |
+| `collected` | None | None | Immediate `step()` call |
+| `gameover` | None | None | Stops playback |
+| `lineExecuted` | None | None | Immediate recursive `step()` call |
+
+**Animation naming convention:**
+
+All animation trigger classes use the `anim-*` prefix. This enables generic cleanup in the `animationend` listener without hardcoded class names. To add a new animation:
+1. Create CSS class `#element.anim-your-name { animation: your-keyframes ... }`
+2. Add class at call site: `element.classList.add('anim-your-name')`
+3. The listener automatically removes it when animation completes
 
 **Why this design:**
 
 - **No timing bugs**: The browser tells us when animations finish, rather than guessing with `setTimeout`
-- **Speed slider works instantly**: CSS variable `--agent-move-duration` is read fresh for each animation
+- **Speed slider works instantly**: CSS variable `--animation-speed` is read fresh for each animation
 - **Pause/resume is simple**: Just check `status` before calling `step()` - no intervals to manage
 - **Clean code**: No flags like `movementInProgress` to track manually
+- **Extensible**: Prefix-based cleanup means adding animations doesn't require modifying the listener
 
 ### PigJatin Language (Java-like alternative)
 

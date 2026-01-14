@@ -118,14 +118,14 @@ function move(row,col,animationDirection=null){
     setCssVariable("--agent-row", row);
     setCssVariable("--agent-col", col);
 	// Add walking animation - animationend handler cleans up and triggers next step
-	if (animationDirection !== null) ui.agent.classList.add(`walking-${DIR_NAMES[animationDirection]}`);
+	if (animationDirection !== null) ui.agent.classList.add(`anim-walking-${DIR_NAMES[animationDirection]}`);
 }
 
 function turn(direction, animate=false){ // direction: 0=right, 1=down, 2=left, 3=up
 	if (animate) {
 		// Store target direction and start first half of hop
 		state.targetDirection = direction;
-		ui.agent.classList.add("hopping-up");
+		ui.agent.classList.add("anim-hopping-up");
 	} else {
 		// Instant turn without animation
 		ui.agent.style.backgroundImage = `url("${AGENT_DIRS[direction]}")`;
@@ -221,7 +221,7 @@ function step() {
             ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
 
             // Trigger HUD animation - animationend handler continues playback
-            ui.colorComparison.classList.add('show-hud');
+            ui.colorComparison.classList.add('anim-show-hud');
             break;
     }
 }
@@ -425,26 +425,19 @@ ui.speedSlider.addEventListener("input", () => {
     setCssVariable("--animation-speed", `${ui.speedSlider.max - ui.speedSlider.value}ms`);
 });
 
-// Event-driven playback: when animations complete, trigger next step
 ui.agent.addEventListener("animationend", (e) => {
-	console.log("FIRED", e.animationName);
-    // Clean up animation classes
-    if (e.animationName.startsWith("walk-")) {
-        ui.agent.classList.remove(`walking-${e.animationName.split("-")[1]}`);
-    } else if (e.animationName === "turn-hop-up") {
-        // First half of turn complete - swap image at peak of jump
+    e.target.classList.forEach(cls => {
+        if (cls.startsWith('anim-')) e.target.classList.remove(cls);
+    });
+
+    // Special case: two-phase turn animation
+    if (e.animationName === "turn-hop-up") {
         ui.agent.style.backgroundImage = `url("${AGENT_DIRS[state.targetDirection]}")`;
-        ui.agent.classList.remove("hopping-up");
-        ui.agent.classList.add("hopping-down");
-        return; // Don't continue playback yet
-    } else if (e.animationName === "turn-hop-down") {
-        // Second half of turn complete
-        ui.agent.classList.remove("hopping-down");
+        ui.agent.classList.add("anim-hopping-down");
+        return; // Don't continue playback until second phase completes
     }
-    if (e.animationName === "hud-flash") {
-        ui.colorComparison.classList.remove("show-hud");
-    }
-    // Continue playback chain
+
+    // Continue playback chain after animation completes
     if (state.playback.status === "playing") {
         step();
     }
