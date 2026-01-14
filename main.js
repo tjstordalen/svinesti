@@ -584,6 +584,17 @@ ui.editor.on("keydown", (cm, event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+    // If help is open, only allow Escape to close it - block all other keys
+    if (ui.helpModal.classList.contains("show")) {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            hideHelp();
+        } else {
+            event.preventDefault(); // Block all other keys
+        }
+        return;
+    }
+
     // Run code
     if (event.ctrlKey && event.key === "Enter") {
         submitCode();
@@ -597,13 +608,6 @@ document.addEventListener("keydown", (event) => {
             ui.editor.getInputField().blur();
         }
         showHelp();
-        return;
-    }
-
-    // Close help
-    if (event.key === "Escape" && ui.helpModal.classList.contains("show")) {
-        event.preventDefault();
-        hideHelp();
         return;
     }
 });
