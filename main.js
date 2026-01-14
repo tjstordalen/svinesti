@@ -590,9 +590,12 @@ document.addEventListener("keydown", (event) => {
         return;
     }
 
-    // Show help (when editor not focused)
-    if (event.key === "?" && !ui.editor.hasFocus()) {
+    // Show help (unfocus editor if focused)
+    if (event.key === "?") {
         event.preventDefault();
+        if (ui.editor.hasFocus()) {
+            ui.editor.getInputField().blur();
+        }
         showHelp();
         return;
     }

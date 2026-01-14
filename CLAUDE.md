@@ -150,5 +150,5 @@ Tests run automatically on page load. Check browser console for results.
 ## Keyboard Shortcuts
 
 - `Ctrl+Enter` - Run code
-- `?` (when editor not focused) - Show help
+- `?` - Show help (unfocuses editor if focused)
 - `Esc` - Close help modal
