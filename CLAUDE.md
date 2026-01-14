@@ -70,9 +70,9 @@ step() → CSS animation → animationend → step() → CSS animation → ...
 
 | Event | Animation | Trigger for next step |
 |-------|-----------|----------------------|
-| `move` | `walking-*` class (walk cycle) | `animationend` |
-| `turn` | `turning` class (bounce effect) | `animationend` |
-| `isColor` | HUD opacity transition | `transitionend` (on fade-out) |
+| `move` | `walking-*` class (walk cycle) | `animationend` on `#agent` |
+| `turn` | `turning` class (bounce effect) | `animationend` on `#agent` |
+| `isColor` | `show-hud` class (`hud-flash` keyframes) | `animationend` on `#color-comparison-hud` |
 | `collected` | None | Immediate `step()` call |
 | `gameover` | None | Stops playback |
 | `lineExecuted` | None | Immediate recursive `step()` call |

@@ -128,7 +128,7 @@ function move(row,col,animationDirection=null){
     setCssVariable("--agent-row", row);
     setCssVariable("--agent-col", col);
 	// Add walking animation - animationend handler cleans up and triggers next step
-	if (animationDirection !== null) ui.agent.classList.add(`walking-${DIR_NAMES[dir]}`);
+	if (animationDirection !== null) ui.agent.classList.add(`walking-${DIR_NAMES[animationDirection]}`);
 }
 
 function turn(direction, animate=false){ // "up", "right", "left", or "down"
@@ -223,16 +223,9 @@ function step() {
         case "isColor":
             ui.comparisonTile.className = 'game-tile ' + msg.color.toLowerCase();
             ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
-			
-            // Show the HUD with fade in
-            ui.colorComparison.classList.add('show');
 
-            // Hide after move duration (same timing as agent movement)
-            const interval = ui.speedSlider.max - ui.speedSlider.value;
-            const hudDuration = interval / 0.7;
-            setTimeout(() => {
-                ui.colorComparison.classList.remove('show');
-            }, hudDuration);
+            // Trigger HUD animation - animationend handler continues playback
+            ui.colorComparison.classList.add('show-hud');
             break;
     }
 }
@@ -437,25 +430,19 @@ ui.speedSlider.addEventListener("input", syncAnimationSpeed);
 
 // Event-driven playback: when animations complete, trigger next step
 ui.agent.addEventListener("animationend", (e) => {
+	console.log("FIRED", e.animationName);
     // Clean up animation classes
     if (e.animationName.startsWith("walk-")) {
         ui.agent.classList.remove(`walking-${e.animationName.split("-")[1]}`);
     } else if (e.animationName === "turn-bounce") {
         ui.agent.classList.remove("turning");
     }
+    if (e.animationName === "hud-flash") {
+        ui.colorComparison.classList.remove("show-hud");
+    }
     // Continue playback chain
     if (state.playback.status === "playing") {
         step();
-    }
-});
-
-// HUD uses CSS transition - continue playback when fade-out completes
-ui.colorComparison.addEventListener("transitionend", (e) => {
-    // Only trigger on fade-out (opacity going to 0), not fade-in
-    if (e.propertyName === "opacity" && !ui.colorComparison.classList.contains("show")) {
-        if (state.playback.status === "playing") {
-            step();
-        }
     }
 });
 

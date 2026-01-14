@@ -697,12 +697,18 @@ body {
     opacity: 0;
     pointer-events: none;
     z-index: 100;
-    transition: opacity 0.2s ease-in-out;
     white-space: nowrap;
 }
 
-#color-comparison-hud.show {
-    opacity: 1;
+@keyframes hud-flash {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+#color-comparison-hud.show-hud {
+    animation: hud-flash calc(var(--agent-move-duration) / 0.3) ease-in-out;
 }
 
 #comparison-tile {
