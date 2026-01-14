@@ -99,6 +99,10 @@ function getAnimSpeed() {
 function showHelp() {
     // Save currently focused element to restore later
     state.focusedElementBeforeHelp = document.activeElement;
+    // Blur editor if it has focus
+    if (ui.editor.hasFocus()) {
+        ui.editor.getInputField().blur();
+    }
     ui.helpModal.classList.add("show");
 }
 
@@ -609,9 +613,10 @@ document.addEventListener("keydown", (event) => {
         return;
     }
 
-    // If help is open, block all other keys
-    if (ui.helpModal.classList.contains("show")) {
+    // Close help with Escape (undocumented)
+    if (event.key === "Escape" && ui.helpModal.classList.contains("show")) {
         event.preventDefault();
+        hideHelp();
         return;
     }
 });
