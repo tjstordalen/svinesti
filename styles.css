@@ -4,9 +4,13 @@
     --grid-n-cols: 8;
     --agent-row: 5;
     --agent-col: 0;
-    --agent-move-duration: 1.75s;
-    --agent-walk-cycles: 2;
-    --agent-turn-duration: 0.25s;
+
+    /* Animation speed system: base speed × multiplier for each animation */
+    --animation-speed: 500ms;
+    --move-multiplier: 1.43;
+    --turn-multiplier: 0.5;
+    --hud-multiplier: 4.76;
+    --walk-cycles: 2;
 
     /* Color palette - Soft Sage Green */
     --color-header: #7eb09b;
@@ -634,7 +638,7 @@ body {
     background-repeat: no-repeat;
     background-position: center;
     position: relative;
-    transition: transform var(--agent-move-duration) ease-out;
+    transition: transform calc(var(--animation-speed) * var(--move-multiplier)) ease-out;
     z-index: 100;
     height: 100%;
     width: 100%;
@@ -667,10 +671,10 @@ body {
     50% { background-image: url("pigs/up-3.png"); }
 }
 
-#agent.walking-right { animation: walk-right calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
-#agent.walking-down { animation: walk-down calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
-#agent.walking-left { animation: walk-left calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
-#agent.walking-up { animation: walk-up calc(var(--agent-move-duration) / var(--agent-walk-cycles)) steps(4) var(--agent-walk-cycles); }
+#agent.walking-right { animation: walk-right calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
+#agent.walking-down { animation: walk-down calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
+#agent.walking-left { animation: walk-left calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
+#agent.walking-up { animation: walk-up calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
 
 /* Turn animation - little bounce effect */
 @keyframes turn-bounce {
@@ -678,7 +682,7 @@ body {
     50% { scale: 1.15; }
 }
 
-#agent.turning { animation: turn-bounce var(--agent-turn-duration) ease-in-out; }
+#agent.turning { animation: turn-bounce calc(var(--animation-speed) * var(--turn-multiplier)) ease-in-out; }
 
 /* ============================================
    Color Comparison HUD
@@ -708,7 +712,7 @@ body {
 }
 
 #color-comparison-hud.show-hud {
-    animation: hud-flash calc(var(--agent-move-duration) / 0.3) ease-in-out;
+    animation: hud-flash calc(var(--animation-speed) * var(--hud-multiplier)) ease-in-out;
 }
 
 #comparison-tile {

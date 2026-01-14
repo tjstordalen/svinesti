@@ -83,18 +83,7 @@ function selectedLanguage() {
     return document.querySelector('input[name="language-choice"]:checked').value;
 }
 
-// TODO: replace this by:
-//     - just setting a css variable "animation speed"
-//     - for each animation, adding a css variable that controls the duration of that animation
-//       by multiplying some constant with the "animation speed" variable
-function syncAnimationSpeed() {
-    // Match animation duration to playback interval, slowed to 70%
-    const interval = ui.speedSlider.max - ui.speedSlider.value;
-    const duration = interval / 0.7; // Slow down to ~70% speed
-    setCssVariable("--agent-move-duration", `${duration}ms`);
-}
-
-// TODO: can't this more easily be done using a css transformation? 
+// TODO: can't this more easily be done using a css transformation?
 let notificationTimeout = null;
 function showReadOnlyNotification() {
     // Clear any existing timeout
@@ -378,7 +367,6 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
 }
 
 initWorker();
-syncAnimationSpeed();
 syncUI(); // Initialize button states
 
 // Set up button handlers (no branching - visibility toggled by CSS)
@@ -426,7 +414,9 @@ ui.levelList.querySelector("li button").click();
 
 // --- Event handlers ---
 
-ui.speedSlider.addEventListener("input", syncAnimationSpeed);
+ui.speedSlider.addEventListener("input", () => {
+    setCssVariable("--animation-speed", `${ui.speedSlider.max - ui.speedSlider.value}ms`);
+});
 
 // Event-driven playback: when animations complete, trigger next step
 ui.agent.addEventListener("animationend", (e) => {
