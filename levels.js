@@ -26,26 +26,6 @@ const levels = [
         dir: 0
     },
     {
-        name: "Level 2T",
-        nRows: 11,
-        nCols: 1,
-        grid: [
-            "B",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "R"
-        ],
-        start: [5, 0],
-        dir: 1
-    },
-    {
         name: "Level 3",
         nRows: 7,
         nCols: 8,
