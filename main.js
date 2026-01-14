@@ -202,9 +202,23 @@ const TURN_MULTIPLIER = 1.5;
 const HUD_MULTIPLIER = 3;
 const WALK_CYCLES = 2;
 
+function updateAgentEdgeClasses(row, col) {
+    const nCols = state.level.nCols;
+
+    // Remove edge class
+    ui.agent.classList.remove('near-right-edge');
+
+    // Flip to left when there aren't 2 full tiles to the right
+    // (HUD is 200% wide, needs 2 tiles of space)
+    if (col >= nCols - 2) {
+        ui.agent.classList.add('near-right-edge');
+    }
+}
+
 function move(row, col) {
     setCssVariable("--agent-row", row);
     setCssVariable("--agent-col", col);
+    updateAgentEdgeClasses(row, col);
 }
 
 function turn(direction) {
@@ -280,8 +294,7 @@ async function step() {
                 break;
 
             case "move":
-                setCssVariable("--agent-row", msg.pos[0]);
-                setCssVariable("--agent-col", msg.pos[1]);
+                move(msg.pos[0], msg.pos[1]);
 
                 // Animate walking
                 const walkDuration = getAnimSpeed() * MOVE_MULTIPLIER / WALK_CYCLES;

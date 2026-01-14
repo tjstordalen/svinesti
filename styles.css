@@ -652,8 +652,12 @@ body {
    ============================================ */
 #color-comparison-hud {
     position: absolute;
-    left: 110%;
+    left: 100%;
+    right: auto;
     top: 0%;
+    width: 200%;
+    min-width: 120px;
+    margin-left: 8px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -663,8 +667,16 @@ body {
     box-shadow: 0 4px 16px rgba(0,0,0,0.25);
     opacity: 0;
     pointer-events: none;
-    z-index: 100;
+    z-index: 200;
     white-space: nowrap;
+}
+
+/* Flip to left side when in rightmost column */
+#agent.near-right-edge #color-comparison-hud {
+    left: auto !important;
+    right: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 8px !important;
 }
 
 #comparison-tile {
