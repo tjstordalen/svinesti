@@ -638,11 +638,12 @@ body {
     background-repeat: no-repeat;
     background-position: center;
     position: relative;
-    transition: transform calc(var(--animation-speed) * var(--move-multiplier)) ease-out;
+    transition: translate calc(var(--animation-speed) * var(--move-multiplier)) ease-out;
     z-index: 100;
     height: 100%;
     width: 100%;
-    transform: translate(calc(var(--agent-col)*100%), calc(var(--agent-row)*100%));
+    translate: calc(var(--agent-col)*100%) calc(var(--agent-row)*100%);
+    transform-origin: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
@@ -676,19 +677,33 @@ body {
 #agent.walking-left { animation: walk-left calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
 #agent.walking-up { animation: walk-up calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
 
-/* Turn animation - hop effect split into two parts */
+/* Turn animation - hop effect split into two parts with squash & stretch */
 @keyframes turn-hop-up {
-    0% { translate: 0 0; }
-    100% { translate: 0 -8%; }
+    0% {
+        transform: translateY(0) scale(0.97, 1.03);  /* Squash anticipation */
+    }
+    100% {
+        transform: translateY(-3%) scale(1.01, 0.99);  /* Stretch at peak */
+    }
 }
 
 @keyframes turn-hop-down {
-    0% { translate: 0 -8%; }
-    100% { translate: 0 0; }
+    0% {
+        transform: translateY(-3%) scale(1.01, 0.99);  /* Stretch at peak */
+    }
+    25% {
+        transform: translateY(0) scale(0.95, 1.05);  /* Squash on landing */
+    }
+    30% {
+        transform: translateY(0) scale(1, 1);  /* Bounce back to normal */
+    }
+    100% {
+        transform: translateY(0) scale(1, 1);  /* Hold - collecting itself */
+    }
 }
 
-#agent.hopping-up { animation: turn-hop-up calc(var(--animation-speed) * var(--turn-multiplier) * 0.5) ease-out; }
-#agent.hopping-down { animation: turn-hop-down calc(var(--animation-speed) * var(--turn-multiplier) * 0.5) ease-in; }
+#agent.hopping-up { animation: turn-hop-up calc(var(--animation-speed) * var(--turn-multiplier) * 0.33) ease-out; }
+#agent.hopping-down { animation: turn-hop-down calc(var(--animation-speed) * var(--turn-multiplier) * 0.66) ease-in; }
 
 /* ============================================
    Color Comparison HUD
