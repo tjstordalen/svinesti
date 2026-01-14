@@ -498,6 +498,36 @@ body {
     transform: translateY(1px);
 }
 
+/* Playback button visibility - state-based */
+/* Show play button when idle or paused */
+.playback-toolbar.idle #btn-play,
+.playback-toolbar.paused #btn-play {
+    display: block;
+}
+.playback-toolbar.playing #btn-play {
+    display: none;
+}
+
+/* Show pause button only when playing */
+.playback-toolbar.idle #btn-pause,
+.playback-toolbar.paused #btn-pause {
+    display: none;
+}
+.playback-toolbar.playing #btn-pause {
+    display: block;
+}
+
+/* All icons visible by default */
+.playback-toolbar .icon {
+    display: inline;
+}
+
+/* Step and reset icons */
+.playback-toolbar .icon-step,
+.playback-toolbar .icon-reset {
+    display: inline;
+}
+
 .speed-control {
     display: flex;
     align-items: center;

@@ -1,7 +1,7 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
 
 // Set to false to disable splash screen for faster debugging
-const ENABLE_SPLASH_SCREEN = true;
+const ENABLE_SPLASH_SCREEN = false;
 
 // --- UI elements ---
 
@@ -11,10 +11,11 @@ const ui = {
     codeInput:		gid("code-input"),
     codeOutput:		gid("code-output"),
     levelList:		gid("level-list"),
-    stepBtn:		gid("playback-step"),
-    stopBtn:		gid("playback-stop"),
+    btn2:		gid("btn2"),
+    btn3:		gid("btn3"),
     speedSlider:	gid("playback-speed"),
-    runCodeBtn:		gid("playback-run-code"),
+    btnPlay:		gid("btn-play"),
+    btnPause:		gid("btn-pause"),
     fontSizeSlider: gid("editor-font-size-slider"),
     sidebar:        gid("sidebar"),
     sidebarToggle:  gid("sidebar-toggle"),
@@ -30,6 +31,7 @@ const ui = {
     colorComparison: gid("color-comparison-hud"),
     comparisonTile: gid("comparison-tile"),
     comparisonAnswer: gid("comparison-answer"),
+    playbackToolbar: document.querySelector(".playback-toolbar"),
 };
 
 // --- State ---
@@ -38,16 +40,38 @@ const state = {
     level: null,
     worker: null,
     workerTimeout: null,
-    currentDir: 0, // Current agent direction (0=right, 1=down, 2=left, 3=up)
-    currentPos: [0, 0], // Current agent position [row, col]
-    highlightedLine: -1, // Currently highlighted line in editor
+    isSingleStepping: false, // Flag to indicate single-step execution mode
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
         index: 0,
-        startPaused: false, // If true, start in paused mode instead of playing
     },
 };
+
+// --- Status machine ---
+
+const STATUS = {
+    idle: {
+        editorReadOnly: false,
+    },
+    playing: {
+        editorReadOnly: "nocursor",
+    },
+    paused: {
+        editorReadOnly: false,
+    },
+};
+
+function syncUI() {
+    const s = STATUS[state.playback.status];
+    ui.playbackToolbar.className = `playback-toolbar ${state.playback.status}`;
+    ui.editor.setOption("readOnly", s.editorReadOnly);
+}
+
+function pause() {
+    state.playback.status = "paused";
+    syncUI();
+}
 
 // --- Utilities ---
 
@@ -59,6 +83,10 @@ function selectedLanguage() {
     return document.querySelector('input[name="language-choice"]:checked').value;
 }
 
+// TODO: replace this by:
+//     - just setting a css variable "animation speed"
+//     - for each animation, adding a css variable that controls the duration of that animation
+//       by multiplying some constant with the "animation speed" variable
 function syncAnimationSpeed() {
     // Match animation duration to playback interval, slowed to 70%
     const interval = ui.speedSlider.max - ui.speedSlider.value;
@@ -66,6 +94,7 @@ function syncAnimationSpeed() {
     setCssVariable("--agent-move-duration", `${duration}ms`);
 }
 
+// TODO: can't this more easily be done using a css transformation? 
 let notificationTimeout = null;
 function showReadOnlyNotification() {
     // Clear any existing timeout
@@ -83,173 +112,118 @@ function showReadOnlyNotification() {
     }, 2000);
 }
 
+// TODO: Provide a numbered list of all the occurrences of "agent" across all files and ask for confirmation before replacing them with "pig" across the board. 
+
 // --- Board rendering ---
 
 // Direction 0 is right, 1 is down, 2 is left, 3 is up
 // Idle frame for each direction
 const AGENT_DIRS = ["pigs/right-1.png", "pigs/down-1.png", "pigs/left-1.png", "pigs/up-1.png"];
 
+// TODO: move this to svinesti.py, so that the direction name is included directly in the message move message. Then delete this line from main.js
 // Direction names for walking animation classes
 const DIR_NAMES = ["right", "down", "left", "up"];
 
-// Maps each character in a level to the relevant CSS classes
-const TILE_CLASSES = {
-    ".": "empty",
-    "r": "red",
-    "g": "green",
-    "b": "blue",
-    "R": "red target",
-    "G": "green target",
-    "B": "blue target",
-};
+function move(row,col,animationDirection=null){
+    setCssVariable("--agent-row", row);
+    setCssVariable("--agent-col", col);
+	// Add walking animation - animationend handler cleans up and triggers next step
+	if (animationDirection !== null) ui.agent.classList.add(`walking-${DIR_NAMES[dir]}`);
+}
 
-// Maps color names to CSS background colors for comparison HUD
-const COLOR_MAP = {
-    "red": "#FF8A8A",
-    "green": "#58E0B8",
-    "blue": "#85D0FF",
-};
+function turn(direction, animate=false){ // "up", "right", "left", or "down"
+	ui.agent.style.backgroundImage = `url("${AGENT_DIRS[direction]}")`;
+	if (animate) ui.agent.classList.add("turning");
+}
 
-function drawLevel(level) {
+function loadLevel(level) {
+    if (level === null) return;
+
+	const classLists = {
+		".": "empty",
+		"r": "red",
+		"g": "green",
+		"b": "blue",
+		"R": "red target",
+		"G": "green target",
+		"B": "blue target",
+	};
+
     ui.grid.innerHTML = "";
 
-	// The layout of the grid is handled in CSS
     setCssVariable("--grid-n-rows", level.nRows);
     setCssVariable("--grid-n-cols", level.nCols);
 
     const cells = level.grid.join("");
     for (let c of cells) {
         const div = document.createElement("div");
-        div.className = "game-tile " + TILE_CLASSES[c];
+        div.className = "game-tile " + classLists[c];
         ui.grid.appendChild(div);
     }
 
 	// The pig needs to be added to the top left grid cell for
 	// the CSS animations to work correctly.
     ui.grid.firstElementChild.appendChild(ui.agent);
-}
-
-function moveAgent(pos) {
-    const [row, col] = pos;
-
-	// The movement of the pig is animated in CSS
-    setCssVariable("--agent-row", row);
-    setCssVariable("--agent-col", col);
-}
-
-function rotateAgent(dir) {
-    state.currentDir = dir;
-    ui.agent.style.backgroundImage = `url("${AGENT_DIRS[dir]}")`;
-}
-
-function consumeTarget(pos) {
-    const [r, c] = pos;
-    const index = state.level.nCols * r + c;
-    ui.grid.children[index].classList.remove("target");
-}
-
-function resetBoard(level) {
-    drawLevel(level);
-    moveAgent(level.start);
-    rotateAgent(level.dir);
-    state.currentPos = level.start;
-}
-
-// --- Editor ---
-function highlightLine(lineno) {
-    lineno--;
-    const prev = state.highlightedLine;
-    if (prev >= 0) {
-        ui.editor.removeLineClass(prev, "background", "highlighted-line");
-    }
-    if (lineno < 0 || lineno > ui.editor.lineCount()) {
-        state.highlightedLine = -1;
-        return;
-    }
-    state.highlightedLine = lineno;
-    ui.editor.addLineClass(lineno, "background", "highlighted-line");
-}
-
-function updateEditorMode() {
-    const mode = selectedLanguage() === "java" ? "text/x-java" : "python";
-    ui.editor.setOption("mode", mode);
+	const [row,col] = level.start;
+	move(row,col);
+	turn(level.dir)
 }
 
 // --- Code storage ---
 
-function storeCode(lang = selectedLanguage()) {
+function storeCode() {
     if (!state.level) return;
-    const key = state.level.name + lang;
+    const key = state.level.name + selectedLanguage();
     localStorage.setItem(key, ui.editor.getValue());
 }
 
-function loadCode(lang = selectedLanguage()) {
+function loadCode() {
     if (!state.level) return;
-    const key = state.level.name + lang;
+    const key = state.level.name + selectedLanguage();
     const code = localStorage.getItem(key) ?? "";
     ui.editor.setValue(code);
 }
 
 // --- Playback ---
 
-function autoplayStart() {
-    step(); // Kick off the chain - animationend events continue it
-}
-
-function autoplayStop() {
-    // Nothing to do - animationend handler checks status before calling step()
-}
-
-function autoplayUpdateSpeed() {
-    syncAnimationSpeed();
-    // CSS variable is updated - next animation will use new duration
-}
 
 function step() {
     if (state.playback.status === "idle") return;
 
-    const msg = state.playback.trace[state.playback.index];
-	state.playback.index++;
-
+    const msg = state.playback.trace[state.playback.index++];
     if (!msg) return;
 
-    // If this is a lineExecuted event, highlight the line and process the next event immediately
-    if (msg.type === "lineExecuted") {
-        highlightLine(msg.lineno);
-        // Recursively process the next event without delay
-        step();
-        return;
-    }
-
     switch (msg.type) {
+		// highlight the relevant line and make the next step immediately to se the effect of te
+		// highlighted line
+		case "lineExecuted":
+			const lineno = msg.lineno - 1;
+			for (let i = 0; i < ui.editor.lineCount(); i++){
+				if (i === lineno) ui.editor.addLineClass(i, "background", "highlighted-line");
+				else ui.editor.removeLineClass(i, "background", "highlighted-line");
+			}
+			step();
+			break;
         case "move":
-            // Add walking animation - animationend handler cleans up and triggers next step
-            ui.agent.classList.add(`walking-${DIR_NAMES[state.currentDir]}`);
-            moveAgent(msg.pos);
-            state.currentPos = msg.pos;
+			move(msg.pos[0], msg.pos[1], msg.dir); 	
             break;
         case "collected":
-            consumeTarget(msg.pos);
-            // No animation - immediately continue the chain
+            const [r, c] = msg.pos;
+            const index = state.level.nCols * r + c;
+            ui.grid.children[index].classList.remove("target");
             if (state.playback.status === "playing") step();
             break;
         case "gameover":
             console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
             playbackStop();
-            highlightLine(-1);
             break;
         case "turn":
-            // Add turning animation - animationend handler cleans up and triggers next step
-            rotateAgent(msg.dir);
-            ui.agent.classList.add("turning");
+			turn(msg.dir, true);
             break;
         case "isColor":
-            console.log(`Is color ${msg.color}? ${msg.result}!`);
-
-            // Set the tile to show the queried color
             ui.comparisonTile.className = 'game-tile ' + msg.color.toLowerCase();
             ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
-
+			
             // Show the HUD with fade in
             ui.colorComparison.classList.add('show');
 
@@ -263,55 +237,66 @@ function step() {
     }
 }
 
-function playbackInit(trace) {
+function playbackInit(trace, singleStep = false) {
     state.playback.index = 0;
     state.playback.trace = trace;
-    ui.stepBtn.disabled = false;
-    ui.stopBtn.disabled = false;
 
-    syncAnimationSpeed();
-    resetBoard(trace[0].level);
-    state.playback.index = 1;
-    autoplayStop();
+    loadLevel(state.level);
 
     // Check if we should start in paused mode (for single-stepping)
-    if (state.playback.startPaused) {
+    if (singleStep) {
         state.playback.status = "paused";
-        state.playback.startPaused = false; // Reset flag
-        ui.runCodeBtn.textContent = "Resume";
-        ui.stopBtn.textContent = "Reset";
-        ui.editor.setOption("readOnly", false);
+        syncUI();
     } else {
         state.playback.status = "playing";
-        ui.editor.setOption("readOnly", "nocursor");
-        autoplayStart();
+        syncUI();
+        step(); // Kick off the chain - animationend events continue it
     }
 }
 
 function playbackStop() {
-    autoplayStop();
     state.playback.status = "idle";
     state.playback.trace = null;
     state.playback.index = 0;
-    // Step button stays enabled (can start single-step mode from idle)
-    ui.stopBtn.disabled = true;
-    ui.runCodeBtn.textContent = "Run";
-    ui.stopBtn.textContent = "Pause";
-    ui.editor.setOption("readOnly", false);
+    syncUI();
 }
 
 function playbackResume() {
     if (state.playback.status === "paused") {
         state.playback.status = "playing";
-        autoplayStart();
-        ui.runCodeBtn.textContent = "Run";
-        ui.stopBtn.textContent = "Pause";
-        ui.stopBtn.disabled = false;
-        ui.editor.setOption("readOnly", "nocursor");
+        syncUI();
+        step(); // Kick off the chain - animationend events continue it
         return true;
     }
     return false;
 }
+
+/*
+  click a level in the list: store the current code, load the new level, load the new code
+  click a language tab: store existing code, load new code. 
+  slide the animation speed: update the var in css
+  slide the font size: update font size
+  type in the editor: store the code. Or maybe when it loses focus? 
+  
+  idle:
+      play: run the code on the selected level -> playing
+	  step: run the code on the selected level, one step -> paused
+	  reset: reload the selected level. We do not need to save the trace, we can just re-run the code. 
+  paused:
+      play: run the code -> playing
+	  step: make another step, no state change.
+	  reset: reload the selected level. 
+  playing: 
+      play: pause -> paused
+	  step: pause -> paused
+	  reset: reload the selected level. 
+
+
+	running the code: listening to animationend events and autostepping. (I think I do need to handle animationcanel btw)
+	stepping the code: just make one step, but don't autostep (disable the listener?)
+	
+ * */
+
 
 // --- Worker management ---
 
@@ -338,7 +323,8 @@ function initWorker() {
                 hideSplashScreen();
             }, 1500);
         } else if (event.data.type === "execution-trace") {
-            playbackInit(event.data.trace);
+            playbackInit(event.data.trace, state.isSingleStepping);
+            state.isSingleStepping = false;
         } else if (event.data.type === "execution-failed") {
             ui.codeOutput.textContent = event.data.errorMessage;
             ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
@@ -354,9 +340,8 @@ function selectLevel(level) {
     storeCode();
     state.level = level;
     loadCode();
-    resetBoard(level);
+    loadLevel(level);
     ui.codeOutput.textContent = "";
-    updateEditorMode();
 }
 
 function switchLanguage() {
@@ -364,7 +349,8 @@ function switchLanguage() {
     const otherLang = currentLang === "python" ? "java" : "python";
     storeCode(otherLang);
     loadCode(currentLang);
-    updateEditorMode();
+    const mode = currentLang === "java" ? "text/x-java" : "python";
+    ui.editor.setOption("mode", mode);
 }
 
 function submitCode() {
@@ -399,9 +385,24 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
 }
 
 initWorker();
-ui.stepBtn.disabled = false; // Step button always enabled (starts single-step mode when idle)
-ui.stopBtn.disabled = true;
 syncAnimationSpeed();
+syncUI(); // Initialize button states
+
+// Set up button handlers (no branching - visibility toggled by CSS)
+ui.btnPlay.onclick = submitCode;
+ui.btnPause.onclick = pause;
+ui.btn2.onclick = () => {
+    if (state.playback.status === "idle") {
+        state.isSingleStepping = true;
+        submitCode();
+    } else if (state.playback.status === "playing") {
+        pause();
+        step();
+    } else {
+        step();
+    }
+};
+ui.btn3.onclick = playbackStop();
 
 // Prepare levels: if the starting position has a star (uppercase letter),
 // convert it to just the tile (lowercase) so the pig doesn't start on a star.
@@ -432,44 +433,7 @@ ui.levelList.querySelector("li button").click();
 
 // --- Event handlers ---
 
-ui.runCodeBtn.onclick = submitCode;
-
-ui.stepBtn.onclick = () => {
-    if (state.playback.status === "idle") {
-        // Start execution in single-step mode
-        state.playback.startPaused = true;
-        submitCode();
-        return;
-    }
-    if (state.playback.status === "playing") {
-        state.playback.status = "paused";
-        autoplayStop();
-        ui.runCodeBtn.textContent = "Resume";
-        ui.stopBtn.textContent = "Reset";
-        ui.editor.setOption("readOnly", false);
-    }
-    step();
-};
-
-ui.stopBtn.onclick = () => {
-    if (state.playback.status === "playing") {
-        // Pause playback and offer Resume/Reset
-        state.playback.status = "paused";
-        autoplayStop();
-        ui.runCodeBtn.textContent = "Resume";
-        ui.stopBtn.textContent = "Reset";
-        ui.editor.setOption("readOnly", false);
-    } else if (state.playback.status === "paused") {
-        // Reset everything
-        playbackStop();
-        resetBoard(state.level);
-        highlightLine(-1);
-        ui.runCodeBtn.textContent = "Run";
-        ui.stopBtn.textContent = "Pause";
-    }
-};
-
-ui.speedSlider.addEventListener("input", autoplayUpdateSpeed);
+ui.speedSlider.addEventListener("input", syncAnimationSpeed);
 
 // Event-driven playback: when animations complete, trigger next step
 ui.agent.addEventListener("animationend", (e) => {
@@ -497,12 +461,7 @@ ui.colorComparison.addEventListener("transitionend", (e) => {
 
 ui.readOnlyNotification.onclick = () => {
     if (state.playback.status === "playing") {
-        // Pause playback to allow editing
-        state.playback.status = "paused";
-        autoplayStop();
-        ui.runCodeBtn.textContent = "Resume";
-        ui.stopBtn.textContent = "Reset";
-        ui.editor.setOption("readOnly", false);
+        pause();
         ui.readOnlyNotification.classList.remove("show");
     }
 };
@@ -517,8 +476,6 @@ ui.editor.on("change", () => {
     // If paused and user edits code, automatically reset
     if (state.playback.status === "paused") {
         playbackStop();
-        resetBoard(state.level);
-        highlightLine(-1);
     }
 });
 

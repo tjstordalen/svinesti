@@ -51,12 +51,10 @@ class State():
         
         self.grid = [list(s) for s in self.grid]
         self.dirs = [(0,1),(1,0),(0,-1),(-1,0)]
-        self.pos  = tuple(self.start)  # current position, initialized from start 
+        self.pos  = tuple(self.start)  # current position, initialized from start
         self.LEFT = -1
         self.RIGHT = 1
-        self.nOps = 0
-    
-        self.trace({"type": "initial-configuration", "level": level}) 
+        self.nOps = 0 
 
     def trace(self, msg):
        self.messages.append(msg)
@@ -80,12 +78,12 @@ def move_aux(s):
     dr,dc = s.dirs[s.dir]
     r,c = s.pos
     s.pos = (r+dr, c+dc)
-    s.trace({"type": "move", "pos": s.pos})
+    s.trace({"type": "move", "pos": s.pos, "dir": s.dir})
 
     ch = s[s.pos]
     if ch.isupper():
         s[s.pos] = ch.lower()
-        s.trace({"type": "collected", "pos": s.pos})
+        s.trace({"type": "collected", "pos": s.pos, "dir": s.dir})
         if not any(c.isupper() for lists in s.grid for c in lists):
             s.game_won = True
             s.trace({"type": "gameover", "win": True})
