@@ -34,6 +34,14 @@
         </button>
         <h1 class="app-title">Svinesti</h1>
         <div class="header-spacer"></div>
+        <button id="help-button" class="icon-btn" title="Help (?)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10" fill="none"></circle>
+                <g transform="translate(4, 4) scale(1)">
+                    <path fill-rule="evenodd" d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"/>
+                </g>
+            </svg>
+        </button>
     </header>
 
     <div id="app-container">
@@ -110,6 +118,79 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <div id="help-modal" class="help-modal">
+        <div class="help-overlay"></div>
+        <div class="help-card">
+            <button id="help-close" class="help-close" title="Close (Esc)">✕</button>
+            <div class="help-content">
+                <div class="help-column">
+                    <h3>About</h3>
+                    <p>Svinesti is an educational programming game. Guide the pig to collect apples.</p>
+
+                    <h4>Licenses</h4>
+                    <ul class="license-list">
+                        <li><a href="https://opengameart.org/content/pigs-rework" target="_blank">Pig sprites</a>: CC-BY 3.0</li>
+                        <li><a href="https://github.com/pyodide/pyodide" target="_blank">Pyodide</a>: MPL 2.0</li>
+                        <li><a href="https://icons.getbootstrap.com/" target="_blank">Icons</a>: MIT</li>
+                        <li><a href="https://codemirror.net/" target="_blank">CodeMirror</a>: MIT</li>
+                    </ul>
+
+                    <h3>Goal</h3>
+                    <p>Walk the pig over colored tiles to collect apples.</p>
+                    <ul>
+                        <li>Red, green, and blue tiles are safe</li>
+                        <li>Avoid empty/white tiles (game ends!)</li>
+                        <li>Collect all apples to win</li>
+                    </ul>
+
+                    <h3>Keyboard Shortcuts</h3>
+                    <ul>
+                        <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Run code</li>
+                        <li><kbd>?</kbd> - Show help</li>
+                        <li><kbd>Esc</kbd> - Close help</li>
+                    </ul>
+                </div>
+
+                <div class="help-column">
+                    <h3>Available Functions</h3>
+                    <pre><code>move()       <span class="comment"># Move forward</span>
+turnLeft()   <span class="comment"># Turn 90° left</span>
+turnRight()  <span class="comment"># Turn 90° right</span>
+
+<span class="comment"># Check tile color (returns true/false)</span>
+isRed()
+isGreen()
+isBlue()</code></pre>
+                </div>
+
+                <div class="help-column">
+                    <h3>Python</h3>
+                    <p>Full Python 3 supported</p>
+                    <pre><code><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">4</span>):
+    move()
+    <span class="keyword">if</span> isRed():
+        turnLeft()</code></pre>
+
+                    <h3>Java</h3>
+                    <p>Minimal Java-like syntax</p>
+                    <p><strong>Types:</strong> <code>int</code>, <code>boolean</code></p>
+                    <p><strong>Control:</strong> <code>if/else</code>, <code>while</code>, <code>{ }</code> blocks</p>
+                    <p><strong>Operators:</strong> <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>, <code>&lt;</code>, <code>&gt;</code>, <code>==</code>, <code>!=</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code></p>
+
+                    <pre><code><span class="keyword">int</span> count = <span class="number">0</span>;
+<span class="keyword">while</span> (count &lt; <span class="number">4</span>) {
+    move();
+    <span class="keyword">if</span> (isRed()) {
+        turnLeft();
+    }
+    count = count + <span class="number">1</span>;
+}</code></pre>
+                    <p class="note"><strong>Limitations:</strong> No arrays, strings, classes, or for loops</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="importmap">

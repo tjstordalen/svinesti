@@ -46,6 +46,7 @@ Sections:
 - **Playback** - `step()` (async), `playbackInit/Stop/Resume()`, `pause()`
 - **Worker management** - `initWorker()`
 - **Actions** - `selectLevel()`, `switchLanguage()`, `submitCode()`
+- **Help system** - `showHelp()`, `hideHelp()` - Modal with three-column layout showing functions, syntax, and licenses
 - **Initialize** - Setup code
 - **Event handlers** - UI event wiring
 
@@ -149,3 +150,5 @@ Tests run automatically on page load. Check browser console for results.
 ## Keyboard Shortcuts
 
 - `Ctrl+Enter` - Run code
+- `?` (when editor not focused) - Show help
+- `Esc` - Close help modal

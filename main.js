@@ -21,6 +21,10 @@ const ui = {
     sidebarToggle:  gid("sidebar-toggle"),
     splashScreen:   gid("splash-screen"),
     readOnlyNotification: gid("editor-readonly-notification"),
+    helpButton:     gid("help-button"),
+    helpModal:      gid("help-modal"),
+    helpClose:      gid("help-close"),
+    helpOverlay:    document.querySelector(".help-overlay"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
         lineNumbers: true,
         lineWrapping: true,
@@ -89,6 +93,14 @@ function selectedLanguage() {
  */
 function getAnimSpeed() {
     return ui.speedSlider.max - ui.speedSlider.value;
+}
+
+function showHelp() {
+    ui.helpModal.classList.add("show");
+}
+
+function hideHelp() {
+    ui.helpModal.classList.remove("show");
 }
 
 // TODO: can't this more easily be done using a css transformation?
@@ -572,7 +584,25 @@ ui.editor.on("keydown", (cm, event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-    if (event.ctrlKey && event.key === "Enter") submitCode();
+    // Run code
+    if (event.ctrlKey && event.key === "Enter") {
+        submitCode();
+        return;
+    }
+
+    // Show help (when editor not focused)
+    if (event.key === "?" && !ui.editor.hasFocus()) {
+        event.preventDefault();
+        showHelp();
+        return;
+    }
+
+    // Close help
+    if (event.key === "Escape" && ui.helpModal.classList.contains("show")) {
+        event.preventDefault();
+        hideHelp();
+        return;
+    }
 });
 
 document.addEventListener("change", (e) => {
@@ -584,6 +614,11 @@ document.addEventListener("change", (e) => {
 ui.sidebarToggle.onclick = () => {
     ui.sidebar.classList.toggle("collapsed");
 };
+
+// Help modal handlers
+ui.helpButton.onclick = showHelp;
+ui.helpClose.onclick = hideHelp;
+ui.helpOverlay.onclick = hideHelp;
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);
