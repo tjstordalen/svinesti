@@ -41,6 +41,7 @@ const state = {
     worker: null,
     workerTimeout: null,
     isSingleStepping: false, // Flag to indicate single-step execution mode
+    targetDirection: null, // For sequential turn animation
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
@@ -120,9 +121,15 @@ function move(row,col,animationDirection=null){
 	if (animationDirection !== null) ui.agent.classList.add(`walking-${DIR_NAMES[animationDirection]}`);
 }
 
-function turn(direction, animate=false){ // "up", "right", "left", or "down"
-	ui.agent.style.backgroundImage = `url("${AGENT_DIRS[direction]}")`;
-	if (animate) ui.agent.classList.add("turning");
+function turn(direction, animate=false){ // direction: 0=right, 1=down, 2=left, 3=up
+	if (animate) {
+		// Store target direction and start first half of hop
+		state.targetDirection = direction;
+		ui.agent.classList.add("hopping-up");
+	} else {
+		// Instant turn without animation
+		ui.agent.style.backgroundImage = `url("${AGENT_DIRS[direction]}")`;
+	}
 }
 
 function loadLevel(level) {
@@ -424,8 +431,15 @@ ui.agent.addEventListener("animationend", (e) => {
     // Clean up animation classes
     if (e.animationName.startsWith("walk-")) {
         ui.agent.classList.remove(`walking-${e.animationName.split("-")[1]}`);
-    } else if (e.animationName === "turn-hop") {
-        ui.agent.classList.remove("turning");
+    } else if (e.animationName === "turn-hop-up") {
+        // First half of turn complete - swap image at peak of jump
+        ui.agent.style.backgroundImage = `url("${AGENT_DIRS[state.targetDirection]}")`;
+        ui.agent.classList.remove("hopping-up");
+        ui.agent.classList.add("hopping-down");
+        return; // Don't continue playback yet
+    } else if (e.animationName === "turn-hop-down") {
+        // Second half of turn complete
+        ui.agent.classList.remove("hopping-down");
     }
     if (e.animationName === "hud-flash") {
         ui.colorComparison.classList.remove("show-hud");
