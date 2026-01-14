@@ -647,64 +647,6 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
-/* Walking animations - cycle through 4 steps (1-2-3-2 pattern) for each direction */
-@keyframes walk-right {
-    0%, 100% { background-image: url("pigs/right-1.png"); }
-    25%, 75% { background-image: url("pigs/right-2.png"); }
-    50% { background-image: url("pigs/right-3.png"); }
-}
-
-@keyframes walk-down {
-    0%, 100% { background-image: url("pigs/down-1.png"); }
-    25%, 75% { background-image: url("pigs/down-2.png"); }
-    50% { background-image: url("pigs/down-3.png"); }
-}
-
-@keyframes walk-left {
-    0%, 100% { background-image: url("pigs/left-1.png"); }
-    25%, 75% { background-image: url("pigs/left-2.png"); }
-    50% { background-image: url("pigs/left-3.png"); }
-}
-
-@keyframes walk-up {
-    0%, 100% { background-image: url("pigs/up-1.png"); }
-    25%, 75% { background-image: url("pigs/up-2.png"); }
-    50% { background-image: url("pigs/up-3.png"); }
-}
-
-#agent.anim-walking-right { animation: walk-right calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
-#agent.anim-walking-down { animation: walk-down calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
-#agent.anim-walking-left { animation: walk-left calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
-#agent.anim-walking-up { animation: walk-up calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
-
-/* Turn animation - hop effect split into two parts with squash & stretch */
-@keyframes turn-hop-up {
-    0% {
-        transform: translateY(0) scale(0.97, 1.03);  /* Squash anticipation */
-    }
-    100% {
-        transform: translateY(-3%) scale(1.01, 0.99);  /* Stretch at peak */
-    }
-}
-
-@keyframes turn-hop-down {
-    0% {
-        transform: translateY(-3%) scale(1.01, 0.99);  /* Stretch at peak */
-    }
-    25% {
-        transform: translateY(0) scale(0.95, 1.05);  /* Squash on landing */
-    }
-    30% {
-        transform: translateY(0) scale(1, 1);  /* Bounce back to normal */
-    }
-    100% {
-        transform: translateY(0) scale(1, 1);  /* Hold - collecting itself */
-    }
-}
-
-#agent.anim-hopping-up { animation: turn-hop-up calc(var(--animation-speed) * var(--turn-multiplier) * 0.33) ease-out; }
-#agent.anim-hopping-down { animation: turn-hop-down calc(var(--animation-speed) * var(--turn-multiplier) * 0.66) ease-in; }
-
 /* ============================================
    Color Comparison HUD
    ============================================ */
@@ -723,17 +665,6 @@ body {
     pointer-events: none;
     z-index: 100;
     white-space: nowrap;
-}
-
-@keyframes hud-flash {
-    0% { opacity: 0; }
-    15% { opacity: 1; }
-    85% { opacity: 1; }
-    100% { opacity: 0; }
-}
-
-#color-comparison-hud.anim-show-hud {
-    animation: hud-flash calc(var(--animation-speed) * var(--hud-multiplier)) ease-in-out;
 }
 
 #comparison-tile {

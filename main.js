@@ -41,7 +41,7 @@ const state = {
     worker: null,
     workerTimeout: null,
     isSingleStepping: false, // Flag to indicate single-step execution mode
-    targetDirection: null, // For sequential turn animation
+    currentAnimation: null, // Track running animation for cancel on stop
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
@@ -84,6 +84,13 @@ function selectedLanguage() {
     return document.querySelector('input[name="language-choice"]:checked').value;
 }
 
+/**
+ * Gets current animation base speed from slider (in milliseconds)
+ */
+function getAnimSpeed() {
+    return ui.speedSlider.max - ui.speedSlider.value;
+}
+
 // TODO: can't this more easily be done using a css transformation?
 let notificationTimeout = null;
 function showReadOnlyNotification() {
@@ -114,22 +121,70 @@ const AGENT_DIRS = ["pigs/right-1.png", "pigs/down-1.png", "pigs/left-1.png", "p
 // Direction names for walking animation classes
 const DIR_NAMES = ["right", "down", "left", "up"];
 
-function move(row,col,animationDirection=null){
+// Keyframe definitions for Web Animations API
+const WALK_KEYFRAMES = {
+    right: [
+        { backgroundImage: 'url("pigs/right-1.png")' },
+        { backgroundImage: 'url("pigs/right-2.png")' },
+        { backgroundImage: 'url("pigs/right-3.png")' },
+        { backgroundImage: 'url("pigs/right-2.png")' },
+        { backgroundImage: 'url("pigs/right-1.png")' }
+    ],
+    down: [
+        { backgroundImage: 'url("pigs/down-1.png")' },
+        { backgroundImage: 'url("pigs/down-2.png")' },
+        { backgroundImage: 'url("pigs/down-3.png")' },
+        { backgroundImage: 'url("pigs/down-2.png")' },
+        { backgroundImage: 'url("pigs/down-1.png")' }
+    ],
+    left: [
+        { backgroundImage: 'url("pigs/left-1.png")' },
+        { backgroundImage: 'url("pigs/left-2.png")' },
+        { backgroundImage: 'url("pigs/left-3.png")' },
+        { backgroundImage: 'url("pigs/left-2.png")' },
+        { backgroundImage: 'url("pigs/left-1.png")' }
+    ],
+    up: [
+        { backgroundImage: 'url("pigs/up-1.png")' },
+        { backgroundImage: 'url("pigs/up-2.png")' },
+        { backgroundImage: 'url("pigs/up-3.png")' },
+        { backgroundImage: 'url("pigs/up-2.png")' },
+        { backgroundImage: 'url("pigs/up-1.png")' }
+    ]
+};
+
+const HOP_UP_KEYFRAMES = [
+    { transform: 'translateY(0) scale(0.97, 1.03)', offset: 0 },
+    { transform: 'translateY(-3%) scale(1.01, 0.99)', offset: 1 }
+];
+
+const HOP_DOWN_KEYFRAMES = [
+    { transform: 'translateY(-3%) scale(1.01, 0.99)', offset: 0 },
+    { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.25 },
+    { transform: 'translateY(0) scale(1, 1)', offset: 0.30 },
+    { transform: 'translateY(0) scale(1, 1)', offset: 1 }
+];
+
+const HUD_FLASH_KEYFRAMES = [
+    { opacity: 0, offset: 0 },
+    { opacity: 1, offset: 0.15 },
+    { opacity: 1, offset: 0.85 },
+    { opacity: 0, offset: 1 }
+];
+
+// Animation speed multipliers (from CSS variables)
+const MOVE_MULTIPLIER = 2;
+const TURN_MULTIPLIER = 1.5;
+const HUD_MULTIPLIER = 3;
+const WALK_CYCLES = 2;
+
+function move(row, col) {
     setCssVariable("--agent-row", row);
     setCssVariable("--agent-col", col);
-	// Add walking animation - animationend handler cleans up and triggers next step
-	if (animationDirection !== null) ui.agent.classList.add(`anim-walking-${DIR_NAMES[animationDirection]}`);
 }
 
-function turn(direction, animate=false){ // direction: 0=right, 1=down, 2=left, 3=up
-	if (animate) {
-		// Store target direction and start first half of hop
-		state.targetDirection = direction;
-		ui.agent.classList.add("anim-hopping-up");
-	} else {
-		// Instant turn without animation
-		ui.agent.style.backgroundImage = `url("${AGENT_DIRS[direction]}")`;
-	}
+function turn(direction) {
+    ui.agent.style.backgroundImage = `url("${AGENT_DIRS[direction]}")`;
 }
 
 function loadLevel(level) {
@@ -183,46 +238,98 @@ function loadCode() {
 // --- Playback ---
 
 
-function step() {
+async function step() {
     if (state.playback.status === "idle") return;
 
     const msg = state.playback.trace[state.playback.index++];
     if (!msg) return;
 
-    switch (msg.type) {
-		// highlight the relevant line and make the next step immediately to se the effect of te
-		// highlighted line
-		case "lineExecuted":
-			const lineno = msg.lineno - 1;
-			for (let i = 0; i < ui.editor.lineCount(); i++){
-				if (i === lineno) ui.editor.addLineClass(i, "background", "highlighted-line");
-				else ui.editor.removeLineClass(i, "background", "highlighted-line");
-			}
-			step();
-			break;
-        case "move":
-			move(msg.pos[0], msg.pos[1], msg.dir); 	
-            break;
-        case "collected":
-            const [r, c] = msg.pos;
-            const index = state.level.nCols * r + c;
-            ui.grid.children[index].classList.remove("target");
-            if (state.playback.status === "playing") step();
-            break;
-        case "gameover":
-            console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-            playbackStop();
-            break;
-        case "turn":
-			turn(msg.dir, true);
-            break;
-        case "isColor":
-            ui.comparisonTile.className = 'game-tile ' + msg.color.toLowerCase();
-            ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
+    try {
+        switch (msg.type) {
+            case "lineExecuted":
+                const lineno = msg.lineno - 1;
+                for (let i = 0; i < ui.editor.lineCount(); i++) {
+                    if (i === lineno) ui.editor.addLineClass(i, "background", "highlighted-line");
+                    else ui.editor.removeLineClass(i, "background", "highlighted-line");
+                }
+                // No animation - continue immediately
+                break;
 
-            // Trigger HUD animation - animationend handler continues playback
-            ui.colorComparison.classList.add('anim-show-hud');
-            break;
+            case "move":
+                setCssVariable("--agent-row", msg.pos[0]);
+                setCssVariable("--agent-col", msg.pos[1]);
+
+                // Animate walking
+                const walkDuration = getAnimSpeed() * MOVE_MULTIPLIER / WALK_CYCLES;
+                state.currentAnimation = ui.agent.animate(
+                    WALK_KEYFRAMES[DIR_NAMES[msg.dir]],
+                    { duration: walkDuration, easing: 'steps(4)', iterations: WALK_CYCLES }
+                );
+                await state.currentAnimation.finished;
+                state.currentAnimation = null;
+                break;
+
+            case "turn":
+                // Phase 1: hop up
+                const hopUpDuration = getAnimSpeed() * TURN_MULTIPLIER * 0.33;
+                state.currentAnimation = ui.agent.animate(HOP_UP_KEYFRAMES, {
+                    duration: hopUpDuration,
+                    easing: 'ease-out',
+                    fill: 'forwards'
+                });
+                await state.currentAnimation.finished;
+
+                // Swap image at peak
+                ui.agent.style.backgroundImage = `url("${AGENT_DIRS[msg.dir]}")`;
+
+                // Phase 2: hop down
+                const hopDownDuration = getAnimSpeed() * TURN_MULTIPLIER * 0.66;
+                state.currentAnimation = ui.agent.animate(HOP_DOWN_KEYFRAMES, {
+                    duration: hopDownDuration,
+                    easing: 'ease-in',
+                    fill: 'forwards'
+                });
+                await state.currentAnimation.finished;
+
+                // Reset transform
+                ui.agent.style.transform = '';
+                state.currentAnimation = null;
+                break;
+
+            case "isColor":
+                ui.comparisonTile.className = 'game-tile ' + msg.color.toLowerCase();
+                ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
+
+                const hudDuration = getAnimSpeed() * HUD_MULTIPLIER;
+                state.currentAnimation = ui.colorComparison.animate(HUD_FLASH_KEYFRAMES, {
+                    duration: hudDuration,
+                    easing: 'ease-in-out'
+                });
+                await state.currentAnimation.finished;
+                state.currentAnimation = null;
+                break;
+
+            case "collected":
+                const [r, c] = msg.pos;
+                const index = state.level.nCols * r + c;
+                ui.grid.children[index].classList.remove("target");
+                // No animation - continue immediately
+                break;
+
+            case "gameover":
+                console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
+                playbackStop();
+                return;
+        }
+    } catch (e) {
+        // Animation was cancelled (user paused/stopped)
+        if (e.name === 'AbortError') return;
+        throw e;
+    }
+
+    // Continue playback chain
+    if (state.playback.status === "playing") {
+        step(); // Don't await - let it run asynchronously
     }
 }
 
@@ -244,6 +351,12 @@ function playbackInit(trace, singleStep = false) {
 }
 
 function playbackStop() {
+    // Cancel any running animation to ensure clean visual state
+    if (state.currentAnimation) {
+        state.currentAnimation.cancel();
+        state.currentAnimation = null;
+    }
+
     state.playback.status = "idle";
     state.playback.trace = null;
     state.playback.index = 0;
@@ -423,24 +536,6 @@ ui.levelList.querySelector("li button").click();
 
 ui.speedSlider.addEventListener("input", () => {
     setCssVariable("--animation-speed", `${ui.speedSlider.max - ui.speedSlider.value}ms`);
-});
-
-ui.agent.addEventListener("animationend", (e) => {
-    e.target.classList.forEach(cls => {
-        if (cls.startsWith('anim-')) e.target.classList.remove(cls);
-    });
-
-    // Special case: two-phase turn animation
-    if (e.animationName === "turn-hop-up") {
-        ui.agent.style.backgroundImage = `url("${AGENT_DIRS[state.targetDirection]}")`;
-        ui.agent.classList.add("anim-hopping-down");
-        return; // Don't continue playback until second phase completes
-    }
-
-    // Continue playback chain after animation completes
-    if (state.playback.status === "playing") {
-        step();
-    }
 });
 
 ui.readOnlyNotification.onclick = () => {

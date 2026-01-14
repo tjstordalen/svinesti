@@ -26,14 +26,12 @@ const state = {
     level: null,
     worker: null,
     workerTimeout: null,
-    currentDir: 0,        // Current pig direction (0=right, 1=down, 2=left, 3=up)
-    currentPos: [0, 0],   // Current pig position [row, col]
-    highlightedLine: -1,  // Currently highlighted line in editor
+    isSingleStepping: false,  // Flag to indicate single-step execution mode
+    currentAnimation: null,   // Track running animation for cancel on stop
     playback: {
-        status: "idle",   // "idle" | "playing" | "paused"
-        trace: null,      // Array of events from execution
-        index: 0,         // Current position in trace
-        startPaused: false,
+        status: "idle",       // "idle" | "playing" | "paused"
+        trace: null,          // Array of events from execution
+        index: 0,             // Current position in trace
     },
 };
 ```
@@ -41,57 +39,62 @@ const state = {
 Sections:
 - **UI elements** - DOM references
 - **State** - All mutable state
-- **Utilities** - `setCssVar()`, `selectedLanguage()`
-- **Board rendering** - `drawLevel()`, `moveAgent()`, `rotateAgent()`, `consumeTarget()`, `resetBoard()`
-- **Editor** - `highlightLine()`
+- **Utilities** - `setCssVar()`, `selectedLanguage()`, `getAnimSpeed()`
+- **Keyframe definitions** - Constants for Web Animations API (`WALK_KEYFRAMES`, `HOP_UP/DOWN_KEYFRAMES`, etc.)
+- **Board rendering** - `move()`, `turn()`, `loadLevel()`
 - **Code storage** - `storeCode()`, `loadCode()` (localStorage persistence)
-- **Playback** - `autoplayStart/Stop()`, `step()`, `playbackInit/Stop/Resume()`
+- **Playback** - `step()` (async), `playbackInit/Stop/Resume()`, `pause()`
 - **Worker management** - `initWorker()`
 - **Actions** - `selectLevel()`, `switchLanguage()`, `submitCode()`
 - **Initialize** - Setup code
 - **Event handlers** - UI event wiring
 
-### Event-Driven Playback
+### Promise-Based Playback (Web Animations API)
 
-The playback system uses **browser animation events** instead of timers to coordinate animations. This ensures animations never overlap and timing stays synchronized regardless of system load.
+The playback system uses the **Web Animations API** with async/await to coordinate animations sequentially. This provides clear control flow and ensures animations complete before continuing.
 
 **How it works:**
 
-1. `step()` processes one trace event and triggers a CSS animation by adding an `anim-*` class
-2. When the animation completes, the browser fires `animationend` (bubbles up to `#agent` listener)
-3. The event listener removes all `anim-*` classes from `e.target` (generic prefix-based cleanup)
-4. The event listener checks if `state.playback.status === "playing"`
-5. If yes, it calls `step()` again, creating a chain
+1. `step()` is an async function that processes one trace event
+2. For animated events, it calls `element.animate(keyframes, options)` which returns an Animation object
+3. `await animation.finished` pauses execution until the animation completes
+4. After animation completes (or immediately for non-animated events), execution continues
+5. If `status === "playing"`, `step()` calls itself recursively (non-blocking)
 
 ```
-step() → CSS animation → animationend → cleanup → step() → CSS animation → ...
+step() → animate() → await finished → step() → animate() → ...
 ```
 
 **Animation types:**
 
-| Event | Animation Class | Keyframes | Trigger for next step |
-|-------|-----------------|-----------|----------------------|
-| `move` | `anim-walking-{dir}` | `walk-{dir}` | `animationend` bubbles to `#agent` |
-| `turn` | `anim-hopping-up` → `anim-hopping-down` | `turn-hop-up` → `turn-hop-down` | Two-phase: image swap at peak, then continue |
-| `isColor` | `anim-show-hud` | `hud-flash` | `animationend` bubbles from `#color-comparison-hud` to `#agent` |
-| `collected` | None | None | Immediate `step()` call |
-| `gameover` | None | None | Stops playback |
-| `lineExecuted` | None | None | Immediate recursive `step()` call |
+| Event | Implementation | Behavior |
+|-------|---------------|----------|
+| `move` | `ui.agent.animate(WALK_KEYFRAMES[dir], {...})` | Walking animation, then continue |
+| `turn` | Two sequential animations: hop up → swap image → hop down | Two-phase turn with image swap at peak |
+| `isColor` | `ui.colorComparison.animate(HUD_FLASH_KEYFRAMES, {...})` | Flash HUD, then continue |
+| `collected` | No animation | Immediate `step()` call |
+| `gameover` | No animation | Stops playback |
+| `lineExecuted` | No animation | Immediate recursive `step()` call |
 
-**Animation naming convention:**
+**Keyframe definitions:**
 
-All animation trigger classes use the `anim-*` prefix. This enables generic cleanup in the `animationend` listener without hardcoded class names. To add a new animation:
-1. Create CSS class `#element.anim-your-name { animation: your-keyframes ... }`
-2. Add class at call site: `element.classList.add('anim-your-name')`
-3. The listener automatically removes it when animation completes
+All keyframes are defined in JavaScript constants at the top of main.js:
+- `WALK_KEYFRAMES` - Object with keyframes for each direction (right, down, left, up)
+- `HOP_UP_KEYFRAMES` / `HOP_DOWN_KEYFRAMES` - Turn animation phases
+- `HUD_FLASH_KEYFRAMES` - Color comparison HUD fade in/out
+
+**Pause behavior:**
+
+- **Pause during playback**: Current animation completes naturally, then chain stops (respects committed actions)
+- **Stop/Reset**: Cancels running animation immediately via `animation.cancel()` for clean visual state
 
 **Why this design:**
 
-- **No timing bugs**: The browser tells us when animations finish, rather than guessing with `setTimeout`
-- **Speed slider works instantly**: CSS variable `--animation-speed` is read fresh for each animation
-- **Pause/resume is simple**: Just check `status` before calling `step()` - no intervals to manage
-- **Clean code**: No flags like `movementInProgress` to track manually
-- **Extensible**: Prefix-based cleanup means adding animations doesn't require modifying the listener
+- **Sequential code is actually sequential**: Turn animation logic is three lines in order, not scattered across listener
+- **No event listeners needed**: Promises tell us when animations finish
+- **Speed slider works instantly**: Duration recalculated fresh for each animation via `getAnimSpeed()`
+- **Pause/resume is simple**: Just check `status` before calling `step()` - no intervals or callbacks to manage
+- **Clean control flow**: Adding animations is just defining keyframes and calling `.animate()`
 
 ### PigJatin Language (Java-like alternative)
 
