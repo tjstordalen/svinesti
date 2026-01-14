@@ -424,7 +424,7 @@ ui.agent.addEventListener("animationend", (e) => {
     // Clean up animation classes
     if (e.animationName.startsWith("walk-")) {
         ui.agent.classList.remove(`walking-${e.animationName.split("-")[1]}`);
-    } else if (e.animationName === "turn-bounce") {
+    } else if (e.animationName === "turn-hop") {
         ui.agent.classList.remove("turning");
     }
     if (e.animationName === "hud-flash") {

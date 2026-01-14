@@ -8,7 +8,7 @@
     /* Animation speed system: base speed × multiplier for each animation */
     --animation-speed: 500ms;
     --move-multiplier: 1.43;
-    --turn-multiplier: 0.5;
+    --turn-multiplier: 2.5;
     --hud-multiplier: 4.76;
     --walk-cycles: 2;
 
@@ -676,13 +676,13 @@ body {
 #agent.walking-left { animation: walk-left calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
 #agent.walking-up { animation: walk-up calc(var(--animation-speed) * var(--move-multiplier) / var(--walk-cycles)) steps(4) var(--walk-cycles); }
 
-/* Turn animation - little bounce effect */
-@keyframes turn-bounce {
-    0%, 100% { scale: 1; }
-    50% { scale: 1.15; }
+/* Turn animation - hop effect */
+@keyframes turn-hop {
+    0%, 80% { translate: 0 0; }
+    50% { translate: 0 -20%; }
 }
 
-#agent.turning { animation: turn-bounce calc(var(--animation-speed) * var(--turn-multiplier)) ease-in-out; }
+#agent.turning { animation: turn-hop calc(var(--animation-speed) * var(--turn-multiplier)) ease-in-out; }
 
 /* ============================================
    Color Comparison HUD
