@@ -39,6 +39,9 @@ class GracefulExit(Exception):
     subitted code, catch that exception, and then exit 'gracefully'.... """
     pass
 
+# Direction names for external representation (levels and trace messages)
+DIR_NAMES = ["right", "down", "left", "up"]
+
 class State():
     # We assume the input has been checked and is valid
     def __init__(self, level): 
@@ -48,7 +51,10 @@ class State():
         # make each entry in the dict into a class member for convenience
         for key,value in level.items():
             setattr(self, key, value)
-        
+
+        # Convert string direction to integer for internal use
+        self.dir = DIR_NAMES.index(self.dir)
+
         self.grid = [list(s) for s in self.grid]
         self.dirs = [(0,1),(1,0),(0,-1),(-1,0)]
         self.pos  = tuple(self.start)  # current position, initialized from start
@@ -78,12 +84,12 @@ def move_aux(s):
     dr,dc = s.dirs[s.dir]
     r,c = s.pos
     s.pos = (r+dr, c+dc)
-    s.trace({"type": "move", "pos": s.pos, "dir": s.dir})
+    s.trace({"type": "move", "pos": s.pos, "dir": DIR_NAMES[s.dir]})
 
     ch = s[s.pos]
     if ch.isupper():
         s[s.pos] = ch.lower()
-        s.trace({"type": "collected", "pos": s.pos, "dir": s.dir})
+        s.trace({"type": "collected", "pos": s.pos, "dir": DIR_NAMES[s.dir]})
         if not any(c.isupper() for lists in s.grid for c in lists):
             s.game_won = True
             s.trace({"type": "gameover", "win": True})
@@ -98,7 +104,7 @@ def turn_aux(s,direction):
     s.count_op()
     s.dir += direction
     s.dir %= len(s.dirs)
-    s.trace({"type": "turn", "dir": s.dir})
+    s.trace({"type": "turn", "dir": DIR_NAMES[s.dir]})
 
 def is_color_aux(s, c):
     s.count_op()

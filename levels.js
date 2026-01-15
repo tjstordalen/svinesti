@@ -13,7 +13,7 @@ const levels = [
             "bb......"
         ],
         start: [6, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Level 2",
@@ -23,7 +23,7 @@ const levels = [
             "BbbbbbbbbbR"
         ],
         start: [0, 5],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Level 3",
@@ -39,7 +39,7 @@ const levels = [
             "bbR.RbR."
         ],
         start: [6, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Level 4",
@@ -54,7 +54,7 @@ const levels = [
             "gggggggggg"
         ],
         start: [5, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Level 5",
@@ -70,7 +70,7 @@ const levels = [
             "bbGR.RbGR."
         ],
         start: [6, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Level 6",
@@ -86,7 +86,7 @@ const levels = [
             "bbGR.RbGR."
         ],
         start: [6, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Level 7",
@@ -100,7 +100,7 @@ const levels = [
             "...bbbb."
         ],
         start: [0, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Level 8",
@@ -117,7 +117,7 @@ const levels = [
             "...G...."
         ],
         start: [4, 3],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Counter Level 1.1",
@@ -130,7 +130,7 @@ const levels = [
             "...bBbbbB"
         ],
         start: [0, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Counter Level 1.2",
@@ -145,7 +145,7 @@ const levels = [
             ".....bbbbBb"
         ],
         start: [0, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Counter Level 1.3",
@@ -157,7 +157,7 @@ const levels = [
             "..bB"
         ],
         start: [0, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Counter Level 2",
@@ -175,7 +175,7 @@ const levels = [
             ".........bbbB"
         ],
         start: [0, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Counter Level 3",
@@ -191,7 +191,7 @@ const levels = [
             "bBBBBBBBBBB"
         ],
         start: [6, 0],
-        dir: 0
+        dir: "right"
     },
     {
         name: "Counter Level 4",
@@ -207,6 +207,6 @@ const levels = [
             "bbR.RbR."
         ],
         start: [6, 0],
-        dir: 0
+        dir: "right"
     }
 ];

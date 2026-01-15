@@ -1,5 +1,7 @@
 // Level Editor Module
 
+import { DIR_NAMES, TILE_CLASSES, pigSpriteUrl } from "./constants.js";
+
 // --- Editor State ---
 
 const editorState = {
@@ -13,17 +15,6 @@ const editorState = {
 
 // Color cycle order: empty -> red -> green -> blue -> empty
 const COLOR_CYCLE = ['.', 'r', 'g', 'b'];
-
-// Map grid characters to CSS classes
-const TILE_CLASSES = {
-    ".": "empty",
-    "r": "red",
-    "g": "green",
-    "b": "blue",
-    "R": "red target",
-    "G": "green target",
-    "B": "blue target",
-};
 
 // --- Editor UI Elements ---
 
@@ -74,7 +65,7 @@ function createEmptyLevel() {
         nCols: 16,
         grid: grid,
         start: [0, 0],
-        dir: 0,
+        dir: "right",
     };
 }
 
@@ -113,7 +104,8 @@ function movePig(level, row, col) {
 }
 
 function rotatePig(level) {
-    level.dir = (level.dir + 1) % 4;
+    const idx = DIR_NAMES.indexOf(level.dir);
+    level.dir = DIR_NAMES[(idx + 1) % 4];
 }
 
 // --- Custom Levels Storage ---
@@ -212,9 +204,6 @@ function validateLevel(level) {
 
 // --- Editor Rendering ---
 
-// Direction images for the pig
-const AGENT_DIRS = ["pigs/right-1.png", "pigs/down-1.png", "pigs/left-1.png", "pigs/up-1.png"];
-
 function setCssVariable(id, val) {
     document.documentElement.style.setProperty(id, val.toString());
 }
@@ -243,7 +232,7 @@ function renderEditorGrid() {
     editorUI.grid.children[pigCellIndex].appendChild(editorUI.agent);
 
     // Set pig direction
-    editorUI.agent.style.backgroundImage = `url("${AGENT_DIRS[level.dir]}")`;
+    editorUI.agent.style.backgroundImage = pigSpriteUrl(level.dir);
 }
 
 // --- Mode Switching ---
@@ -443,7 +432,7 @@ function handleRightClick(e) {
     const [pigRow, pigCol] = editorState.level.start;
     if (row === pigRow && col === pigCol) {
         rotatePig(editorState.level);
-        editorUI.agent.style.backgroundImage = `url("${AGENT_DIRS[editorState.level.dir]}")`;
+        editorUI.agent.style.backgroundImage = pigSpriteUrl(editorState.level.dir);
         return;
     }
 
@@ -461,7 +450,7 @@ function handleRightClick(e) {
 function handleAgentClick(e) {
     e.stopPropagation();
     rotatePig(editorState.level);
-    editorUI.agent.style.backgroundImage = `url("${AGENT_DIRS[editorState.level.dir]}")`;
+    editorUI.agent.style.backgroundImage = pigSpriteUrl(editorState.level.dir);
 }
 
 function handleAgentDragStart(e) {

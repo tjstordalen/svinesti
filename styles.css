@@ -752,8 +752,8 @@ body.editor-mode #level-list {
     left: 100%;
     right: auto;
     top: 0%;
-    width: 200%;
-    min-width: 120px;
+    width: fit-content;
+    max-width: 180px;
     margin-left: 8px;
     display: flex;
     align-items: center;
