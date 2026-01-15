@@ -749,6 +749,7 @@ body.editor-mode .game-tile:hover {
 /* Pig draggable in editor mode */
 body.editor-mode #agent {
     cursor: grab;
+    transition: none;
 }
 
 body.editor-mode #agent:active {

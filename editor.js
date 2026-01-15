@@ -307,13 +307,15 @@ function renderEditorGrid() {
         editorUI.grid.appendChild(div);
     }
 
-    // Re-add the agent to the grid
-    editorUI.grid.firstElementChild.appendChild(editorUI.agent);
-
-    // Position the pig
+    // Add the agent to the correct cell (not using translate in editor mode)
     const [row, col] = level.start;
-    setCssVariable("--agent-row", row);
-    setCssVariable("--agent-col", col);
+    const pigCellIndex = row * level.nCols + col;
+    const pigCell = editorUI.grid.children[pigCellIndex];
+    pigCell.appendChild(editorUI.agent);
+
+    // Reset translate so pig stays in its actual cell
+    setCssVariable("--agent-row", 0);
+    setCssVariable("--agent-col", 0);
 
     // Set pig direction
     editorUI.agent.style.backgroundImage = `url("${AGENT_DIRS[level.dir]}")`;
