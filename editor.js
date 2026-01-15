@@ -60,15 +60,15 @@ function cycleColor(c) {
 
 // --- Level Creation ---
 
-function createEmptyLevel(rows, cols) {
+function createEmptyLevel() {
     const grid = [];
-    for (let r = 0; r < rows; r++) {
-        grid.push('.'.repeat(cols));
+    for (let r = 0; r < 9; r++) {
+        grid.push('.'.repeat(16));
     }
     return {
         name: "Custom Level",
-        nRows: rows,
-        nCols: cols,
+        nRows: 9,
+        nCols: 16,
         grid: grid,
         start: [0, 0],
         dir: 0,
@@ -88,9 +88,6 @@ function cloneLevel(level) {
 
 // --- Grid Modification ---
 
-// TODO: consider using a map mapping from row,col to a value. Potentially something like pythons
-// defaultdict. I think it could simplify things. But do not take my word for it. Consider 
-// and ask me my opinions. 
 function setCell(level, row, col, char) {
     const rowStr = level.grid[row];
     level.grid[row] = rowStr.substring(0, col) + char + rowStr.substring(col + 1);
@@ -98,99 +95,6 @@ function setCell(level, row, col, char) {
 
 function getCell(level, row, col) {
     return level.grid[row][col];
-}
-
-// TODO (same as above) again, resizing the grid is trivial with a map: you do nothing. just allow 
-// negative coordinates and normalize at the end. Or, if you prefer, normalize iemmediately by adding 1 
-// to either the row or the column coordinate of each point immediately if you add a new top row or
-// left column.
-function resizeGrid(level, newRows, newCols) {
-    const newGrid = [];
-
-    for (let r = 0; r < newRows; r++) {
-        if (r < level.nRows) {
-            // Existing row - extend or truncate
-            const existingRow = level.grid[r];
-            if (newCols > level.nCols) {
-                newGrid.push(existingRow + '.'.repeat(newCols - level.nCols));
-            } else {
-                newGrid.push(existingRow.substring(0, newCols));
-            }
-        } else {
-            // New row
-            newGrid.push('.'.repeat(newCols));
-        }
-    }
-
-    level.grid = newGrid;
-    level.nRows = newRows;
-    level.nCols = newCols;
-
-    // Clamp pig position if out of bounds
-    if (level.start[0] >= newRows) level.start[0] = newRows - 1;
-    if (level.start[1] >= newCols) level.start[1] = newCols - 1;
-}
-
-
-// TODO: easier with dict.
-function addRow(level, position) {
-    const newRow = '.'.repeat(level.nCols);
-    if (position === 'top') {
-        level.grid.unshift(newRow);
-        level.start[0]++; // Shift pig down
-    } else {
-        level.grid.push(newRow);
-    }
-    level.nRows++;
-}
-
-// Same.
-function removeRow(level, position) {
-    if (level.nRows <= 1) return false;
-
-    if (position === 'top') {
-        level.grid.shift();
-        level.start[0] = Math.max(0, level.start[0] - 1);
-    } else {
-        level.grid.pop();
-        level.start[0] = Math.min(level.start[0], level.nRows - 2);
-    }
-    level.nRows--;
-    return true;
-}
-
-// And here, I think. 
-function addCol(level, position) {
-    for (let r = 0; r < level.nRows; r++) {
-        if (position === 'left') {
-            level.grid[r] = '.' + level.grid[r];
-        } else {
-            level.grid[r] = level.grid[r] + '.';
-        }
-    }
-    if (position === 'left') {
-        level.start[1]++; // Shift pig right
-    }
-    level.nCols++;
-}
-
-function removeCol(level, position) {
-    if (level.nCols <= 1) return false;
-
-    for (let r = 0; r < level.nRows; r++) {
-        if (position === 'left') {
-            level.grid[r] = level.grid[r].substring(1);
-        } else {
-            level.grid[r] = level.grid[r].substring(0, level.nCols - 1);
-        }
-    }
-    if (position === 'left') {
-        level.start[1] = Math.max(0, level.start[1] - 1);
-    } else {
-        level.start[1] = Math.min(level.start[1], level.nCols - 2);
-    }
-    level.nCols--;
-    return true;
 }
 
 // --- Pig Management ---
@@ -312,8 +216,6 @@ function setCssVariable(id, val) {
     document.documentElement.style.setProperty(id, val.toString());
 }
 
-// TODO: this looks more or less identical to the loadLevel function in main.js 
-// Would it be possible to share implementation without too much hassle? 
 function renderEditorGrid() {
     const level = editorState.level;
     if (!level) return;
@@ -322,10 +224,6 @@ function renderEditorGrid() {
 
     setCssVariable("--grid-n-rows", level.nRows);
     setCssVariable("--grid-n-cols", level.nCols);
-
-    // Sync size inputs with current level
-    editorUI.gridRows.value = level.nRows;
-    editorUI.gridCols.value = level.nCols;
 
     const cells = level.grid.join("");
     for (let i = 0; i < cells.length; i++) {
@@ -408,30 +306,6 @@ function attachEditorListeners() {
     editorUI.grid.addEventListener("dragover", boundHandlers.gridDragOver);
     editorUI.grid.addEventListener("drop", boundHandlers.gridDrop);
 
-    // Edge button handlers
-    boundHandlers.edgeTopAdd = () => { addRow(editorState.level, 'top'); renderEditorGrid(); };
-    boundHandlers.edgeTopRemove = () => { removeRow(editorState.level, 'top'); renderEditorGrid(); };
-    boundHandlers.edgeBottomAdd = () => { addRow(editorState.level, 'bottom'); renderEditorGrid(); };
-    boundHandlers.edgeBottomRemove = () => { removeRow(editorState.level, 'bottom'); renderEditorGrid(); };
-    boundHandlers.edgeLeftAdd = () => { addCol(editorState.level, 'left'); renderEditorGrid(); };
-    boundHandlers.edgeLeftRemove = () => { removeCol(editorState.level, 'left'); renderEditorGrid(); };
-    boundHandlers.edgeRightAdd = () => { addCol(editorState.level, 'right'); renderEditorGrid(); };
-    boundHandlers.edgeRightRemove = () => { removeCol(editorState.level, 'right'); renderEditorGrid(); };
-
-    editorUI.edgeTopAdd.addEventListener("click", boundHandlers.edgeTopAdd);
-    editorUI.edgeTopRemove.addEventListener("click", boundHandlers.edgeTopRemove);
-    editorUI.edgeBottomAdd.addEventListener("click", boundHandlers.edgeBottomAdd);
-    editorUI.edgeBottomRemove.addEventListener("click", boundHandlers.edgeBottomRemove);
-    editorUI.edgeLeftAdd.addEventListener("click", boundHandlers.edgeLeftAdd);
-    editorUI.edgeLeftRemove.addEventListener("click", boundHandlers.edgeLeftRemove);
-    editorUI.edgeRightAdd.addEventListener("click", boundHandlers.edgeRightAdd);
-    editorUI.edgeRightRemove.addEventListener("click", boundHandlers.edgeRightRemove);
-
-    // Size input handlers
-    boundHandlers.sizeChange = handleSizeChange;
-    editorUI.gridRows.addEventListener("change", boundHandlers.sizeChange);
-    editorUI.gridCols.addEventListener("change", boundHandlers.sizeChange);
-
     // Save button handler
     boundHandlers.saveClick = handleSaveClick;
     editorUI.saveButton.addEventListener("click", boundHandlers.saveClick);
@@ -450,17 +324,6 @@ function detachEditorListeners() {
     editorUI.grid.removeEventListener("drop", boundHandlers.gridDrop);
     editorUI.agent.removeAttribute("draggable");
 
-    editorUI.edgeTopAdd.removeEventListener("click", boundHandlers.edgeTopAdd);
-    editorUI.edgeTopRemove.removeEventListener("click", boundHandlers.edgeTopRemove);
-    editorUI.edgeBottomAdd.removeEventListener("click", boundHandlers.edgeBottomAdd);
-    editorUI.edgeBottomRemove.removeEventListener("click", boundHandlers.edgeBottomRemove);
-    editorUI.edgeLeftAdd.removeEventListener("click", boundHandlers.edgeLeftAdd);
-    editorUI.edgeLeftRemove.removeEventListener("click", boundHandlers.edgeLeftRemove);
-    editorUI.edgeRightAdd.removeEventListener("click", boundHandlers.edgeRightAdd);
-    editorUI.edgeRightRemove.removeEventListener("click", boundHandlers.edgeRightRemove);
-
-    editorUI.gridRows.removeEventListener("change", boundHandlers.sizeChange);
-    editorUI.gridCols.removeEventListener("change", boundHandlers.sizeChange);
     editorUI.saveButton.removeEventListener("click", boundHandlers.saveClick);
     editorUI.newButton.removeEventListener("click", boundHandlers.newClick);
 
@@ -558,13 +421,6 @@ function handleGridDrop(e) {
     renderEditorGrid();
 }
 
-function handleSizeChange() {
-    const rows = parseInt(editorUI.gridRows.value) || 1;
-    const cols = parseInt(editorUI.gridCols.value) || 1;
-    resizeGrid(editorState.level, rows, cols);
-    renderEditorGrid();
-}
-
 function handleSaveClick() {
     const errors = validateLevel(editorState.level);
     if (errors.length > 0) {
@@ -582,10 +438,7 @@ function handleSaveClick() {
 }
 
 function handleNewClick() {
-    const rows = parseInt(editorUI.gridRows.value) || 8;
-    const cols = parseInt(editorUI.gridCols.value) || 8;
-    editorState.level = createEmptyLevel(rows, cols);
-    // Place pig on a blue cell at origin
+    editorState.level = createEmptyLevel();
     setCell(editorState.level, 0, 0, 'b');
     renderEditorGrid();
 }
@@ -604,20 +457,10 @@ function initEditorUI() {
         modePlay: document.getElementById("mode-play"),
         modeEdit: document.getElementById("mode-edit"),
         editorToolbar: document.getElementById("editor-toolbar"),
-        gridRows: document.getElementById("grid-rows"),
-        gridCols: document.getElementById("grid-cols"),
         saveButton: document.getElementById("editor-save"),
         newButton: document.getElementById("editor-new"),
         grid: document.getElementById("grid"),
         agent: document.getElementById("agent"),
-        edgeTopAdd: document.getElementById("edge-top-add"),
-        edgeTopRemove: document.getElementById("edge-top-remove"),
-        edgeBottomAdd: document.getElementById("edge-bottom-add"),
-        edgeBottomRemove: document.getElementById("edge-bottom-remove"),
-        edgeLeftAdd: document.getElementById("edge-left-add"),
-        edgeLeftRemove: document.getElementById("edge-left-remove"),
-        edgeRightAdd: document.getElementById("edge-right-add"),
-        edgeRightRemove: document.getElementById("edge-right-remove"),
         notification: document.getElementById("editor-notification"),
     };
 
@@ -658,11 +501,6 @@ export {
     createEmptyLevel,
     setCell,
     getCell,
-    resizeGrid,
-    addRow,
-    removeRow,
-    addCol,
-    removeCol,
     movePig,
     rotatePig,
     loadCustomLevels,
