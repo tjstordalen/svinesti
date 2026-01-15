@@ -14,8 +14,6 @@ export const STATUS = {
     },
 };
 
-// Direction names
-export const DIR_NAMES = ["right", "down", "left", "up"];
 
 // Map grid characters to CSS classes
 export const TILE_CLASSES = {

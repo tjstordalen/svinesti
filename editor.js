@@ -1,6 +1,15 @@
 // Level Editor Module
 
-import { DIR_NAMES, TILE_CLASSES, pigSpriteUrl } from "./constants.js";
+import { TILE_CLASSES, pigSpriteUrl } from "./constants.js";
+
+function cycleDirection(dir) {
+    switch (dir) {
+        case "right": return "down";
+        case "down":  return "left";
+        case "left":  return "up";
+        case "up":    return "right";
+    }
+}
 
 // --- Editor State ---
 
@@ -103,10 +112,6 @@ function movePig(level, row, col) {
     level.start = [row, col];
 }
 
-function rotatePig(level) {
-    const idx = DIR_NAMES.indexOf(level.dir);
-    level.dir = DIR_NAMES[(idx + 1) % 4];
-}
 
 // --- Custom Levels Storage ---
 
@@ -431,7 +436,7 @@ function handleRightClick(e) {
     // Check if this is the pig's cell - rotate pig instead
     const [pigRow, pigCol] = editorState.level.start;
     if (row === pigRow && col === pigCol) {
-        rotatePig(editorState.level);
+        editorState.level.dir = cycleDirection(editorState.level.dir);
         editorUI.agent.style.backgroundImage = pigSpriteUrl(editorState.level.dir);
         return;
     }
@@ -449,7 +454,7 @@ function handleRightClick(e) {
 
 function handleAgentClick(e) {
     e.stopPropagation();
-    rotatePig(editorState.level);
+    editorState.level.dir = cycleDirection(editorState.level.dir);
     editorUI.agent.style.backgroundImage = pigSpriteUrl(editorState.level.dir);
 }
 
@@ -557,7 +562,6 @@ export {
     setCell,
     getCell,
     movePig,
-    rotatePig,
     loadCustomLevels,
     saveCustomLevels,
     addCustomLevel,
