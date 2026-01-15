@@ -2,7 +2,7 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 
 // Set to false to disable splash screen for faster debugging
-const ENABLE_SPLASH_SCREEN = false;
+const ENABLE_SPLASH_SCREEN = true;
 
 // --- UI elements ---
 
@@ -555,6 +555,9 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
 initWorker();
 syncUI(); // Initialize button states
 
+// Initialize font size from slider
+ui.editor.getWrapperElement().style.fontSize = ui.fontSizeSlider.value + "px";
+
 // Set up button handlers (no branching - visibility toggled by CSS)
 ui.btnPlay.onclick = submitCode;
 ui.btnPause.onclick = pause;
@@ -599,10 +602,6 @@ for (let lvl of levels) {
 ui.levelList.querySelector("li button").click();
 
 // --- Event handlers ---
-
-ui.speedSlider.addEventListener("input", () => {
-    setCssVariable("--animation-speed", `${ui.speedSlider.max - ui.speedSlider.value}ms`);
-});
 
 ui.readOnlyNotification.onclick = () => {
     if (state.playback.status === "playing") {
