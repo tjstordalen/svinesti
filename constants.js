@@ -68,6 +68,28 @@ export const KEYFRAMES = {
         { opacity: 1, offset: 0.85 },
         { opacity: 0, offset: 1 }
     ],
+    CELEBRATE: [
+        { transform: 'translateY(0) scale(1, 1)', offset: 0 },
+        { transform: 'translateY(-40px) scale(1.05, 0.95)', offset: 0.25 },
+        { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.4 },
+        { transform: 'translateY(-30px) scale(1.03, 0.97)', offset: 0.6 },
+        { transform: 'translateY(0) scale(0.97, 1.03)', offset: 0.75 },
+        { transform: 'translateY(-15px) scale(1.02, 0.98)', offset: 0.9 },
+        { transform: 'translateY(0) scale(1, 1)', offset: 1 },
+    ],
+    SHAKE: [
+        { transform: 'translate(0, 0)', offset: 0 },
+        { transform: 'translate(-8px, 4px)', offset: 0.1 },
+        { transform: 'translate(8px, -4px)', offset: 0.2 },
+        { transform: 'translate(-8px, -4px)', offset: 0.3 },
+        { transform: 'translate(8px, 4px)', offset: 0.4 },
+        { transform: 'translate(-8px, 4px)', offset: 0.5 },
+        { transform: 'translate(8px, -4px)', offset: 0.6 },
+        { transform: 'translate(-8px, -4px)', offset: 0.7 },
+        { transform: 'translate(8px, 4px)', offset: 0.8 },
+        { transform: 'translate(-4px, 2px)', offset: 0.9 },
+        { transform: 'translate(0, 0)', offset: 1 },
+    ],
 };
 
 // Animation speed multipliers

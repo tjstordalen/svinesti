@@ -59,6 +59,7 @@ const state = {
     isSingleStepping: false, // Flag to indicate single-step execution mode
     currentAnimation: null, // Track running animation for cancel on stop
     focusedElementBeforeHelp: null, // Track which element to refocus after help closes
+    currentDirection: null, // Track pig's current direction during playback
     playback: {
         status: "idle", // "idle" | "playing" | "paused"
         trace: null,
@@ -291,6 +292,10 @@ function turn(direction) {
 function loadLevel(level) {
     if (level === null) return;
 
+    // Cancel and reset pig animations/transforms
+    ui.agent.getAnimations().forEach(a => a.cancel());
+    ui.agent.style.transform = '';
+
     ui.grid.innerHTML = "";
 
     setCssVariable("--grid-n-rows", level.nRows);
@@ -366,7 +371,8 @@ async function step() {
                 });
                 await state.currentAnimation.finished;
 
-                // Swap image at peak
+                // Swap image at peak and update current direction
+                state.currentDirection = msg.dir;
                 ui.agent.style.backgroundImage = pigSpriteUrl(msg.dir);
 
                 // Phase 2: hop down
@@ -407,6 +413,34 @@ async function step() {
                 console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
                 if (msg.win) {
                     showWinAnimation();
+                    ui.agent.animate(KEYFRAMES.CELEBRATE, {
+                        duration: 1500,
+                        easing: 'ease-out'
+                    });
+                } else {
+                    // Play shake animation on loss
+                    const gridWrapper = document.getElementById('grid-wrapper');
+                    if (gridWrapper) {
+                        gridWrapper.animate(KEYFRAMES.SHAKE, {
+                            duration: 600,
+                            easing: 'ease-out'
+                        });
+                    }
+                    // Rotate pig based on current direction
+                    const dir = state.currentDirection;
+                    const isLeftRight = dir === 'left' || dir === 'right';
+                    const rotation = isLeftRight ? 180 : 90;
+                    const translateY = isLeftRight ? '-50%' : '0';
+                    const translateX = isLeftRight ? '0' : '30%';
+
+                    ui.agent.animate([
+                        { transform: 'rotate(0deg) translateX(0) translateY(0)' },
+                        { transform: `rotate(${rotation}deg) translateX(${translateX}) translateY(${translateY})` }
+                    ], {
+                        duration: 600,
+                        easing: 'ease-out',
+                        fill: 'forwards'
+                    });
                 }
                 playbackStop(false);
                 return;
@@ -426,6 +460,7 @@ async function step() {
 function playbackInit(trace, singleStep = false) {
     state.playback.index = 0;
     state.playback.trace = trace;
+    state.currentDirection = state.level.dir;
 
     loadLevel(state.level);
 
@@ -442,7 +477,10 @@ function playbackInit(trace, singleStep = false) {
 
 function playbackStop(resetBoard = true) {
     // Cancel ALL animations on the pig (walk + translate can run in parallel)
-    ui.agent.getAnimations().forEach(a => a.cancel());
+    // But only if we're resetting the board (not on game over)
+    if (resetBoard) {
+        ui.agent.getAnimations().forEach(a => a.cancel());
+    }
     state.currentAnimation = null;
 
     state.playback.status = "idle";
