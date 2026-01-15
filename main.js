@@ -405,6 +405,9 @@ async function step() {
 
             case "gameover":
                 console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
+                if (msg.win) {
+                    showWinAnimation();
+                }
                 playbackStop(false);
                 return;
         }
@@ -770,6 +773,50 @@ const SHARE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" heigh
   <path fill-rule="evenodd" d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1z"/>
   <path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 1.707V10.5a.5.5 0 0 1-1 0V1.707L5.354 3.854a.5.5 0 1 1-.708-.708z"/>
 </svg>`;
+
+const CONFETTI_COLORS = ['#FF8A8A', '#58E0B8', '#85D0FF', '#FFD700', '#FF6B6B', '#4ECDC4'];
+
+function showWinAnimation() {
+    const container = document.getElementById('confetti-container');
+    if (!container) return;
+
+    // Clear any existing confetti
+    container.innerHTML = '';
+
+    // Create confetti pieces
+    const numPieces = 40;
+    for (let i = 0; i < numPieces; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+
+        // Random shape
+        const shapes = ['square', 'circle', 'ribbon'];
+        confetti.classList.add(shapes[Math.floor(Math.random() * shapes.length)]);
+
+        // Random color
+        confetti.style.backgroundColor = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+
+        // Random position
+        confetti.style.left = Math.random() * 100 + '%';
+
+        // Random animation properties
+        const duration = 2 + Math.random() * 2; // 2-4 seconds
+        const drift = (Math.random() - 0.5) * 100; // -50 to 50px
+        const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
+
+        confetti.style.setProperty('--drift', drift + 'px');
+        confetti.style.setProperty('--rotation', rotation + 'deg');
+        confetti.style.animationDuration = duration + 's';
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+
+        container.appendChild(confetti);
+    }
+
+    // Clean up after animation
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
 
 function showCopiedToast(anchorElement) {
     // Remove any existing toast
