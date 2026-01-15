@@ -3,13 +3,6 @@
     --grid-n-rows: 7;
     --grid-n-cols: 8;
 
-    /* Animation speed system: base speed × multiplier for each animation */
-    --animation-speed: 500ms;
-    --move-multiplier: 1.43;
-    --turn-multiplier: 1.0;
-    --hud-multiplier: 4.76;
-    --walk-cycles: 2;
-
     /* Color palette - Soft Sage Green */
     --color-header: #7eb09b;
     --color-header-dark: #6a9985;
@@ -23,6 +16,12 @@
     --color-border: #e1e5eb;
     --color-text: #2d3748;
     --color-text-muted: #718096;
+
+    /* Tile colors */
+    --tile-empty: #FAF7F2;
+    --tile-red: #FF8A8A;
+    --tile-green: #58E0B8;
+    --tile-blue: #85D0FF;
 
     /* Sizing */
     --header-height: 56px;
@@ -487,11 +486,6 @@ body {
     background: rgba(139, 224, 26, 0.25) !important;
 }
 
-/* Hide cursor when editor is read-only during playback */
-.CodeMirror-readonly .CodeMirror-cursor {
-    display: none !important;
-}
-
 /* Playback Toolbar */
 .playback-toolbar {
     display: flex;
@@ -579,12 +573,6 @@ body {
     display: inline;
 }
 
-/* Step and reset icons */
-.playback-toolbar .icon-step,
-.playback-toolbar .icon-reset {
-    display: inline;
-}
-
 .speed-control {
     display: flex;
     align-items: center;
@@ -657,43 +645,8 @@ body {
     display: none;
 }
 
-.size-inputs {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.size-inputs label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.875rem;
-    color: var(--color-text);
-}
-
-.size-inputs input[type="number"] {
-    width: 60px;
-    padding: 6px 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-surface);
-    color: var(--color-text);
-    font-size: 0.875rem;
-    text-align: center;
-}
-
-.size-inputs input[type="number"]:focus {
-    outline: none;
-    border-color: var(--color-interactive);
-}
-
-.size-separator {
-    color: var(--color-text-muted);
-    font-size: 1rem;
-}
-
 /* ============================================
-   Grid Container (for editor edge buttons)
+   Grid Container
    ============================================ */
 #grid-container {
     position: relative;
@@ -703,69 +656,6 @@ body {
     flex: 1;
     width: 100%;
     container-type: size;
-}
-
-/* Edge buttons for resizing grid */
-.edge-btn {
-    position: absolute;
-    width: 28px;
-    height: 28px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-surface);
-    color: var(--color-text);
-    font-size: 1.2rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-fast);
-    z-index: 10;
-}
-
-.edge-btn:hover {
-    background: var(--color-interactive-light);
-    border-color: var(--color-interactive);
-    color: white;
-}
-
-.edge-btn:active {
-    transform: scale(0.95);
-}
-
-/* Edge button positions */
-.edge-btn.edge-top {
-    top: 0;
-    left: 50%;
-}
-.edge-btn.edge-top.add { transform: translateX(-100%) translateY(-100%); margin-left: -4px; }
-.edge-btn.edge-top.remove { transform: translateX(0%) translateY(-100%); margin-left: 4px; }
-
-.edge-btn.edge-bottom {
-    bottom: 0;
-    left: 50%;
-}
-.edge-btn.edge-bottom.add { transform: translateX(-100%) translateY(100%); margin-left: -4px; }
-.edge-btn.edge-bottom.remove { transform: translateX(0%) translateY(100%); margin-left: 4px; }
-
-.edge-btn.edge-left {
-    left: 0;
-    top: 50%;
-}
-.edge-btn.edge-left.add { transform: translateX(-100%) translateY(-100%); margin-top: -4px; }
-.edge-btn.edge-left.remove { transform: translateX(-100%) translateY(0%); margin-top: 4px; }
-
-.edge-btn.edge-right {
-    right: 0;
-    top: 50%;
-}
-.edge-btn.edge-right.add { transform: translateX(100%) translateY(-100%); margin-top: -4px; }
-.edge-btn.edge-right.remove { transform: translateX(100%) translateY(0%); margin-top: 4px; }
-
-/* Show edge buttons only in editor mode */
-body.editor-mode .edge-btn {
-    display: flex;
 }
 
 /* Hide code section in editor mode */
@@ -815,7 +705,7 @@ body.editor-mode #level-list {
 }
 
 .game-tile {
-    background-color: #FAF7F2;
+    background-color: var(--tile-empty);
     aspect-ratio: 1 / 1;
     width: 100%;
     position: relative;
@@ -823,15 +713,15 @@ body.editor-mode #level-list {
 }
 
 .game-tile.red {
-    background-color: #FF8A8A;
+    background-color: var(--tile-red);
 }
 
 .game-tile.green {
-    background-color: #58E0B8;
+    background-color: var(--tile-green);
 }
 
 .game-tile.blue {
-    background-color: #85D0FF;
+    background-color: var(--tile-blue);
 }
 
 .game-tile.target::before {
@@ -888,10 +778,10 @@ body.editor-mode #level-list {
 
 /* Flip to left side when in rightmost column */
 #agent.near-right-edge #color-comparison-hud {
-    left: auto !important;
-    right: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 8px !important;
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 8px;
 }
 
 #comparison-tile {
@@ -1127,12 +1017,6 @@ body.editor-mode #level-list {
     font-size: 13px;
     color: var(--color-text-muted);
     font-style: italic;
-}
-
-.help-column .copyright {
-    font-size: 12px;
-    color: var(--color-text-muted);
-    margin-top: 16px;
 }
 
 @keyframes fadeIn {
