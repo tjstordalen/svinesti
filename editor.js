@@ -166,8 +166,46 @@ function deleteCustomLevel(name) {
 
 // --- Level Export/Import (URL sharing) ---
 
+function compactLevel(level) {
+    // Find bounding box of non-empty tiles
+    let minRow = level.nRows, maxRow = -1;
+    let minCol = level.nCols, maxCol = -1;
+
+    for (let r = 0; r < level.nRows; r++) {
+        for (let c = 0; c < level.nCols; c++) {
+            if (level.grid[r][c] !== '.') {
+                minRow = Math.min(minRow, r);
+                maxRow = Math.max(maxRow, r);
+                minCol = Math.min(minCol, c);
+                maxCol = Math.max(maxCol, c);
+            }
+        }
+    }
+
+    // If empty level, return minimal 1x1
+    if (maxRow < 0) {
+        return { ...level, nRows: 1, nCols: 1, grid: ['.'], start: [0, 0] };
+    }
+
+    // Crop grid to bounding box
+    const newGrid = [];
+    for (let r = minRow; r <= maxRow; r++) {
+        newGrid.push(level.grid[r].slice(minCol, maxCol + 1));
+    }
+
+    return {
+        name: level.name,
+        nRows: maxRow - minRow + 1,
+        nCols: maxCol - minCol + 1,
+        grid: newGrid,
+        start: [level.start[0] - minRow, level.start[1] - minCol],
+        dir: level.dir,
+    };
+}
+
 function exportLevelToURL(level) {
-    const encoded = btoa(JSON.stringify(level));
+    const compacted = compactLevel(level);
+    const encoded = btoa(JSON.stringify(compacted));
     return `${location.origin}${location.pathname}#level=${encoded}`;
 }
 
