@@ -135,6 +135,7 @@
                 <div id="editor-toolbar" class="editor-toolbar hidden">
                     <button id="editor-new" class="btn btn-secondary">New</button>
                     <button id="editor-save" class="btn btn-primary">Save</button>
+                    <button id="editor-share" class="btn btn-secondary">Share</button>
                     <div class="editor-help-text">
                         <span><strong>Click</strong> tile: cycle colors</span>
                         <span><strong>Drag</strong>: paint tiles</span>
@@ -144,7 +145,10 @@
                     </div>
                 </div>
                 <div id="grid-container">
-                    <div id="grid"></div>
+                    <div id="grid-wrapper">
+                        <input type="text" id="level-name-input" class="level-name-input hidden" placeholder="Name your level here">
+                        <div id="grid"></div>
+                    </div>
                 </div>
                 <div id="agent">
                     <div id="color-comparison-hud">

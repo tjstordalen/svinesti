@@ -136,10 +136,22 @@ function saveCustomLevels() {
 }
 
 function addCustomLevel(level) {
-    level.name = `Custom Level ${editorState.customLevels.length + 1}`;
     editorState.customLevels.push(cloneLevel(level));
     saveCustomLevels();
-    return level.name;
+}
+
+function getNextLevelName() {
+    // Find lowest positive integer not used in existing level names
+    const usedNumbers = new Set();
+    for (const level of editorState.customLevels) {
+        const match = level.name.match(/^Custom Level (\d+)$/);
+        if (match) {
+            usedNumbers.add(parseInt(match[1]));
+        }
+    }
+    let n = 1;
+    while (usedNumbers.has(n)) n++;
+    return `Custom Level ${n}`;
 }
 
 function deleteCustomLevel(name) {
@@ -150,6 +162,34 @@ function deleteCustomLevel(name) {
         return true;
     }
     return false;
+}
+
+// --- Level Export/Import (URL sharing) ---
+
+function exportLevelToURL(level) {
+    const encoded = btoa(JSON.stringify(level));
+    return `${location.origin}${location.pathname}#level=${encoded}`;
+}
+
+function importLevelFromURL() {
+    if (!location.hash.startsWith('#level=')) return null;
+    try {
+        const encoded = location.hash.slice(7); // Remove '#level='
+        const level = JSON.parse(atob(encoded));
+        // Basic validation
+        if (!level.grid || !level.start || !level.nRows || !level.nCols) {
+            console.error("Invalid level data in URL");
+            return null;
+        }
+        return level;
+    } catch (e) {
+        console.error("Failed to decode level from URL:", e);
+        return null;
+    }
+}
+
+function clearLevelFromURL() {
+    history.replaceState(null, '', location.pathname);
 }
 
 // --- Level Validation ---
@@ -252,6 +292,8 @@ function enterEditMode() {
     // Update UI
     document.body.classList.add("editor-mode");
     editorUI.editorToolbar.classList.remove("hidden");
+    editorUI.levelNameInput.classList.remove("hidden");
+    editorUI.levelNameInput.value = "";
     editorUI.modePlay.classList.remove("active");
     editorUI.modeEdit.classList.add("active");
 
@@ -268,6 +310,7 @@ function exitEditMode() {
     // Update UI
     document.body.classList.remove("editor-mode");
     editorUI.editorToolbar.classList.add("hidden");
+    editorUI.levelNameInput.classList.add("hidden");
     editorUI.modePlay.classList.add("active");
     editorUI.modeEdit.classList.remove("active");
 
@@ -318,6 +361,10 @@ function attachEditorListeners() {
     // New button handler
     boundHandlers.newClick = handleNewClick;
     editorUI.newButton.addEventListener("click", boundHandlers.newClick);
+
+    // Share button handler
+    boundHandlers.shareClick = handleShareClick;
+    editorUI.shareButton.addEventListener("click", boundHandlers.shareClick);
 }
 
 function detachEditorListeners() {
@@ -334,6 +381,7 @@ function detachEditorListeners() {
 
     editorUI.saveButton.removeEventListener("click", boundHandlers.saveClick);
     editorUI.newButton.removeEventListener("click", boundHandlers.newClick);
+    editorUI.shareButton.removeEventListener("click", boundHandlers.shareClick);
 
     boundHandlers = {};
 }
@@ -488,8 +536,13 @@ function handleSaveClick() {
         return;
     }
 
-    const name = addCustomLevel(editorState.level);
+    const name = editorUI.levelNameInput.value.trim() || getNextLevelName();
+    editorState.level.name = name;
+    addCustomLevel(editorState.level);
     showNotification(`Level "${name}" saved!`);
+
+    // Clear input for next level
+    editorUI.levelNameInput.value = "";
 
     // Notify main.js to refresh the level list
     if (typeof onLevelSaved === "function") {
@@ -500,7 +553,26 @@ function handleSaveClick() {
 function handleNewClick() {
     editorState.level = createEmptyLevel();
     setCell(editorState.level, 0, 0, 'b');
+    editorUI.levelNameInput.value = "";
     renderEditorGrid();
+}
+
+async function handleShareClick() {
+    const errors = validateLevel(editorState.level);
+    if (errors.length > 0) {
+        showNotification(errors[0], true);
+        return;
+    }
+
+    const url = exportLevelToURL(editorState.level);
+
+    try {
+        await navigator.clipboard.writeText(url);
+        showNotification("Link copied to clipboard!");
+    } catch (e) {
+        // Fallback: show the URL in a prompt
+        prompt("Copy this link to share your level:", url);
+    }
 }
 
 // Callback for when a level is saved (set by main.js)
@@ -519,6 +591,8 @@ function initEditorUI() {
         editorToolbar: document.getElementById("editor-toolbar"),
         saveButton: document.getElementById("editor-save"),
         newButton: document.getElementById("editor-new"),
+        shareButton: document.getElementById("editor-share"),
+        levelNameInput: document.getElementById("level-name-input"),
         grid: document.getElementById("grid"),
         agent: document.getElementById("agent"),
         notification: document.getElementById("editor-notification"),
@@ -571,4 +645,7 @@ export {
     enterEditMode,
     exitEditMode,
     setOnLevelSaved,
+    exportLevelToURL,
+    importLevelFromURL,
+    clearLevelFromURL,
 };

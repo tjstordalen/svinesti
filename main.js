@@ -826,6 +826,19 @@ Editor.setOnLevelSaved(() => {
 // Build initial custom levels list
 buildCustomLevelsList();
 
+// Check for level in URL hash (shared level)
+const importedLevel = Editor.importLevelFromURL();
+if (importedLevel) {
+    // Give it a temporary name if not present
+    if (!importedLevel.name) {
+        importedLevel.name = "Shared Level";
+    }
+    // Select the imported level for play
+    selectLevel(importedLevel);
+    // Clear the hash from URL
+    Editor.clearLevelFromURL();
+}
+
 // Mode toggle handlers
 ui.modePlay.onclick = () => {
     if (!Editor.editorState.active) return;

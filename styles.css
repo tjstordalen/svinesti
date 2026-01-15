@@ -638,6 +638,28 @@ body {
     display: none;
 }
 
+/* Level Name Input */
+.level-name-input {
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    font-size: 1.125rem;
+    font-weight: 700;
+    padding: 0;
+    margin-bottom: 8px;
+    outline: none;
+    width: 250px;
+}
+
+.level-name-input::placeholder {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.level-name-input.hidden {
+    display: none;
+}
+
 .editor-help-text {
     display: flex;
     gap: 16px;
@@ -703,12 +725,19 @@ body.editor-mode #level-list {
     display: none;
 }
 
+#grid-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
 #grid {
     display: grid;
     grid-template-columns: repeat(var(--grid-n-cols), 1fr);
     grid-template-rows: repeat(var(--grid-n-rows), 1fr);
-    width: min(100cqw - 48px, (100cqh - 48px) * (var(--grid-n-cols) / var(--grid-n-rows)));
-    height: min((100cqw - 48px) * (var(--grid-n-rows) / var(--grid-n-cols)), 100cqh - 48px);
+    width: min(100cqw - 48px, (100cqh - 80px) * (var(--grid-n-cols) / var(--grid-n-rows)));
+    height: min((100cqw - 48px) * (var(--grid-n-rows) / var(--grid-n-cols)), 100cqh - 80px);
     border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: var(--shadow-lg);
