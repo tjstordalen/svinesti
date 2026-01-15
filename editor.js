@@ -135,7 +135,17 @@ function saveCustomLevels() {
     }
 }
 
+function resolveNameConflict(name) {
+    const existingNames = new Set(editorState.customLevels.map(l => l.name));
+    if (!existingNames.has(name)) return name;
+
+    let n = 1;
+    while (existingNames.has(`${name}-${n}`)) n++;
+    return `${name}-${n}`;
+}
+
 function addCustomLevel(level) {
+    level.name = resolveNameConflict(level.name);
     editorState.customLevels.push(cloneLevel(level));
     saveCustomLevels();
 }
@@ -601,6 +611,9 @@ async function handleShareClick() {
         showNotification(errors[0], true);
         return;
     }
+
+    // Read name from input field
+    editorState.level.name = editorUI.levelNameInput.value.trim() || getNextLevelName();
 
     const url = exportLevelToURL(editorState.level);
 
