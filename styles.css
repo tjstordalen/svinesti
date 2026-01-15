@@ -374,30 +374,24 @@ body {
     border: 1px solid var(--color-border);
 }
 
-.lang-tab {
-    cursor: pointer;
-}
-
-.lang-tab input {
-    display: none;
-}
-
-.lang-tab span {
-    display: block;
+.lang-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
     padding: 6px 14px;
     border-radius: 4px;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--color-text-muted);
+    cursor: pointer;
     transition: all var(--transition-fast);
 }
 
-.lang-tab:hover span {
+.lang-btn:hover {
     color: var(--color-text);
     background: var(--color-bg);
 }
 
-.lang-tab input:checked + span {
+.lang-btn.active {
     background: var(--color-interactive);
     color: white;
 }
@@ -512,6 +506,9 @@ body {
     transition: all var(--transition-fast);
     width: 70px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn:disabled {
@@ -549,28 +546,23 @@ body {
     transform: translateY(1px);
 }
 
-/* Playback button visibility - state-based */
-/* Show play button when idle or paused */
-.playback-toolbar.idle #btn-play,
-.playback-toolbar.paused #btn-play {
+/* Playback button icon visibility - state-based */
+/* Show play icon when idle or paused */
+.playback-toolbar.idle .icon-play,
+.playback-toolbar.paused .icon-play {
     display: block;
 }
-.playback-toolbar.playing #btn-play {
+.playback-toolbar.playing .icon-play {
     display: none;
 }
 
-/* Show pause button only when playing */
-.playback-toolbar.idle #btn-pause,
-.playback-toolbar.paused #btn-pause {
+/* Show pause icon only when playing */
+.playback-toolbar.idle .icon-pause,
+.playback-toolbar.paused .icon-pause {
     display: none;
 }
-.playback-toolbar.playing #btn-pause {
+.playback-toolbar.playing .icon-pause {
     display: block;
-}
-
-/* All icons visible by default */
-.playback-toolbar .icon {
-    display: inline;
 }
 
 .speed-control {

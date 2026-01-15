@@ -2,7 +2,7 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 
 // Set to false to disable splash screen for faster debugging
-const ENABLE_SPLASH_SCREEN = true;
+const ENABLE_SPLASH_SCREEN = false;
 
 // --- UI elements ---
 
@@ -12,11 +12,10 @@ const ui = {
     codeInput:		gid("code-input"),
     codeOutput:		gid("code-output"),
     levelList:		gid("level-list"),
+    btn1:		gid("btn1"),
     btn2:		gid("btn2"),
     btn3:		gid("btn3"),
     speedSlider:	gid("playback-speed"),
-    btnPlay:		gid("btn-play"),
-    btnPause:		gid("btn-pause"),
     fontSizeSlider: gid("editor-font-size-slider"),
     sidebar:        gid("sidebar"),
     sidebarToggle:  gid("sidebar-toggle"),
@@ -28,6 +27,8 @@ const ui = {
     helpOverlay:    document.querySelector(".help-overlay"),
     modePlay:       gid("mode-play"),
     modeEdit:       gid("mode-edit"),
+    langPython:     gid("select-lang-python"),
+    langJava:       gid("select-lang-java"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
         lineNumbers: true,
         lineWrapping: true,
@@ -89,7 +90,7 @@ function setCssVariable(id, val) {
 }
 
 function selectedLanguage() {
-    return document.querySelector('input[name="language-choice"]:checked').value;
+    return document.querySelector('.lang-btn.active').dataset.lang;
 }
 
 /**
@@ -237,7 +238,7 @@ async function moveAnimated(toRow, toCol) {
     const dy = toRect.top - fromRect.top;
 
     // Animate movement
-    const anim = ui.agent.animate([
+    const animate = ui.agent.animate([
         { translate: '0 0' },
         { translate: `${dx}px ${dy}px` }
     ], {
@@ -246,8 +247,8 @@ async function moveAnimated(toRow, toCol) {
         fill: 'forwards'
     });
 
-    await anim.finished;
-    anim.cancel(); // Clear the animation so translate resets
+    await animate.finished;
+    animate.cancel(); // Clear the animation so translate resets
 
     // Move to actual cell
     placePig(toRow, toCol);
@@ -512,12 +513,18 @@ function selectLevel(level) {
     ui.codeOutput.textContent = "";
 }
 
-function switchLanguage() {
+function switchLanguage(newLang) {
     const currentLang = selectedLanguage();
-    const otherLang = currentLang === "python" ? "java" : "python";
-    storeCode(otherLang);
-    loadCode(currentLang);
-    const mode = currentLang === "java" ? "text/x-java" : "python";
+    if (currentLang === newLang) return;
+
+    storeCode();
+
+    // Toggle active state
+    ui.langPython.classList.toggle('active', newLang === 'python');
+    ui.langJava.classList.toggle('active', newLang === 'java');
+
+    loadCode();
+    const mode = newLang === "java" ? "text/x-java" : "python";
     ui.editor.setOption("mode", mode);
 }
 
@@ -559,8 +566,13 @@ syncUI(); // Initialize button states
 ui.editor.getWrapperElement().style.fontSize = ui.fontSizeSlider.value + "px";
 
 // Set up button handlers (no branching - visibility toggled by CSS)
-ui.btnPlay.onclick = submitCode;
-ui.btnPause.onclick = pause;
+ui.btn1.onclick = () => {
+    if (state.playback.status === "playing") {
+        pause();
+    } else {
+        submitCode();
+    }
+};
 ui.btn2.onclick = () => {
     if (state.playback.status === "idle") {
         state.isSingleStepping = true;
@@ -698,11 +710,9 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-document.addEventListener("change", (e) => {
-    if (e.target.type === "radio" && e.target.name === "language-choice") {
-        switchLanguage();
-    }
-});
+// Language button handlers
+ui.langPython.onclick = () => switchLanguage('python');
+ui.langJava.onclick = () => switchLanguage('java');
 
 ui.sidebarToggle.onclick = () => {
     ui.sidebar.classList.toggle("collapsed");

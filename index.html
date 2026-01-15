@@ -69,14 +69,8 @@
             <section id="code-section">
                 <div class="editor-header">
                     <div class="language-tabs">
-                        <label class="lang-tab">
-                            <input id="select-lang-python" type="radio" name="language-choice" value="python" checked>
-                            <span>Python 3</span>
-                        </label>
-                        <label class="lang-tab">
-                            <input id="select-lang-java" type="radio" name="language-choice" value="java">
-                            <span>Java</span>
-                        </label>
+                        <button id="select-lang-python" class="lang-btn active" data-lang="python">Python 3</button>
+                        <button id="select-lang-java" class="lang-btn" data-lang="java">Java</button>
                     </div>
                     <div class="font-size-control">
                         <label for="editor-font-size-slider" title="Font Size">
@@ -103,21 +97,28 @@
 
                 <div class="playback-toolbar idle">
                     <div class="button-group">
-                        <button id="btn-play" class="btn btn-primary">
+                        <button id="btn1" class="btn btn-primary">
                             <!-- https://icons.getbootstrap.com/icons/play-fill/ -->
-                            <img class="icon" src="icons/play-fill.svg" width="24" height="24" alt="Play">
-                        </button>
-                        <button id="btn-pause" class="btn btn-primary">
+                            <svg class="icon-play" width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"/>
+                            </svg>
                             <!-- https://icons.getbootstrap.com/icons/pause/ -->
-                            <img class="icon" src="icons/pause.svg" width="24" height="24" alt="Pause">
+                            <svg class="icon-pause" width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5m4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5"/>
+                            </svg>
                         </button>
                         <button id="btn2" class="btn btn-secondary">
                             <!-- https://icons.getbootstrap.com/icons/chevron-bar-right/ -->
-                            <img class="icon icon-step" src="icons/chevron-bar-right.svg" width="24" height="24" alt="Step">
+                            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.146 3.646a.5.5 0 0 0 0 .708L7.793 8l-3.647 3.646a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708 0M11.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5"/>
+                            </svg>
                         </button>
                         <button id="btn3" class="btn btn-secondary">
                             <!-- https://icons.getbootstrap.com/icons/arrow-counterclockwise/ -->
-                            <img class="icon icon-reset" src="icons/arrow-counterclockwise.svg" width="24" height="24" alt="Reset">
+                            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
+                                <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
+                            </svg>
                         </button>
                     </div>
                     <div class="speed-control">
