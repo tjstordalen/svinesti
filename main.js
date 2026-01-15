@@ -319,8 +319,9 @@ async function step() {
                     if (i === lineno) ui.editor.addLineClass(i, "background", "highlighted-line");
                     else ui.editor.removeLineClass(i, "background", "highlighted-line");
                 }
-                // No animation - continue immediately
-                break;
+                // Continue immediately to next trace event (skip pause for line highlights)
+                step();
+                return;
 
             case "move":
                 // Run walk animation and movement in parallel
@@ -659,6 +660,42 @@ document.addEventListener("keydown", (event) => {
         event.preventDefault();
         hideHelp();
         return;
+    }
+
+    // Playback shortcuts (only when not typing in editor)
+    if (!ui.editor.hasFocus()) {
+        // Space = pause/resume
+        if (event.key === " ") {
+            event.preventDefault();
+            if (state.playback.status === "playing") {
+                pause();
+            } else if (state.playback.status === "paused") {
+                playbackResume();
+            }
+            return;
+        }
+
+        // N = step
+        if (event.key === "n" || event.key === "N") {
+            event.preventDefault();
+            if (state.playback.status === "idle") {
+                state.isSingleStepping = true;
+                submitCode();
+            } else if (state.playback.status === "playing") {
+                pause();
+                step();
+            } else {
+                step();
+            }
+            return;
+        }
+
+        // Backspace = reset
+        if (event.key === "Backspace") {
+            event.preventDefault();
+            playbackStop();
+            return;
+        }
     }
 });
 

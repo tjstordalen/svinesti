@@ -6,6 +6,9 @@ const editorState = {
     active: false,
     level: null,  // Working copy of level being edited
     customLevels: [], // Loaded from localStorage
+    painting: false,  // Currently in paint-drag mode
+    paintColor: null, // Color being painted (e.g., 'r', 'g', 'b')
+    paintedCells: 0,  // Count of cells painted during drag (to distinguish from click)
 };
 
 // Color cycle order: empty -> red -> green -> blue -> empty
@@ -293,6 +296,14 @@ function attachEditorListeners() {
     boundHandlers.rightClick = handleRightClick;
     editorUI.grid.addEventListener("contextmenu", boundHandlers.rightClick);
 
+    // Paint drag handlers
+    boundHandlers.paintStart = handlePaintStart;
+    boundHandlers.paintMove = handlePaintMove;
+    boundHandlers.paintEnd = handlePaintEnd;
+    editorUI.grid.addEventListener("mousedown", boundHandlers.paintStart);
+    editorUI.grid.addEventListener("mousemove", boundHandlers.paintMove);
+    document.addEventListener("mouseup", boundHandlers.paintEnd);
+
     // Pig click handler (rotation)
     boundHandlers.agentClick = handleAgentClick;
     editorUI.agent.addEventListener("click", boundHandlers.agentClick);
@@ -318,6 +329,9 @@ function attachEditorListeners() {
 function detachEditorListeners() {
     editorUI.grid.removeEventListener("click", boundHandlers.gridClick);
     editorUI.grid.removeEventListener("contextmenu", boundHandlers.rightClick);
+    editorUI.grid.removeEventListener("mousedown", boundHandlers.paintStart);
+    editorUI.grid.removeEventListener("mousemove", boundHandlers.paintMove);
+    document.removeEventListener("mouseup", boundHandlers.paintEnd);
     editorUI.agent.removeEventListener("click", boundHandlers.agentClick);
     editorUI.agent.removeEventListener("dragstart", boundHandlers.agentDragStart);
     editorUI.grid.removeEventListener("dragover", boundHandlers.gridDragOver);
@@ -341,6 +355,12 @@ function getCellFromEvent(e) {
 }
 
 function handleGridClick(e) {
+    // Skip cycling if we just finished a paint drag
+    if (editorState.paintedCells > 0) {
+        editorState.paintedCells = 0;
+        return;
+    }
+
     // Ignore clicks on the pig
     if (e.target.closest("#agent")) return;
 
@@ -360,6 +380,52 @@ function handleGridClick(e) {
 
     // Update the tile's class
     tile.className = "game-tile " + TILE_CLASSES[newChar];
+}
+
+function handlePaintStart(e) {
+    if (e.target.closest("#agent")) return;
+
+    const cell = getCellFromEvent(e);
+    if (!cell) return;
+
+    const { row, col } = cell;
+    const currentChar = getCell(editorState.level, row, col);
+
+    editorState.painting = true;
+    editorState.paintColor = isColorChar(currentChar) ? getBaseColor(currentChar) : '.';
+    editorState.paintedCells = 0;
+}
+
+function handlePaintMove(e) {
+    if (!editorState.painting) return;
+
+    const cell = getCellFromEvent(e);
+    if (!cell) return;
+
+    const { row, col, tile } = cell;
+
+    // Don't paint the pig's cell
+    const [pigRow, pigCol] = editorState.level.start;
+    if (row === pigRow && col === pigCol) return;
+
+    const currentChar = getCell(editorState.level, row, col);
+    const currentBase = isColorChar(currentChar) ? getBaseColor(currentChar) : '.';
+
+    // Only paint if cell is different
+    if (currentBase !== editorState.paintColor) {
+        // Preserve apple status if painting a color over a tile with apple
+        const newChar = (editorState.paintColor !== '.' && hasApple(currentChar))
+            ? editorState.paintColor.toUpperCase()
+            : editorState.paintColor;
+        setCell(editorState.level, row, col, newChar);
+        tile.className = "game-tile " + TILE_CLASSES[newChar];
+        editorState.paintedCells++;
+    }
+}
+
+function handlePaintEnd() {
+    editorState.painting = false;
+    editorState.paintColor = null;
 }
 
 function handleRightClick(e) {
