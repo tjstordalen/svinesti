@@ -1,4 +1,5 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
+import * as Editor from "./editor.js";
 
 // Set to false to disable splash screen for faster debugging
 const ENABLE_SPLASH_SCREEN = false;
@@ -25,6 +26,8 @@ const ui = {
     helpModal:      gid("help-modal"),
     helpClose:      gid("help-close"),
     helpOverlay:    document.querySelector(".help-overlay"),
+    modePlay:       gid("mode-play"),
+    modeEdit:       gid("mode-edit"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
         lineNumbers: true,
         lineWrapping: true,
@@ -540,7 +543,7 @@ ui.btn2.onclick = () => {
         step();
     }
 };
-ui.btn3.onclick = playbackStop();
+ui.btn3.onclick = playbackStop;
 
 // Prepare levels: if the starting position has a star (uppercase letter),
 // convert it to just the tile (lowercase) so the pig doesn't start on a star.
@@ -648,6 +651,104 @@ ui.sidebarToggle.onclick = () => {
 ui.helpButton.onclick = showHelp;
 ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
+
+// --- Editor Integration ---
+
+// Initialize editor module
+Editor.initEditorUI();
+
+// Build custom levels section in sidebar
+function buildCustomLevelsList() {
+    // Remove existing custom levels section if present
+    const existingSection = document.getElementById("custom-levels-section");
+    if (existingSection) {
+        existingSection.remove();
+    }
+
+    // Only show if there are custom levels
+    if (Editor.editorState.customLevels.length === 0) return;
+
+    // Create custom levels section
+    const section = document.createElement("div");
+    section.id = "custom-levels-section";
+    section.innerHTML = `
+        <div class="sidebar-header" style="border-top: 1px solid var(--color-border);">
+            <h2>Custom Levels</h2>
+        </div>
+    `;
+
+    const list = document.createElement("ul");
+    list.id = "custom-level-list";
+    list.className = "level-list";
+    list.style.cssText = "list-style: none; margin: 0; padding: 8px;";
+
+    for (const lvl of Editor.editorState.customLevels) {
+        const item = document.createElement("li");
+        item.style.marginBottom = "4px";
+
+        const btn = document.createElement("button");
+        btn.textContent = lvl.name;
+        btn.style.cssText = `
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--color-text);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+        `;
+
+        btn.addEventListener("click", () => {
+            // Exit edit mode if active
+            if (Editor.editorState.active) {
+                Editor.exitEditMode();
+            }
+            selectLevel(lvl);
+            // Update selection styling
+            ui.levelList.querySelectorAll("li button").forEach(b => b.classList.remove("selected"));
+            list.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+        });
+
+        item.appendChild(btn);
+        list.appendChild(item);
+    }
+
+    section.appendChild(list);
+    ui.levelList.parentElement.appendChild(section);
+}
+
+// Set callback for when levels are saved
+Editor.setOnLevelSaved(() => {
+    buildCustomLevelsList();
+});
+
+// Build initial custom levels list
+buildCustomLevelsList();
+
+// Mode toggle handlers
+ui.modePlay.onclick = () => {
+    if (!Editor.editorState.active) return;
+
+    const editedLevel = Editor.exitEditMode();
+    // Reload the current level (or the edited one if we want to test it)
+    loadLevel(state.level);
+};
+
+ui.modeEdit.onclick = () => {
+    if (Editor.editorState.active) return;
+
+    // Stop any playback
+    playbackStop();
+
+    // Enter edit mode with current level
+    Editor.enterEditMode(state.level);
+};
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);

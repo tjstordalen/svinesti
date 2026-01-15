@@ -33,6 +33,10 @@
             </svg>
         </button>
         <h1 class="app-title">Svinesti</h1>
+        <div class="mode-toggle">
+            <button id="mode-play" class="mode-btn active">Play</button>
+            <button id="mode-edit" class="mode-btn">Edit</button>
+        </div>
         <div class="header-spacer"></div>
         <button id="help-button" class="icon-btn" title="Help - Press ?">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5">
@@ -108,7 +112,27 @@
             </section>
 
             <section id="game-section">
-                <div id="grid"></div>
+                <div id="editor-toolbar" class="editor-toolbar hidden">
+                    <select id="size-preset">
+                        <option value="5,5">Small (5×5)</option>
+                        <option value="8,8" selected>Medium (8×8)</option>
+                        <option value="6,10">Wide (6×10)</option>
+                        <option value="10,12">Large (10×12)</option>
+                    </select>
+                    <button id="editor-new" class="btn btn-secondary">New</button>
+                    <button id="editor-save" class="btn btn-primary">Save</button>
+                </div>
+                <div id="grid-container">
+                    <button id="edge-top-add" class="edge-btn edge-top add" title="Add row to top">+</button>
+                    <button id="edge-top-remove" class="edge-btn edge-top remove" title="Remove row from top">−</button>
+                    <button id="edge-left-add" class="edge-btn edge-left add" title="Add column to left">+</button>
+                    <button id="edge-left-remove" class="edge-btn edge-left remove" title="Remove column from left">−</button>
+                    <div id="grid"></div>
+                    <button id="edge-right-add" class="edge-btn edge-right add" title="Add column to right">+</button>
+                    <button id="edge-right-remove" class="edge-btn edge-right remove" title="Remove column from right">−</button>
+                    <button id="edge-bottom-add" class="edge-btn edge-bottom add" title="Add row to bottom">+</button>
+                    <button id="edge-bottom-remove" class="edge-btn edge-bottom remove" title="Remove row from bottom">−</button>
+                </div>
                 <div id="agent">
                     <div id="color-comparison-hud">
                         <div id="comparison-tile" class="game-tile"></div>
@@ -127,32 +151,15 @@
             <div class="help-content">
                 <div class="help-column">
                     <h3>About</h3>
-                    <p>Svinesti is an educational programming game. Guide the pig to collect apples.</p>
-
-                    <h4>Licenses</h4>
-                    <ul class="license-list">
-                        <li><a href="https://opengameart.org/content/pigs-rework" target="_blank">Pig sprites</a>: CC-BY 3.0</li>
-                        <li><a href="https://github.com/pyodide/pyodide" target="_blank">Pyodide</a>: MPL 2.0</li>
-                        <li><a href="https://icons.getbootstrap.com/" target="_blank">Icons</a>: MIT</li>
-                        <li><a href="https://codemirror.net/" target="_blank">CodeMirror</a>: MIT</li>
-                    </ul>
+                    <p>Svinesti is an educational programming game. Guide the pig to collect all the apples.</p>
 
                     <h3>Goal</h3>
-                    <p>Walk the pig over colored tiles to collect apples.</p>
                     <ul>
                         <li>Red, green, and blue tiles are safe</li>
                         <li>Avoid empty/white tiles (game ends!)</li>
                         <li>Collect all apples to win</li>
                     </ul>
 
-                    <h3>Keyboard Shortcuts</h3>
-                    <ul>
-                        <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Run code</li>
-                        <li><kbd>?</kbd> - Open/Close this help</li>
-                    </ul>
-                </div>
-
-                <div class="help-column">
                     <h3>Available Functions</h3>
                     <pre><code>move()       <span class="comment"># Move forward</span>
 turnLeft()   <span class="comment"># Turn 90° left</span>
@@ -165,14 +172,16 @@ isBlue()</code></pre>
                 </div>
 
                 <div class="help-column">
-                    <h3>Python</h3>
+                    <h3>Languages</h3>
+
+                    <h4>Python</h4>
                     <p>Full Python 3 supported</p>
                     <pre><code><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">4</span>):
     move()
     <span class="keyword">if</span> isRed():
         turnLeft()</code></pre>
 
-                    <h3>Java</h3>
+                    <h4>Java</h4>
                     <p>Minimal Java-like syntax</p>
                     <p><strong>Types:</strong> <code>int</code>, <code>boolean</code></p>
                     <p><strong>Control:</strong> <code>if/else</code>, <code>while</code>, <code>{ }</code> blocks</p>
@@ -187,6 +196,33 @@ isBlue()</code></pre>
     count = count + <span class="number">1</span>;
 }</code></pre>
                     <p class="note"><strong>Limitations:</strong> No arrays, strings, classes, or for loops</p>
+                </div>
+
+                <div class="help-column">
+				
+                    <h3>Keyboard Shortcuts</h3>
+                    <ul>
+                        <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Run code</li>
+                        <li><kbd>?</kbd> - Open/Close this help</li>
+                    </ul>
+                    <h3>Level Editor</h3>
+                    <p>Click <strong>Edit</strong> in the header to create custom levels.</p>
+                    <ul>
+                        <li><strong>Left-click</strong> tile: cycle colors</li>
+                        <li><strong>Right-click</strong> tile: toggle apple</li>
+                        <li><strong>Drag pig</strong>: move starting position</li>
+                        <li><strong>Click pig</strong>: rotate direction</li>
+                        <li>Use <strong>+/−</strong> buttons to resize</li>
+                    </ul>
+
+
+                    <h4>Licenses</h4>
+                    <ul class="license-list">
+                        <li><a href="https://opengameart.org/content/pigs-rework" target="_blank">Pig sprites</a>: CC-BY 3.0</li>
+                        <li><a href="https://github.com/pyodide/pyodide" target="_blank">Pyodide</a>: MPL 2.0</li>
+                        <li><a href="https://icons.getbootstrap.com/" target="_blank">Icons</a>: MIT</li>
+                        <li><a href="https://codemirror.net/" target="_blank">CodeMirror</a>: MIT</li>
+                    </ul>
                 </div>
             </div>
         </div>

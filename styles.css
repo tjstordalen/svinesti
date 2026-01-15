@@ -163,6 +163,38 @@ body {
     flex: 1;
 }
 
+/* Mode Toggle */
+.mode-toggle {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.15);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    margin-left: 16px;
+}
+
+.mode-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.mode-btn:hover {
+    color: white;
+    background: rgba(255,255,255,0.1);
+}
+
+.mode-btn.active {
+    background: rgba(255,255,255,0.25);
+    color: white;
+}
+
 .icon-btn {
     background: rgba(255,255,255,0.15);
     border: none;
@@ -576,14 +608,151 @@ body {
 #game-section {
     flex: 1;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     padding: 24px;
-    container-type: size;
     min-width: 300px;
+    gap: 16px;
+}
+
+/* ============================================
+   Editor Toolbar
+   ============================================ */
+.editor-toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+}
+
+.editor-toolbar.hidden {
+    display: none;
+}
+
+.editor-toolbar select {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.editor-toolbar select:focus {
+    outline: none;
+    border-color: var(--color-interactive);
+}
+
+/* ============================================
+   Grid Container (for editor edge buttons)
+   ============================================ */
+#grid-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    container-type: size;
+}
+
+/* Edge buttons for resizing grid */
+.edge-btn {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    z-index: 10;
+}
+
+.edge-btn:hover {
+    background: var(--color-interactive-light);
+    border-color: var(--color-interactive);
+    color: white;
+}
+
+.edge-btn:active {
+    transform: scale(0.95);
+}
+
+/* Edge button positions */
+.edge-btn.edge-top {
+    top: 0;
+    left: 50%;
+}
+.edge-btn.edge-top.add { transform: translateX(-100%) translateY(-100%); margin-left: -4px; }
+.edge-btn.edge-top.remove { transform: translateX(0%) translateY(-100%); margin-left: 4px; }
+
+.edge-btn.edge-bottom {
+    bottom: 0;
+    left: 50%;
+}
+.edge-btn.edge-bottom.add { transform: translateX(-100%) translateY(100%); margin-left: -4px; }
+.edge-btn.edge-bottom.remove { transform: translateX(0%) translateY(100%); margin-left: 4px; }
+
+.edge-btn.edge-left {
+    left: 0;
+    top: 50%;
+}
+.edge-btn.edge-left.add { transform: translateX(-100%) translateY(-100%); margin-top: -4px; }
+.edge-btn.edge-left.remove { transform: translateX(-100%) translateY(0%); margin-top: 4px; }
+
+.edge-btn.edge-right {
+    right: 0;
+    top: 50%;
+}
+.edge-btn.edge-right.add { transform: translateX(100%) translateY(-100%); margin-top: -4px; }
+.edge-btn.edge-right.remove { transform: translateX(100%) translateY(0%); margin-top: 4px; }
+
+/* Show edge buttons only in editor mode */
+body.editor-mode .edge-btn {
+    display: flex;
+}
+
+/* Hide code section in editor mode */
+body.editor-mode #code-section {
+    display: none;
+}
+
+/* Make game section take full width in editor mode */
+body.editor-mode #game-section {
+    flex: 1;
+}
+
+/* Editor mode grid styling */
+body.editor-mode .game-tile {
+    cursor: pointer;
+    transition: filter var(--transition-fast);
+}
+
+body.editor-mode .game-tile:hover {
+    filter: brightness(1.1);
+}
+
+/* Pig draggable in editor mode */
+body.editor-mode #agent {
+    cursor: grab;
+}
+
+body.editor-mode #agent:active {
+    cursor: grabbing;
 }
 
 #grid {
@@ -912,6 +1081,12 @@ body {
     font-size: 13px;
     color: var(--color-text-muted);
     font-style: italic;
+}
+
+.help-column .copyright {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 16px;
 }
 
 @keyframes fadeIn {
