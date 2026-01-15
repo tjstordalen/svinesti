@@ -2,3 +2,5 @@
 *.swo
 notes.*
 todo.*
+memories/
+memories/*
