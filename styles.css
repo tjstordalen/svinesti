@@ -173,23 +173,23 @@ body {
 .mode-btn {
     background: transparent;
     border: none;
-    color: rgba(255,255,255,0.7);
-    padding: 6px 16px;
+    color: rgba(255,255,255,0.85);
+    padding: 8px 20px;
     border-radius: 4px;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.9375rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
 .mode-btn:hover {
     color: white;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.15);
 }
 
 .mode-btn.active {
-    background: rgba(255,255,255,0.25);
-    color: white;
+    background: white;
+    color: var(--color-interactive-dark);
 }
 
 .icon-btn {
@@ -636,6 +636,23 @@ body {
 
 .editor-toolbar.hidden {
     display: none;
+}
+
+.editor-help-text {
+    display: flex;
+    gap: 16px;
+    margin-left: auto;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+
+.editor-help-text span {
+    white-space: nowrap;
+}
+
+.editor-help-text strong {
+    color: var(--color-text);
+    font-weight: 600;
 }
 
 /* ============================================
