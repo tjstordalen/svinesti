@@ -497,6 +497,7 @@ body {
 }
 
 .btn {
+    position: relative;
     padding: 10px 0;
     border: none;
     border-radius: var(--radius-sm);
@@ -544,6 +545,16 @@ body {
 
 .btn-secondary:active:not(:disabled) {
     transform: translateY(1px);
+}
+
+.key-hint {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 /* Playback button icon visibility - state-based */

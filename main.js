@@ -113,15 +113,20 @@ function hideHelp() {
     }
 }
 
-// TODO: can't this more easily be done using a css transformation?
 let notificationTimeout = null;
-function showReadOnlyNotification() {
+const NOTIFICATION_CLICK = "Click to pause and edit code";
+const NOTIFICATION_KEY = "Press i again to pause and edit code";
+
+let lastEditorIPress = 0;  // Timestamp for double-tap i detection
+
+function showReadOnlyNotification(message = NOTIFICATION_CLICK) {
     // Clear any existing timeout
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
     }
 
-    // Show notification
+    // Set message and show notification
+    ui.readOnlyNotification.textContent = message;
     ui.readOnlyNotification.classList.add("show");
 
     // Hide after 2 seconds
@@ -129,6 +134,10 @@ function showReadOnlyNotification() {
         ui.readOnlyNotification.classList.remove("show");
         notificationTimeout = null;
     }, 2000);
+}
+
+function isNotificationShowing() {
+    return ui.readOnlyNotification.classList.contains("show");
 }
 
 // TODO: Provide a numbered list of all the occurrences of "agent" across all files and ask for confirmation before replacing them with "pig" across the board. 
@@ -337,16 +346,22 @@ function playbackInit(trace, singleStep = false) {
 }
 
 function playbackStop() {
-    // Cancel any running animation to ensure clean visual state
-    if (state.currentAnimation) {
-        state.currentAnimation.cancel();
-        state.currentAnimation = null;
-    }
+    // Cancel ALL animations on the pig (walk + translate can run in parallel)
+    ui.agent.getAnimations().forEach(a => a.cancel());
+    state.currentAnimation = null;
 
     state.playback.status = "idle";
     state.playback.trace = null;
     state.playback.index = 0;
     syncUI();
+
+    // Clear line highlighting
+    for (let i = 0; i < ui.editor.lineCount(); i++) {
+        ui.editor.removeLineClass(i, "background", "highlighted-line");
+    }
+
+    // Reset the board to initial state
+    loadLevel(state.level);
 }
 
 function playbackResume() {
@@ -359,31 +374,28 @@ function playbackResume() {
     return false;
 }
 
-/*
-  click a level in the list: store the current code, load the new level, load the new code
-  click a language tab: store existing code, load new code. 
-  slide the animation speed: update the var in css
-  slide the font size: update font size
-  type in the editor: store the code. Or maybe when it loses focus? 
-  
-  idle:
-      play: run the code on the selected level -> playing
-	  step: run the code on the selected level, one step -> paused
-	  reset: reload the selected level. We do not need to save the trace, we can just re-run the code. 
-  paused:
-      play: run the code -> playing
-	  step: make another step, no state change.
-	  reset: reload the selected level. 
-  playing: 
-      play: pause -> paused
-	  step: pause -> paused
-	  reset: reload the selected level. 
+// State-dependent behavior for playback controls
+const BEHAVIOR = {
+    idle: {
+        btn1: () => submitCode(),
+        btn2: () => { state.isSingleStepping = true; submitCode(); },
+        btn3: () => playbackStop(),
+    },
+    playing: {
+        btn1: () => pause(),
+        btn2: () => { pause(); step(); },
+        btn3: () => playbackStop(),
+    },
+    paused: {
+        btn1: () => playbackResume(),
+        btn2: () => step(),
+        btn3: () => playbackStop(),
+    },
+};
 
-
-	running the code: listening to animationend events and autostepping. (I think I do need to handle animationcanel btw)
-	stepping the code: just make one step, but don't autostep (disable the listener?)
-	
- * */
+function dispatch(action) {
+    BEHAVIOR[state.playback.status][action]();
+}
 
 
 // --- Worker management ---
@@ -484,26 +496,10 @@ syncUI(); // Initialize button states
 // Initialize font size from slider
 ui.editor.getWrapperElement().style.fontSize = ui.fontSizeSlider.value + "px";
 
-// Set up button handlers (no branching - visibility toggled by CSS)
-ui.btn1.onclick = () => {
-    if (state.playback.status === "playing") {
-        pause();
-    } else {
-        submitCode();
-    }
-};
-ui.btn2.onclick = () => {
-    if (state.playback.status === "idle") {
-        state.isSingleStepping = true;
-        submitCode();
-    } else if (state.playback.status === "playing") {
-        pause();
-        step();
-    } else {
-        step();
-    }
-};
-ui.btn3.onclick = playbackStop;
+// Set up button handlers
+ui.btn1.onclick = () => dispatch("btn1");
+ui.btn2.onclick = () => dispatch("btn2");
+ui.btn3.onclick = () => dispatch("btn3");
 
 // Prepare levels: if the starting position has a star (uppercase letter),
 // convert it to just the tile (lowercase) so the pig doesn't start on a star.
@@ -594,37 +590,49 @@ document.addEventListener("keydown", (event) => {
 
     // Playback shortcuts (only when not typing in editor)
     if (!ui.editor.hasFocus()) {
-        // Space = pause/resume
-        if (event.key === " ") {
+        // i = focus editor
+        if (event.key === "i") {
             event.preventDefault();
-            if (state.playback.status === "playing") {
-                pause();
-            } else if (state.playback.status === "paused") {
-                playbackResume();
-            }
-            return;
-        }
-
-        // N = step
-        if (event.key === "n" || event.key === "N") {
-            event.preventDefault();
-            if (state.playback.status === "idle") {
-                state.isSingleStepping = true;
-                submitCode();
-            } else if (state.playback.status === "playing") {
-                pause();
-                step();
+            if (ui.editor.getOption("readOnly")) {
+                if (isNotificationShowing()) {
+                    // Second press - pause and focus
+                    pause();
+                    ui.readOnlyNotification.classList.remove("show");
+                    ui.editor.focus();
+                    ui.editor.setCursor(ui.editor.getCursor());
+                } else {
+                    // First press - show notification
+                    showReadOnlyNotification(NOTIFICATION_KEY);
+                }
             } else {
-                step();
+                ui.editor.focus();
+                ui.editor.setCursor(ui.editor.getCursor());
             }
             return;
         }
 
-        // Backspace = reset
-        if (event.key === "Backspace") {
+        // h, j, k = btn1, btn2, btn3
+        if (event.key === "h") { event.preventDefault(); dispatch("btn1"); return; }
+        if (event.key === "j") { event.preventDefault(); dispatch("btn2"); return; }
+        if (event.key === "k") { event.preventDefault(); dispatch("btn3"); return; }
+    } else {
+        // Escape or double-tap i = unfocus editor
+        if (event.key === "Escape") {
             event.preventDefault();
-            playbackStop();
+            ui.editor.getInputField().blur();
             return;
+        }
+        if (event.key === "i") {
+            const now = Date.now();
+            if (now - lastEditorIPress < 300) {
+                event.preventDefault();
+                // Delete the first 'i' that was typed
+                ui.editor.execCommand("delCharBefore");
+                ui.editor.getInputField().blur();
+                lastEditorIPress = 0;
+                return;
+            }
+            lastEditorIPress = now;
         }
     }
 });
