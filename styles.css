@@ -2,8 +2,6 @@
     /* Grid CSS variables (set by JS) */
     --grid-n-rows: 7;
     --grid-n-cols: 8;
-    --agent-row: 5;
-    --agent-col: 0;
 
     /* Animation speed system: base speed × multiplier for each animation */
     --animation-speed: 500ms;
@@ -749,7 +747,6 @@ body.editor-mode .game-tile:hover {
 /* Pig draggable in editor mode */
 body.editor-mode #agent {
     cursor: grab;
-    transition: none;
 }
 
 body.editor-mode #agent:active {
@@ -808,11 +805,9 @@ body.editor-mode #agent:active {
     background-repeat: no-repeat;
     background-position: center;
     position: relative;
-    transition: translate calc(var(--animation-speed) * var(--move-multiplier)) ease-out;
     z-index: 100;
     height: 100%;
     width: 100%;
-    translate: calc(var(--agent-col)*100%) calc(var(--agent-row)*100%);
     transform-origin: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }

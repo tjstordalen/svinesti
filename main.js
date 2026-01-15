@@ -218,10 +218,39 @@ function updateAgentEdgeClasses(row, col) {
     }
 }
 
-function move(row, col) {
-    setCssVariable("--agent-row", row);
-    setCssVariable("--agent-col", col);
+function getPigCell(row, col) {
+    return ui.grid.children[row * state.level.nCols + col];
+}
+
+function placePig(row, col) {
+    const cell = getPigCell(row, col);
+    cell.appendChild(ui.agent);
     updateAgentEdgeClasses(row, col);
+}
+
+async function moveAnimated(toRow, toCol) {
+    const fromRect = ui.agent.getBoundingClientRect();
+    const toCell = getPigCell(toRow, toCol);
+    const toRect = toCell.getBoundingClientRect();
+
+    const dx = toRect.left - fromRect.left;
+    const dy = toRect.top - fromRect.top;
+
+    // Animate movement
+    const anim = ui.agent.animate([
+        { translate: '0 0' },
+        { translate: `${dx}px ${dy}px` }
+    ], {
+        duration: getAnimSpeed() * MOVE_MULTIPLIER,
+        easing: 'ease-out',
+        fill: 'forwards'
+    });
+
+    await anim.finished;
+    anim.cancel(); // Clear the animation so translate resets
+
+    // Move to actual cell
+    placePig(toRow, toCol);
 }
 
 function turn(direction) {
@@ -253,12 +282,9 @@ function loadLevel(level) {
         ui.grid.appendChild(div);
     }
 
-	// The pig needs to be added to the top left grid cell for
-	// the CSS animations to work correctly.
-    ui.grid.firstElementChild.appendChild(ui.agent);
-	const [row,col] = level.start;
-	move(row,col);
-	turn(level.dir)
+	const [row, col] = level.start;
+	placePig(row, col);
+	turn(level.dir);
 }
 
 // --- Code storage ---
@@ -297,15 +323,14 @@ async function step() {
                 break;
 
             case "move":
-                move(msg.pos[0], msg.pos[1]);
-
-                // Animate walking
+                // Run walk animation and movement in parallel
                 const walkDuration = getAnimSpeed() * MOVE_MULTIPLIER / WALK_CYCLES;
                 state.currentAnimation = ui.agent.animate(
                     WALK_KEYFRAMES[DIR_NAMES[msg.dir]],
                     { duration: walkDuration, easing: 'steps(4)', iterations: WALK_CYCLES }
                 );
-                await state.currentAnimation.finished;
+
+                await moveAnimated(msg.pos[0], msg.pos[1]);
                 state.currentAnimation = null;
                 break;
 
