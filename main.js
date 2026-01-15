@@ -771,8 +771,8 @@ ui.modeEdit.onclick = () => {
     // Stop any playback
     playbackStop();
 
-    // Enter edit mode with current level
-    Editor.enterEditMode(state.level);
+    // Enter edit mode with a fresh level
+    Editor.enterEditMode();
 };
 
 // Run PigJatin tests

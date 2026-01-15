@@ -11,13 +11,16 @@ const editorState = {
 // Color cycle order: empty -> red -> green -> blue -> empty
 const COLOR_CYCLE = ['.', 'r', 'g', 'b'];
 
-// Preset grid sizes
-const SIZE_PRESETS = [
-    { name: "Small (5×5)", rows: 5, cols: 5 },
-    { name: "Medium (8×8)", rows: 8, cols: 8 },
-    { name: "Wide (6×10)", rows: 6, cols: 10 },
-    { name: "Large (10×12)", rows: 10, cols: 12 },
-];
+// Map grid characters to CSS classes
+const TILE_CLASSES = {
+    ".": "empty",
+    "r": "red",
+    "g": "green",
+    "b": "blue",
+    "R": "red target",
+    "G": "green target",
+    "B": "blue target",
+};
 
 // --- Editor UI Elements ---
 
@@ -29,7 +32,7 @@ function isColorChar(c) {
     return 'rgbRGB'.includes(c);
 }
 
-function hasStar(c) {
+function hasApple(c) {
     return 'RGB'.includes(c);
 }
 
@@ -37,19 +40,19 @@ function getBaseColor(c) {
     return c.toLowerCase();
 }
 
-function toggleStar(c) {
+function toggleApple(c) {
     if (!isColorChar(c)) return c;
-    return hasStar(c) ? c.toLowerCase() : c.toUpperCase();
+    return hasApple(c) ? c.toLowerCase() : c.toUpperCase();
 }
 
 function cycleColor(c) {
     const base = getBaseColor(c);
-    const hadStar = hasStar(c);
+    const hadApple = hasApple(c);
     const idx = COLOR_CYCLE.indexOf(base);
     const nextBase = COLOR_CYCLE[(idx + 1) % COLOR_CYCLE.length];
 
-    // Preserve star if moving to a color (not empty)
-    if (nextBase !== '.' && hadStar) {
+    // Preserve apple if moving to a color (not empty)
+    if (nextBase !== '.' && hadApple) {
         return nextBase.toUpperCase();
     }
     return nextBase;
@@ -85,6 +88,9 @@ function cloneLevel(level) {
 
 // --- Grid Modification ---
 
+// TODO: consider using a map mapping from row,col to a value. Potentially something like pythons
+// defaultdict. I think it could simplify things. But do not take my word for it. Consider 
+// and ask me my opinions. 
 function setCell(level, row, col, char) {
     const rowStr = level.grid[row];
     level.grid[row] = rowStr.substring(0, col) + char + rowStr.substring(col + 1);
@@ -94,6 +100,10 @@ function getCell(level, row, col) {
     return level.grid[row][col];
 }
 
+// TODO (same as above) again, resizing the grid is trivial with a map: you do nothing. just allow 
+// negative coordinates and normalize at the end. Or, if you prefer, normalize iemmediately by adding 1 
+// to either the row or the column coordinate of each point immediately if you add a new top row or
+// left column.
 function resizeGrid(level, newRows, newCols) {
     const newGrid = [];
 
@@ -121,6 +131,8 @@ function resizeGrid(level, newRows, newCols) {
     if (level.start[1] >= newCols) level.start[1] = newCols - 1;
 }
 
+
+// TODO: easier with dict.
 function addRow(level, position) {
     const newRow = '.'.repeat(level.nCols);
     if (position === 'top') {
@@ -132,6 +144,7 @@ function addRow(level, position) {
     level.nRows++;
 }
 
+// Same.
 function removeRow(level, position) {
     if (level.nRows <= 1) return false;
 
@@ -146,6 +159,7 @@ function removeRow(level, position) {
     return true;
 }
 
+// And here, I think. 
 function addCol(level, position) {
     for (let r = 0; r < level.nRows; r++) {
         if (position === 'left') {
@@ -218,17 +232,7 @@ function saveCustomLevels() {
 }
 
 function addCustomLevel(level) {
-    // Generate unique name if needed
-    let baseName = level.name || "Custom Level";
-    let name = baseName;
-    let counter = 1;
-
-    while (editorState.customLevels.some(l => l.name === name)) {
-        counter++;
-        name = `${baseName} ${counter}`;
-    }
-
-    level.name = name;
+    level.name = `Custom Level ${editorState.customLevels.length + 1}`;
     editorState.customLevels.push(cloneLevel(level));
     saveCustomLevels();
     return level.name;
@@ -246,6 +250,24 @@ function deleteCustomLevel(name) {
 
 // --- Level Validation ---
 
+function findReachableTiles(level, startRow, startCol) {
+    const visited = new Set();
+    const queue = [[startRow, startCol]];
+    const key = (r, c) => `${r},${c}`;
+
+    while (queue.length > 0) {
+        const [r, c] = queue.shift();
+        const k = key(r, c);
+        if (visited.has(k)) continue;
+        if (r < 0 || r >= level.nRows || c < 0 || c >= level.nCols) continue;
+        if (!isColorChar(getCell(level, r, c))) continue;
+
+        visited.add(k);
+        queue.push([r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]);
+    }
+    return visited;
+}
+
 function validateLevel(level) {
     const errors = [];
 
@@ -255,16 +277,27 @@ function validateLevel(level) {
         errors.push("Pig must be on a colored tile");
     }
 
-    // Check there's at least one star
-    let hasStars = false;
+    // Check there's at least one apple
+    let hasApples = false;
     for (const row of level.grid) {
         if (/[RGB]/.test(row)) {
-            hasStars = true;
+            hasApples = true;
             break;
         }
     }
-    if (!hasStars) {
-        errors.push("Level must have at least one apple (star)");
+    if (!hasApples) {
+        errors.push("Level must have at least one apple");
+    }
+
+    // Check all colored tiles are reachable from start
+    const reachable = findReachableTiles(level, level.start[0], level.start[1]);
+    for (let r = 0; r < level.nRows; r++) {
+        for (let c = 0; c < level.nCols; c++) {
+            if (isColorChar(getCell(level, r, c)) && !reachable.has(`${r},${c}`)) {
+                errors.push("All colored tiles must be reachable from the pig");
+                return errors; // Early return, one message is enough
+            }
+        }
     }
 
     return errors;
@@ -279,30 +312,26 @@ function setCssVariable(id, val) {
     document.documentElement.style.setProperty(id, val.toString());
 }
 
+// TODO: this looks more or less identical to the loadLevel function in main.js 
+// Would it be possible to share implementation without too much hassle? 
 function renderEditorGrid() {
     const level = editorState.level;
     if (!level) return;
-
-    const classLists = {
-        ".": "empty",
-        "r": "red",
-        "g": "green",
-        "b": "blue",
-        "R": "red target",
-        "G": "green target",
-        "B": "blue target",
-    };
 
     editorUI.grid.innerHTML = "";
 
     setCssVariable("--grid-n-rows", level.nRows);
     setCssVariable("--grid-n-cols", level.nCols);
 
+    // Sync size inputs with current level
+    editorUI.gridRows.value = level.nRows;
+    editorUI.gridCols.value = level.nCols;
+
     const cells = level.grid.join("");
     for (let i = 0; i < cells.length; i++) {
         const c = cells[i];
         const div = document.createElement("div");
-        div.className = "game-tile " + classLists[c];
+        div.className = "game-tile " + TILE_CLASSES[c];
         div.dataset.index = i;
         editorUI.grid.appendChild(div);
     }
@@ -318,17 +347,12 @@ function renderEditorGrid() {
 
 // --- Mode Switching ---
 
-function enterEditMode(currentLevel) {
+function enterEditMode() {
     editorState.active = true;
 
-    // Clone the current level or create a new one
-    if (currentLevel) {
-        editorState.level = cloneLevel(currentLevel);
-    } else {
-        editorState.level = createEmptyLevel(8, 8);
-        // Place pig on a blue cell at origin
-        setCell(editorState.level, 0, 0, 'b');
-    }
+    // Always create a new level
+    editorState.level = createEmptyLevel(8, 8);
+    setCell(editorState.level, 0, 0, 'b');
 
     // Update UI
     document.body.classList.add("editor-mode");
@@ -367,9 +391,9 @@ function attachEditorListeners() {
     boundHandlers.gridClick = handleGridClick;
     editorUI.grid.addEventListener("click", boundHandlers.gridClick);
 
-    // Grid right-click handler (star toggle)
-    boundHandlers.gridContextMenu = handleGridContextMenu;
-    editorUI.grid.addEventListener("contextmenu", boundHandlers.gridContextMenu);
+    // Grid right-click handler (apple toggle)
+    boundHandlers.rightClick = handleRightClick;
+    editorUI.grid.addEventListener("contextmenu", boundHandlers.rightClick);
 
     // Pig click handler (rotation)
     boundHandlers.agentClick = handleAgentClick;
@@ -403,9 +427,10 @@ function attachEditorListeners() {
     editorUI.edgeRightAdd.addEventListener("click", boundHandlers.edgeRightAdd);
     editorUI.edgeRightRemove.addEventListener("click", boundHandlers.edgeRightRemove);
 
-    // Size preset handler
-    boundHandlers.sizePresetChange = handleSizePresetChange;
-    editorUI.sizePreset.addEventListener("change", boundHandlers.sizePresetChange);
+    // Size input handlers
+    boundHandlers.sizeChange = handleSizeChange;
+    editorUI.gridRows.addEventListener("change", boundHandlers.sizeChange);
+    editorUI.gridCols.addEventListener("change", boundHandlers.sizeChange);
 
     // Save button handler
     boundHandlers.saveClick = handleSaveClick;
@@ -418,7 +443,7 @@ function attachEditorListeners() {
 
 function detachEditorListeners() {
     editorUI.grid.removeEventListener("click", boundHandlers.gridClick);
-    editorUI.grid.removeEventListener("contextmenu", boundHandlers.gridContextMenu);
+    editorUI.grid.removeEventListener("contextmenu", boundHandlers.rightClick);
     editorUI.agent.removeEventListener("click", boundHandlers.agentClick);
     editorUI.agent.removeEventListener("dragstart", boundHandlers.agentDragStart);
     editorUI.grid.removeEventListener("dragover", boundHandlers.gridDragOver);
@@ -434,7 +459,8 @@ function detachEditorListeners() {
     editorUI.edgeRightAdd.removeEventListener("click", boundHandlers.edgeRightAdd);
     editorUI.edgeRightRemove.removeEventListener("click", boundHandlers.edgeRightRemove);
 
-    editorUI.sizePreset.removeEventListener("change", boundHandlers.sizePresetChange);
+    editorUI.gridRows.removeEventListener("change", boundHandlers.sizeChange);
+    editorUI.gridCols.removeEventListener("change", boundHandlers.sizeChange);
     editorUI.saveButton.removeEventListener("click", boundHandlers.saveClick);
     editorUI.newButton.removeEventListener("click", boundHandlers.newClick);
 
@@ -470,19 +496,10 @@ function handleGridClick(e) {
     setCell(editorState.level, row, col, newChar);
 
     // Update the tile's class
-    const classLists = {
-        ".": "empty",
-        "r": "red",
-        "g": "green",
-        "b": "blue",
-        "R": "red target",
-        "G": "green target",
-        "B": "blue target",
-    };
-    tile.className = "game-tile " + classLists[newChar];
+    tile.className = "game-tile " + TILE_CLASSES[newChar];
 }
 
-function handleGridContextMenu(e) {
+function handleRightClick(e) {
     e.preventDefault();
 
     // Ignore right-clicks on the pig
@@ -501,11 +518,11 @@ function handleGridContextMenu(e) {
         return;
     }
 
-    // Toggle star on colored cells only
+    // Toggle apple on colored cells only
     const currentChar = getCell(editorState.level, row, col);
     if (!isColorChar(currentChar)) return;
 
-    const newChar = toggleStar(currentChar);
+    const newChar = toggleApple(currentChar);
     setCell(editorState.level, row, col, newChar);
 
     // Update the tile's class
@@ -541,8 +558,9 @@ function handleGridDrop(e) {
     renderEditorGrid();
 }
 
-function handleSizePresetChange(e) {
-    const [rows, cols] = e.target.value.split(",").map(Number);
+function handleSizeChange() {
+    const rows = parseInt(editorUI.gridRows.value) || 1;
+    const cols = parseInt(editorUI.gridCols.value) || 1;
     resizeGrid(editorState.level, rows, cols);
     renderEditorGrid();
 }
@@ -550,12 +568,12 @@ function handleSizePresetChange(e) {
 function handleSaveClick() {
     const errors = validateLevel(editorState.level);
     if (errors.length > 0) {
-        alert("Cannot save level:\n" + errors.join("\n"));
+        showNotification(errors[0], true);
         return;
     }
 
     const name = addCustomLevel(editorState.level);
-    alert(`Level "${name}" saved!`);
+    showNotification(`Level "${name}" saved!`);
 
     // Notify main.js to refresh the level list
     if (typeof onLevelSaved === "function") {
@@ -564,7 +582,8 @@ function handleSaveClick() {
 }
 
 function handleNewClick() {
-    const [rows, cols] = editorUI.sizePreset.value.split(",").map(Number);
+    const rows = parseInt(editorUI.gridRows.value) || 8;
+    const cols = parseInt(editorUI.gridCols.value) || 8;
     editorState.level = createEmptyLevel(rows, cols);
     // Place pig on a blue cell at origin
     setCell(editorState.level, 0, 0, 'b');
@@ -585,7 +604,8 @@ function initEditorUI() {
         modePlay: document.getElementById("mode-play"),
         modeEdit: document.getElementById("mode-edit"),
         editorToolbar: document.getElementById("editor-toolbar"),
-        sizePreset: document.getElementById("size-preset"),
+        gridRows: document.getElementById("grid-rows"),
+        gridCols: document.getElementById("grid-cols"),
         saveButton: document.getElementById("editor-save"),
         newButton: document.getElementById("editor-new"),
         grid: document.getElementById("grid"),
@@ -598,26 +618,44 @@ function initEditorUI() {
         edgeLeftRemove: document.getElementById("edge-left-remove"),
         edgeRightAdd: document.getElementById("edge-right-add"),
         edgeRightRemove: document.getElementById("edge-right-remove"),
+        notification: document.getElementById("editor-notification"),
     };
 
     // Load custom levels from localStorage
     loadCustomLevels();
 }
 
+// --- Notification ---
+
+let notificationTimeout = null;
+
+function showNotification(message, isError = false) {
+    clearTimeout(notificationTimeout);
+    editorUI.notification.textContent = message;
+    editorUI.notification.classList.toggle("error", isError);
+    editorUI.notification.classList.add("show");
+
+    editorUI.notification.onclick = () => {
+        editorUI.notification.classList.remove("show");
+    };
+
+    notificationTimeout = setTimeout(() => {
+        editorUI.notification.classList.remove("show");
+    }, 3000);
+}
+
 // --- Exports ---
 
 export {
     editorState,
-    SIZE_PRESETS,
     initEditorUI,
     editorUI,
     isColorChar,
-    hasStar,
+    hasApple,
     getBaseColor,
-    toggleStar,
+    toggleApple,
     cycleColor,
     createEmptyLevel,
-    cloneLevel,
     setCell,
     getCell,
     resizeGrid,

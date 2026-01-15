@@ -263,6 +263,21 @@ body {
     padding: 8px;
     overflow-y: auto;
     flex: 1;
+    min-height: 0;
+}
+
+#custom-levels-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#custom-level-list {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
 }
 
 #level-list li {
@@ -443,6 +458,14 @@ body {
     background: rgba(90, 145, 120, 1);
 }
 
+.editor-notification.error {
+    background: rgba(180, 80, 80, 0.95);
+}
+
+.editor-notification.error:hover {
+    background: rgba(180, 80, 80, 1);
+}
+
 #code-input, .CodeMirror {
     height: 100% !important;
     font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
@@ -604,6 +627,7 @@ body {
    Game Section
    ============================================ */
 #game-section {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -633,19 +657,39 @@ body {
     display: none;
 }
 
-.editor-toolbar select {
-    padding: 8px 12px;
+.size-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.size-inputs label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: var(--color-text);
+}
+
+.size-inputs input[type="number"] {
+    width: 60px;
+    padding: 6px 8px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
     color: var(--color-text);
     font-size: 0.875rem;
-    cursor: pointer;
+    text-align: center;
 }
 
-.editor-toolbar select:focus {
+.size-inputs input[type="number"]:focus {
     outline: none;
     border-color: var(--color-interactive);
+}
+
+.size-separator {
+    color: var(--color-text-muted);
+    font-size: 1rem;
 }
 
 /* ============================================
@@ -751,6 +795,12 @@ body.editor-mode #agent {
 
 body.editor-mode #agent:active {
     cursor: grabbing;
+}
+
+/* In editor mode, hide built-in levels and show only custom levels */
+body.editor-mode #sidebar > .sidebar-header,
+body.editor-mode #level-list {
+    display: none;
 }
 
 #grid {

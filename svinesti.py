@@ -70,7 +70,7 @@ class State():
     
     def count_op(self):
         self.nOps += 1
-        if (self.nOps > 1000):
+        if (self.nOps > 10000):
             raise GracefulExit
 
 def move_aux(s):
