@@ -2,7 +2,6 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 import {
     ENABLE_SPLASH_SCREEN,
-    STATUS,
     TILE_CLASSES,
     KEYFRAMES,
     MOVE_MULTIPLIER,
@@ -67,15 +66,87 @@ const state = {
     },
 };
 
-function syncUI() {
-    const s = STATUS[state.playback.status];
-    ui.playbackToolbar.className = `playback-toolbar ${state.playback.status}`;
-    ui.editor.setOption("readOnly", s.editorReadOnly);
+
+function enterIdle(resetBoard = true) {
+	// State
+	state.playback.status = "idle";
+	state.isSingleStepping = false;
+	state.playback.trace = null;
+	state.playback.index = 0;
+	state.currentAnimation = null;
+
+	// UI
+	ui.playbackToolbar.className = "playback-toolbar idle";
+	ui.editor.setOption("readOnly", false);
+	ui.btn1.classList.remove("pauseIcon");
+	ui.btn1.classList.add("playIcon");
+
+	// Clear line highlighting
+	for (let i = 0; i < ui.editor.lineCount(); i++) {
+		ui.editor.removeLineClass(i, "background", "highlighted-line");
+	}
+
+	// Behavior
+	ui.btn1.onclick = () => submitCode();
+	ui.btn2.onclick = () => { state.isSingleStepping = true; submitCode(); };
+	ui.btn3.onclick = () => enterIdle();
+
+	// Conditional actions
+	if (resetBoard) {
+		ui.agent.getAnimations().forEach(a => a.cancel());
+		loadLevel(state.level);
+	}
 }
 
-function pause() {
-    state.playback.status = "paused";
-    syncUI();
+function enterPlaying(newTrace = null) {
+	// State
+	state.playback.status = "playing";
+	state.isSingleStepping = false;
+
+	if (newTrace !== null) {
+		state.playback.trace = newTrace;
+		state.playback.index = 0;
+		state.currentDirection = state.level.dir;
+		loadLevel(state.level);
+	}
+
+	// UI
+	ui.playbackToolbar.className = "playback-toolbar playing";
+	ui.editor.setOption("readOnly", "nocursor");
+	ui.btn1.classList.remove("playIcon");
+	ui.btn1.classList.add("pauseIcon");
+
+	// Behavior
+	ui.btn1.onclick = () => enterPaused();
+	ui.btn2.onclick = () => { enterPaused(); step(); };
+	ui.btn3.onclick = () => enterIdle();
+
+	// Start playback
+	step();
+}
+
+function enterPaused(newTrace = null) {
+	// State
+	state.playback.status = "paused";
+	state.isSingleStepping = true;
+
+	if (newTrace !== null) {
+		state.playback.trace = newTrace;
+		state.playback.index = 0;
+		state.currentDirection = state.level.dir;
+		loadLevel(state.level);
+	}
+
+	// UI
+	ui.playbackToolbar.className = "playback-toolbar paused";
+	ui.editor.setOption("readOnly", false);
+	ui.btn1.classList.remove("pauseIcon");
+	ui.btn1.classList.add("playIcon");
+
+	// Behavior
+	ui.btn1.onclick = () => enterPlaying();
+	ui.btn2.onclick = () => step();
+	ui.btn3.onclick = () => enterIdle();
 }
 
 // --- Utilities ---
@@ -442,7 +513,7 @@ async function step() {
                         fill: 'forwards'
                     });
                 }
-                playbackStop(false);
+                enterIdle(false);
                 return;
         }
     } catch (e) {
@@ -457,82 +528,6 @@ async function step() {
     }
 }
 
-function playbackInit(trace, singleStep = false) {
-    state.playback.index = 0;
-    state.playback.trace = trace;
-    state.currentDirection = state.level.dir;
-
-    loadLevel(state.level);
-
-    // Check if we should start in paused mode (for single-stepping)
-    if (singleStep) {
-        state.playback.status = "paused";
-        syncUI();
-    } else {
-        state.playback.status = "playing";
-        syncUI();
-        step(); // Kick off the chain - animationend events continue it
-    }
-}
-
-function playbackStop(resetBoard = true) {
-    // Cancel ALL animations on the pig (walk + translate can run in parallel)
-    // But only if we're resetting the board (not on game over)
-    if (resetBoard) {
-        ui.agent.getAnimations().forEach(a => a.cancel());
-    }
-    state.currentAnimation = null;
-
-    state.playback.status = "idle";
-    state.playback.trace = null;
-    state.playback.index = 0;
-    syncUI();
-
-    // Clear line highlighting
-    for (let i = 0; i < ui.editor.lineCount(); i++) {
-        ui.editor.removeLineClass(i, "background", "highlighted-line");
-    }
-
-    // Reset the board to initial state (unless finishing a completed game)
-    if (resetBoard) {
-        loadLevel(state.level);
-    }
-}
-
-function playbackResume() {
-    if (state.playback.status === "paused") {
-        state.playback.status = "playing";
-        syncUI();
-        step(); // Kick off the chain - animationend events continue it
-        return true;
-    }
-    return false;
-}
-
-// State-dependent behavior for playback controls
-const BEHAVIOR = {
-    idle: {
-        btn1: () => submitCode(),
-        btn2: () => { state.isSingleStepping = true; submitCode(); },
-        btn3: () => playbackStop(),
-    },
-    playing: {
-        btn1: () => pause(),
-        btn2: () => { pause(); step(); },
-        btn3: () => playbackStop(),
-    },
-    paused: {
-        btn1: () => playbackResume(),
-        btn2: () => step(),
-        btn3: () => playbackStop(),
-    },
-};
-
-function dispatch(action) {
-    BEHAVIOR[state.playback.status][action]();
-}
-
-
 // --- Worker management ---
 
 function hideSplashScreen() {
@@ -546,7 +541,7 @@ function hideSplashScreen() {
 }
 
 function initWorker() {
-    playbackStop();
+    enterIdle();
 
     console.log("Initializing worker");
     if (state.worker) state.worker.terminate();
@@ -559,7 +554,11 @@ function initWorker() {
                 hideSplashScreen();
             }, 1500);
         } else if (event.data.type === "execution-trace") {
-            playbackInit(event.data.trace, state.isSingleStepping);
+            if (state.isSingleStepping) {
+                enterPaused(event.data.trace);
+            } else {
+                enterPlaying(event.data.trace);
+            }
             state.isSingleStepping = false;
         } else if (event.data.type === "execution-failed") {
             ui.codeOutput.textContent = event.data.errorMessage;
@@ -572,7 +571,7 @@ function initWorker() {
 // --- Actions ---
 
 function selectLevel(level) {
-    playbackStop();
+    enterIdle();
     storeCode();
     state.level = level;
     loadCode();
@@ -596,7 +595,10 @@ function switchLanguage(newLang) {
 }
 
 function submitCode() {
-    if (playbackResume()) return;
+    if (state.playback.status === "paused") {
+        enterPlaying();
+        return;
+    }
 
     ui.codeOutput.textContent = "";
     let program = ui.editor.getValue();
@@ -628,15 +630,9 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
 }
 
 initWorker();
-syncUI(); // Initialize button states
 
 // Initialize font size from slider
 ui.editor.getWrapperElement().style.fontSize = ui.fontSizeSlider.value + "px";
-
-// Set up button handlers
-ui.btn1.onclick = () => dispatch("btn1");
-ui.btn2.onclick = () => dispatch("btn2");
-ui.btn3.onclick = () => dispatch("btn3");
 
 // Prepare levels: if the starting position has a star (uppercase letter),
 // convert it to just the tile (lowercase) so the pig doesn't start on a star.
@@ -669,7 +665,7 @@ ui.levelList.querySelector("li button").click();
 
 ui.readOnlyNotification.onclick = () => {
     if (state.playback.status === "playing") {
-        pause();
+        enterPaused();
         ui.readOnlyNotification.classList.remove("show");
     }
 };
@@ -683,7 +679,7 @@ ui.editor.on("change", () => {
 
     // If paused and user edits code, automatically reset
     if (state.playback.status === "paused") {
-        playbackStop();
+        enterIdle();
     }
 });
 
@@ -736,7 +732,7 @@ document.addEventListener("keydown", (event) => {
             if (ui.editor.getOption("readOnly")) {
                 if (isNotificationShowing()) {
                     // Second press - pause and focus
-                    pause();
+                    enterPaused();
                     ui.readOnlyNotification.classList.remove("show");
                     ui.editor.focus();
                     ui.editor.setCursor(ui.editor.getCursor());
@@ -752,9 +748,9 @@ document.addEventListener("keydown", (event) => {
         }
 
         // h, j, k = btn1, btn2, btn3
-        if (event.key === "h" && isShortcutEnabled('h')) { event.preventDefault(); dispatch("btn1"); return; }
-        if (event.key === "j" && isShortcutEnabled('j')) { event.preventDefault(); dispatch("btn2"); return; }
-        if (event.key === "k" && isShortcutEnabled('k')) { event.preventDefault(); dispatch("btn3"); return; }
+        if (event.key === "h" && isShortcutEnabled('h')) { event.preventDefault(); ui.btn1.click(); return; }
+        if (event.key === "j" && isShortcutEnabled('j')) { event.preventDefault(); ui.btn2.click(); return; }
+        if (event.key === "k" && isShortcutEnabled('k')) { event.preventDefault(); ui.btn3.click(); return; }
     } else {
         // Escape or double-tap i = unfocus editor
         if (event.key === "Escape" && isShortcutEnabled('ii')) {
@@ -1081,7 +1077,7 @@ ui.modeEdit.onclick = () => {
     if (Editor.editorState.active) return;
 
     // Stop any playback
-    playbackStop();
+    enterIdle();
 
     // Enter edit mode with a fresh level
     Editor.enterEditMode();

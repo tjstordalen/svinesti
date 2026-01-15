@@ -1,20 +1,6 @@
 // Debug/config
 export const ENABLE_SPLASH_SCREEN = false;
 
-// Playback status machine
-export const STATUS = {
-    idle: {
-        editorReadOnly: false,
-    },
-    playing: {
-        editorReadOnly: "nocursor",
-    },
-    paused: {
-        editorReadOnly: false,
-    },
-};
-
-
 // Map grid characters to CSS classes
 export const TILE_CLASSES = {
     ".": "empty",
