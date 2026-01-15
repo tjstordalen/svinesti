@@ -136,6 +136,98 @@ function showReadOnlyNotification(message = NOTIFICATION_CLICK) {
     }, 2000);
 }
 
+// --- Shortcut settings ---
+
+const SHORTCUTS_STORAGE_KEY = 'svinesti-shortcuts';
+const DEFAULT_SHORTCUTS = {
+    'ctrl+enter': false,
+    'h': false,
+    'j': false,
+    'k': false,
+    'i': false,
+    'ii': false,
+    '?': true,  // Always enabled, cannot be disabled
+};
+
+let shortcutSettings = loadShortcutSettings();
+
+function loadShortcutSettings() {
+    try {
+        const saved = localStorage.getItem(SHORTCUTS_STORAGE_KEY);
+        if (saved) {
+            return { ...DEFAULT_SHORTCUTS, ...JSON.parse(saved) };
+        }
+    } catch (e) {}
+    return { ...DEFAULT_SHORTCUTS };
+}
+
+function saveShortcutSettings() {
+    localStorage.setItem(SHORTCUTS_STORAGE_KEY, JSON.stringify(shortcutSettings));
+}
+
+function isShortcutEnabled(key) {
+    return shortcutSettings[key] !== false;
+}
+
+function toggleShortcut(key) {
+    if (key === '?') return;  // Cannot disable help shortcut
+    shortcutSettings[key] = !shortcutSettings[key];
+    saveShortcutSettings();
+    updateShortcutUI();
+}
+
+function setAllShortcuts(enabled) {
+    for (const key in shortcutSettings) {
+        if (key !== '?') shortcutSettings[key] = enabled;
+    }
+    saveShortcutSettings();
+    updateShortcutUI();
+}
+
+function updateShortcutUI() {
+    const list = document.getElementById('shortcuts-list');
+    const masterToggle = document.getElementById('shortcuts-enabled');
+    if (!list || !masterToggle) return;
+
+    // Update individual shortcuts (? is always enabled)
+    list.querySelectorAll('li[data-shortcut]').forEach(li => {
+        const key = li.dataset.shortcut;
+        if (key === '?') return;
+        li.classList.toggle('disabled', !shortcutSettings[key]);
+    });
+
+    // Update master toggle (checked if ANY toggleable shortcut is enabled)
+    const anyEnabled = Object.entries(shortcutSettings)
+        .filter(([key]) => key !== '?')
+        .some(([, v]) => v);
+    masterToggle.checked = anyEnabled;
+}
+
+function initShortcutToggles() {
+    const list = document.getElementById('shortcuts-list');
+    const masterToggle = document.getElementById('shortcuts-enabled');
+    if (!list || !masterToggle) return;
+
+    // Click on individual shortcut to toggle (except ?)
+    list.querySelectorAll('li[data-shortcut]').forEach(li => {
+        if (li.dataset.shortcut === '?') {
+            li.style.cursor = 'default';
+            return;
+        }
+        li.addEventListener('click', () => {
+            toggleShortcut(li.dataset.shortcut);
+        });
+    });
+
+    // Master toggle
+    masterToggle.addEventListener('change', () => {
+        setAllShortcuts(masterToggle.checked);
+    });
+
+    // Initialize UI state
+    updateShortcutUI();
+}
+
 function isNotificationShowing() {
     return ui.readOnlyNotification.classList.contains("show");
 }
@@ -406,6 +498,7 @@ function hideSplashScreen() {
     ui.splashScreen.classList.add("fade-out");
     setTimeout(() => {
         ui.splashScreen.style.display = "none";
+        showHelp();
     }, 500); // Match CSS transition duration
 }
 
@@ -485,9 +578,10 @@ function submitCode() {
 
 // --- Initialize ---
 
-// Hide splash screen immediately if disabled
+// Hide splash screen immediately if disabled, show help
 if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     ui.splashScreen.style.display = "none";
+    showHelp();
 }
 
 initWorker();
@@ -565,13 +659,13 @@ ui.editor.on("keydown", (cm, event) => {
 
 document.addEventListener("keydown", (event) => {
     // Run code
-    if (event.ctrlKey && event.key === "Enter") {
+    if (event.ctrlKey && event.key === "Enter" && isShortcutEnabled('ctrl+enter')) {
         submitCode();
         return;
     }
 
     // Toggle help
-    if (event.key === "?") {
+    if (event.key === "?" && isShortcutEnabled('?')) {
         event.preventDefault();
         if (ui.helpModal.classList.contains("show")) {
             hideHelp();
@@ -591,7 +685,7 @@ document.addEventListener("keydown", (event) => {
     // Playback shortcuts (only when not typing in editor)
     if (!ui.editor.hasFocus()) {
         // i = focus editor
-        if (event.key === "i") {
+        if (event.key === "i" && isShortcutEnabled('i')) {
             event.preventDefault();
             if (ui.editor.getOption("readOnly")) {
                 if (isNotificationShowing()) {
@@ -612,17 +706,17 @@ document.addEventListener("keydown", (event) => {
         }
 
         // h, j, k = btn1, btn2, btn3
-        if (event.key === "h") { event.preventDefault(); dispatch("btn1"); return; }
-        if (event.key === "j") { event.preventDefault(); dispatch("btn2"); return; }
-        if (event.key === "k") { event.preventDefault(); dispatch("btn3"); return; }
+        if (event.key === "h" && isShortcutEnabled('h')) { event.preventDefault(); dispatch("btn1"); return; }
+        if (event.key === "j" && isShortcutEnabled('j')) { event.preventDefault(); dispatch("btn2"); return; }
+        if (event.key === "k" && isShortcutEnabled('k')) { event.preventDefault(); dispatch("btn3"); return; }
     } else {
         // Escape or double-tap i = unfocus editor
-        if (event.key === "Escape") {
+        if (event.key === "Escape" && isShortcutEnabled('ii')) {
             event.preventDefault();
             ui.editor.getInputField().blur();
             return;
         }
-        if (event.key === "i") {
+        if (event.key === "i" && isShortcutEnabled('ii')) {
             const now = Date.now();
             if (now - lastEditorIPress < 300) {
                 event.preventDefault();
@@ -649,6 +743,9 @@ ui.sidebarToggle.onclick = () => {
 ui.helpButton.onclick = showHelp;
 ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
+
+// Initialize shortcut toggles
+initShortcutToggles();
 
 // --- Editor Integration ---
 

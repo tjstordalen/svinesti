@@ -212,14 +212,22 @@ isBlue()</code></pre>
 
                 <div class="help-column">
                     <h3>Keyboard Shortcuts</h3>
-                    <ul>
-                        <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Run code</li>
-                        <li><kbd>H</kbd> - Play / Pause</li>
-                        <li><kbd>J</kbd> - Step</li>
-                        <li><kbd>K</kbd> - Reset</li>
-                        <li><kbd>I</kbd> - Focus editor</li>
-                        <li><kbd>I</kbd><kbd>I</kbd> / <kbd>Esc</kbd> - Unfocus editor</li>
-                        <li><kbd>?</kbd> - Open/Close this help</li>
+                    <div class="shortcuts-master-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="shortcuts-enabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Enable shortcuts</span>
+                        <span class="toggle-hint">or click individual shortcuts below</span>
+                    </div>
+                    <ul id="shortcuts-list" class="shortcuts-list">
+                        <li data-shortcut="ctrl+enter"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Run code</li>
+                        <li data-shortcut="h"><kbd>H</kbd> - Play / Pause</li>
+                        <li data-shortcut="j"><kbd>J</kbd> - Step</li>
+                        <li data-shortcut="k"><kbd>K</kbd> - Reset</li>
+                        <li data-shortcut="i"><kbd>I</kbd> - Focus editor</li>
+                        <li data-shortcut="ii"><kbd>I</kbd><kbd>I</kbd> / <kbd>Esc</kbd> - Unfocus editor</li>
+                        <li data-shortcut="?"><kbd>?</kbd> - Open/Close this help</li>
                     </ul>
 
                     <h3>Level Editor</h3>
@@ -231,15 +239,12 @@ isBlue()</code></pre>
                         <li><strong>Drag pig</strong>: move starting position</li>
                         <li><strong>Click pig</strong>: rotate direction</li>
                     </ul>
+                </div>
 
-                    <h4>Licenses</h4>
-                    <ul class="license-list">
-                        <li><a href="https://opengameart.org/content/pigs-rework" target="_blank">Pig sprites</a> by AntumDeluge: CC-BY 3.0</li>
-                        <li><a href="https://github.com/pyodide/pyodide" target="_blank">Pyodide</a>: MPL 2.0</li>
-                        <li><a href="https://icons.getbootstrap.com/" target="_blank">Bootstrap Icons</a>: MIT</li>
-                        <li><a href="https://codemirror.net/" target="_blank">CodeMirror</a>: MIT</li>
-                        <li><a href="https://www.antlr.org/" target="_blank">ANTLR</a>: BSD</li>
-                    </ul>
+                <div class="help-licenses">
+                    &copy; 2026 Tord Stordalen · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC-BY-NC-SA 4.0</a>
+                    <br>
+                    <a href="https://opengameart.org/content/pigs-rework" target="_blank">Pig sprites</a> by Daniel Eddeland, reworked by AntumDeluge: CC-BY 3.0
                 </div>
             </div>
         </div>
