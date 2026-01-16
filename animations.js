@@ -84,7 +84,7 @@ const KEYFRAMES = {
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Animation} - The animation object
  */
-export function walk(agent, direction, animSpeed) {
+function walk(agent, direction, animSpeed) {
     const walkDuration = animSpeed * MOVE_MULTIPLIER / WALK_CYCLES;
     return agent.animate(
         KEYFRAMES.WALK[direction],
@@ -100,7 +100,7 @@ export function walk(agent, direction, animSpeed) {
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-export async function move(agent, dx, dy, animSpeed) {
+async function move(agent, dx, dy, animSpeed) {
     const anim = agent.animate([
         { translate: '0 0' },
         { translate: `${dx}px ${dy}px` }
@@ -121,7 +121,7 @@ export async function move(agent, dx, dy, animSpeed) {
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-export async function turn(agent, direction, animSpeed) {
+async function turn(agent, direction, animSpeed) {
     // Phase 1: hop up
     const hopUp = agent.animate(KEYFRAMES.HOP_UP, {
         duration: animSpeed * TURN_MULTIPLIER * 0.33,
@@ -151,7 +151,7 @@ export async function turn(agent, direction, animSpeed) {
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-export async function hudFlash(hud, animSpeed) {
+async function hudFlash(hud, animSpeed) {
     const anim = hud.animate(KEYFRAMES.HUD_FLASH, {
         duration: animSpeed * HUD_MULTIPLIER,
         easing: 'ease-in-out'
@@ -163,7 +163,8 @@ export async function hudFlash(hud, animSpeed) {
  * Plays the celebrate animation on win
  * @param {HTMLElement} agent - The pig element
  */
-export function celebrate(agent) {
+function celebrate(agent) {
+    confetti(document.getElementById('confetti-container'));
     agent.animate(KEYFRAMES.CELEBRATE, {
         duration: 1500,
         easing: 'ease-out'
@@ -176,7 +177,7 @@ export function celebrate(agent) {
  * @param {string} direction - Current direction the pig is facing
  * @param {HTMLElement} gridWrapper - The grid wrapper element (optional)
  */
-export function lose(agent, direction, gridWrapper) {
+function lose(agent, direction, gridWrapper) {
     if (gridWrapper) {
         gridWrapper.animate(KEYFRAMES.SHAKE, {
             duration: 600,
@@ -211,7 +212,7 @@ const NOTIFY_COLOR_ERROR = 'rgba(180, 80, 80, 0.95)';
  * @param {number} duration - Total duration in ms (default 2500)
  * @returns {Animation} - The animation object (can be cancelled)
  */
-export function notify(element, message, isError = false, duration = 2500) {
+function notify(element, message, isError = false, duration = 2500) {
     // Cancel any existing animation on this element
     element.getAnimations().forEach(a => a.cancel());
 
@@ -223,3 +224,63 @@ export function notify(element, message, isError = false, duration = 2500) {
         easing: 'ease-in-out',
     });
 }
+
+// Confetti colors
+const CONFETTI_COLORS = ['#FF8A8A', '#58E0B8', '#85D0FF', '#FFD700', '#FF6B6B', '#4ECDC4'];
+
+/**
+ * Shows win confetti animation
+ * @param {HTMLElement} container - The confetti container element
+ */
+function confetti(container) {
+    if (!container) return;
+
+    // Clear any existing confetti
+    container.innerHTML = '';
+
+    // Create confetti pieces
+    const numPieces = 40;
+    for (let i = 0; i < numPieces; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti';
+
+        // Random shape
+        const shapes = ['square', 'circle', 'ribbon'];
+        piece.classList.add(shapes[Math.floor(Math.random() * shapes.length)]);
+
+        // Random color
+        piece.style.backgroundColor = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+
+        // Random position
+        piece.style.left = Math.random() * 100 + '%';
+
+        // Random animation properties
+        const duration = 2 + Math.random() * 2; // 2-4 seconds
+        const drift = (Math.random() - 0.5) * 100; // -50 to 50px
+        const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
+
+        piece.style.setProperty('--drift', drift + 'px');
+        piece.style.setProperty('--rotation', rotation + 'deg');
+        piece.style.animationDuration = duration + 's';
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+
+        container.appendChild(piece);
+    }
+
+    // Clean up after animation
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+// --- Exports ---
+
+export const animations = {
+    walk,
+    move,
+    turn,
+    hudFlash,
+    celebrate,
+    lose,
+    notify,
+};

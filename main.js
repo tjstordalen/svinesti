@@ -1,9 +1,8 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 import * as CustomLevels from "./customLevels.js";
-import * as Animations from "./animations.js";
+import { animations, pigSpriteUrl } from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
-import { pigSpriteUrl } from "./animations.js";
 import { levels, TILE_CLASSES } from "./levels.js";
 
 const ENABLE_SPLASH_SCREEN = false;
@@ -221,7 +220,7 @@ async function moveAnimated(toRow, toCol) {
     const dx = toRect.left - fromRect.left;
     const dy = toRect.top - fromRect.top;
 
-    await Animations.move(ui.agent, dx, dy, getAnimSpeed());
+    await animations.move(ui.agent, dx, dy, getAnimSpeed());
 
     // Move to actual cell
     placePig(toRow, toCol);
@@ -293,19 +292,19 @@ async function step() {
 
             case "move":
                 // Run walk animation and movement in parallel
-                Animations.walk(ui.agent, msg.dir, getAnimSpeed());
+                animations.walk(ui.agent, msg.dir, getAnimSpeed());
                 await moveAnimated(msg.pos[0], msg.pos[1]);
                 break;
 
             case "turn":
-                await Animations.turn(ui.agent, msg.dir, getAnimSpeed());
+                await animations.turn(ui.agent, msg.dir, getAnimSpeed());
                 state.currentDirection = msg.dir;
                 break;
 
             case "isColor":
                 ui.comparisonTile.className = 'game-tile ' + msg.color.toLowerCase();
                 ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
-                await Animations.hudFlash(ui.colorComparison, getAnimSpeed());
+                await animations.hudFlash(ui.colorComparison, getAnimSpeed());
                 break;
 
             case "collected":
@@ -318,11 +317,10 @@ async function step() {
             case "gameover":
                 console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
                 if (msg.win) {
-                    showWinAnimation();
-                    Animations.celebrate(ui.agent);
+                    animations.celebrate(ui.agent);
                 } else {
                     const gridWrapper = document.getElementById('grid-wrapper');
-                    Animations.lose(ui.agent, state.currentDirection, gridWrapper);
+                    animations.lose(ui.agent, state.currentDirection, gridWrapper);
                 }
                 enterIdle(false);
                 return;
@@ -491,14 +489,14 @@ ui.editor.on("change", () => {
 ui.editor.on("mousedown", (cm, event) => {
     if (cm.getOption("readOnly") && state.playback.status === "playing") {
         enterPaused();
-        Animations.notify(ui.gameNotification, "Paused to edit code");
+        animations.notify(ui.gameNotification, "Paused to edit code");
     }
 });
 
 ui.editor.on("keydown", (cm, event) => {
     if (cm.getOption("readOnly") && state.playback.status === "playing") {
         enterPaused();
-        Animations.notify(ui.gameNotification, "Paused to edit code");
+        animations.notify(ui.gameNotification, "Paused to edit code");
     }
 });
 
@@ -522,50 +520,6 @@ Editor.initEditorUI();
 
 // Build custom levels section in sidebar
 CustomLevels.init(ui, selectLevel);
-
-const CONFETTI_COLORS = ['#FF8A8A', '#58E0B8', '#85D0FF', '#FFD700', '#FF6B6B', '#4ECDC4'];
-
-function showWinAnimation() {
-    const container = document.getElementById('confetti-container');
-    if (!container) return;
-
-    // Clear any existing confetti
-    container.innerHTML = '';
-
-    // Create confetti pieces
-    const numPieces = 40;
-    for (let i = 0; i < numPieces; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-
-        // Random shape
-        const shapes = ['square', 'circle', 'ribbon'];
-        confetti.classList.add(shapes[Math.floor(Math.random() * shapes.length)]);
-
-        // Random color
-        confetti.style.backgroundColor = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-
-        // Random position
-        confetti.style.left = Math.random() * 100 + '%';
-
-        // Random animation properties
-        const duration = 2 + Math.random() * 2; // 2-4 seconds
-        const drift = (Math.random() - 0.5) * 100; // -50 to 50px
-        const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
-
-        confetti.style.setProperty('--drift', drift + 'px');
-        confetti.style.setProperty('--rotation', rotation + 'deg');
-        confetti.style.animationDuration = duration + 's';
-        confetti.style.animationDelay = Math.random() * 0.5 + 's';
-
-        container.appendChild(confetti);
-    }
-
-    // Clean up after animation
-    setTimeout(() => {
-        container.innerHTML = '';
-    }, 5000);
-}
 
 // Mode toggle handlers
 ui.modePlay.onclick = () => {
@@ -606,7 +560,7 @@ Shortcuts.register("focus-editor", "Focus editor", () => {
     if (ui.editor.hasFocus()) return;
     if (ui.editor.getOption("readOnly") && state.playback.status === "playing") {
         enterPaused();
-        Animations.notify(ui.gameNotification, "Paused to edit code");
+        animations.notify(ui.gameNotification, "Paused to edit code");
     }
     ui.editor.focus();
     ui.editor.setCursor(ui.editor.getCursor());

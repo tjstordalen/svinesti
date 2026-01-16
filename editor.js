@@ -1,6 +1,6 @@
 // Level Editor Module
 
-import { pigSpriteUrl, notify } from "./animations.js";
+import { pigSpriteUrl, animations } from "./animations.js";
 import { TILE_CLASSES } from "./levels.js";
 
 function cycleDirection(dir) {
@@ -657,7 +657,7 @@ function initEditorUI() {
 // --- Notification ---
 
 function showNotification(message, isError = false) {
-    const anim = notify(editorUI.notification, message, isError, 3000);
+    const anim = animations.notify(editorUI.notification, message, isError, 3000);
     editorUI.notification.onclick = () => anim.cancel();
 }
 
