@@ -11,8 +11,9 @@ let rebindingShortcut = null;  // Track which shortcut is being rebound
  * @param {string} name - Human-readable name for display (e.g., "Focus editor")
  * @param {Function} action - The function to call
  * @param {string} defaultKey - Default hotkey (e.g., "ctrl+enter", "?", "h")
+ * @param {Object} options - Optional settings (e.g., { ctrlNote: true })
  */
-export function register(id, name, action, defaultKey) {
+export function register(id, name, action, defaultKey, options = {}) {
     shortcuts.push({
         id,
         name,
@@ -20,7 +21,21 @@ export function register(id, name, action, defaultKey) {
         defaultKey,
         key: defaultKey,
         enabled: true,
+        ctrlNote: options.ctrlNote || false,
     });
+
+    // Auto-register Ctrl+ version for single-character keys with ctrlNote
+    if (options.ctrlNote && defaultKey.length === 1) {
+        shortcuts.push({
+            id: id + '-ctrl',
+            name,
+            action,
+            defaultKey: 'ctrl+' + defaultKey,
+            key: 'ctrl+' + defaultKey,
+            enabled: true,
+            hidden: true,  // Don't show in UI
+        });
+    }
 }
 
 /**
@@ -95,7 +110,7 @@ function renderUI(container) {
             <span class="toggle-slider"></span>
         </label>
         <span>Enable shortcuts</span>
-        <span class="toggle-hint">or click individual shortcuts below</span>
+        <span class="hint">or click individual shortcuts below</span>
     `;
     container.appendChild(masterToggle);
 
@@ -111,6 +126,9 @@ function renderUI(container) {
     }
 
     for (const shortcut of shortcuts) {
+        // Skip hidden shortcuts (e.g., auto-registered Ctrl+ versions)
+        if (shortcut.hidden) continue;
+
         const li = document.createElement('li');
         if (!shortcut.enabled) li.classList.add('disabled');
 
@@ -125,6 +143,17 @@ function renderUI(container) {
         const nameSpan = document.createElement('span');
         nameSpan.textContent = ` - ${shortcut.name}`;
 
+        // Add note for shortcuts that work with Ctrl from editor
+        let noteSpan = null;
+        if (shortcut.ctrlNote) {
+            noteSpan = document.createElement('span');
+            noteSpan.className = 'hint';
+            if (shortcut.key.length === 1) {
+                noteSpan.innerHTML = ` (<kbd>Ctrl</kbd> + <kbd>${shortcut.key.toUpperCase()}</kbd> from editor)`;
+            }
+            nameSpan.appendChild(noteSpan);
+        }
+
         // Click li to toggle enabled/disabled
         li.addEventListener('click', () => {
             shortcut.enabled = !shortcut.enabled;
@@ -135,6 +164,7 @@ function renderUI(container) {
 
         // Store references for updating later
         shortcut.keySpan = keySpan;
+        shortcut.noteSpan = noteSpan;
         shortcut.li = li;
 
         li.appendChild(keySpan);
@@ -147,7 +177,9 @@ function renderUI(container) {
         const enabled = masterCheckbox.checked;
         for (const shortcut of shortcuts) {
             shortcut.enabled = enabled;
-            shortcut.li.classList.toggle('disabled', !enabled);
+            if (shortcut.li) {
+                shortcut.li.classList.toggle('disabled', !enabled);
+            }
         }
         saveSettings();
     });
@@ -186,6 +218,17 @@ function attachKeyboardListener() {
             const newKey = getKeyString(event);
             rebindingShortcut.key = newKey;
             rebindingShortcut.keySpan.innerHTML = formatKeyDisplay(newKey);
+
+            // Update ctrlNote hint based on new key
+            if (rebindingShortcut.noteSpan) {
+                const isLetter = /^[a-z]$/i.test(newKey);
+                if (isLetter) {
+                    rebindingShortcut.noteSpan.innerHTML = ` (<kbd>Ctrl</kbd> + <kbd>${newKey.toUpperCase()}</kbd> from editor)`;
+                } else {
+                    rebindingShortcut.noteSpan.innerHTML = '';
+                }
+            }
+
             saveSettings();
             rebindingShortcut = null;
             return;

@@ -599,10 +599,8 @@ function toggleHelp() {
     }
 }
 
-Shortcuts.register("toggle-help", "Toggle help", toggleHelp, "?");
-Shortcuts.register("run-code", "Run code", submitCode, "ctrl+enter");
-Shortcuts.register("play-pause", "Play / Pause", () => ui.btn1.click(), "h");
-Shortcuts.register("step", "Step", () => ui.btn2.click(), "j");
+Shortcuts.register("play-pause", "Play / Pause", () => ui.btn1.click(), "h", { ctrlNote: true });
+Shortcuts.register("step", "Step", () => ui.btn2.click(), "j", { ctrlNote: true });
 Shortcuts.register("reset", "Reset", () => ui.btn3.click(), "k");
 Shortcuts.register("focus-editor", "Focus editor", () => {
     if (ui.editor.hasFocus()) return;
@@ -613,7 +611,7 @@ Shortcuts.register("focus-editor", "Focus editor", () => {
     ui.editor.focus();
     ui.editor.setCursor(ui.editor.getCursor());
 }, "i");
-Shortcuts.register("escape", "Escape", () => {
+Shortcuts.register("unfocus-editor", "Unfocus editor", () => {
     // Close help if open
     if (ui.helpModal.classList.contains("show")) {
         hideHelp();
@@ -624,4 +622,5 @@ Shortcuts.register("escape", "Escape", () => {
         ui.editor.getInputField().blur();
     }
 }, "escape");
+Shortcuts.register("toggle-help", "Toggle help", toggleHelp, "?");
 Shortcuts.initialize(gid("shortcuts-container"));
