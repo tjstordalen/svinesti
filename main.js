@@ -1,9 +1,8 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
-import * as Editor from "./editor.js";
-import * as CustomLevels from "./customLevels.js";
-import { animations, pigSpriteUrl } from "./animations.js";
+import { animations } from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
-import { levels, TILE_CLASSES } from "./levels.js";
+import * as Board from "./board.js";
+import { levels } from "./levels.js";
 
 const ENABLE_SPLASH_SCREEN = false;
 
@@ -148,10 +147,6 @@ function enterPaused(newTrace = null) {
 
 // --- Utilities ---
 
-function setCssVariable(id, val) {
-    document.documentElement.style.setProperty(id, val.toString());
-}
-
 function selectedLanguage() {
     return document.querySelector('.lang-btn.active').dataset.lang;
 }
@@ -187,34 +182,21 @@ function hideHelp() {
 
 // TODO: Provide a numbered list of all the occurrences of "agent" across all files and ask for confirmation before replacing them with "pig" across the board. 
 
-// --- Board rendering ---
+// --- Board rendering (play-specific wrappers) ---
 
 function updateAgentEdgeClasses(row, col) {
-    const nCols = state.level.nCols;
-
-    // Remove edge class
-    ui.agent.classList.remove('near-right-edge');
-
-    // Flip to left when there aren't 2 full tiles to the right
-    // (HUD is 200% wide, needs 2 tiles of space)
-    if (col >= nCols - 2) {
-        ui.agent.classList.add('near-right-edge');
-    }
-}
-
-function getPigCell(row, col) {
-    return ui.grid.children[row * state.level.nCols + col];
+    // Flip HUD to left when near right edge (HUD needs 2 tiles of space)
+    ui.agent.classList.toggle('near-right-edge', col >= state.level.nCols - 2);
 }
 
 function placePig(row, col) {
-    const cell = getPigCell(row, col);
-    cell.appendChild(ui.agent);
+    Board.placePig(ui.grid, ui.agent, state.level.nCols, row, col);
     updateAgentEdgeClasses(row, col);
 }
 
 async function moveAnimated(toRow, toCol) {
     const fromRect = ui.agent.getBoundingClientRect();
-    const toCell = getPigCell(toRow, toCol);
+    const toCell = Board.getCell(ui.grid, state.level.nCols, toRow, toCol);
     const toRect = toCell.getBoundingClientRect();
 
     const dx = toRect.left - fromRect.left;
@@ -222,12 +204,7 @@ async function moveAnimated(toRow, toCol) {
 
     await animations.move(ui.agent, dx, dy, getAnimSpeed());
 
-    // Move to actual cell
     placePig(toRow, toCol);
-}
-
-function turn(direction) {
-    ui.agent.style.backgroundImage = pigSpriteUrl(direction);
 }
 
 function loadLevel(level) {
@@ -237,21 +214,11 @@ function loadLevel(level) {
     ui.agent.getAnimations().forEach(a => a.cancel());
     ui.agent.style.transform = '';
 
-    ui.grid.innerHTML = "";
+    Board.renderGrid(ui.grid, level);
 
-    setCssVariable("--grid-n-rows", level.nRows);
-    setCssVariable("--grid-n-cols", level.nCols);
-
-    const cells = level.grid.join("");
-    for (let c of cells) {
-        const div = document.createElement("div");
-        div.className = "game-tile " + TILE_CLASSES[c];
-        ui.grid.appendChild(div);
-    }
-
-	const [row, col] = level.start;
-	placePig(row, col);
-	turn(level.dir);
+    const [row, col] = level.start;
+    placePig(row, col);
+    Board.setPigDirection(ui.agent, level.dir);
 }
 
 // --- Code storage ---
@@ -512,33 +479,6 @@ ui.sidebarToggle.onclick = () => {
 ui.helpButton.onclick = showHelp;
 ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
-
-// --- Editor Integration ---
-
-// Initialize editor module
-Editor.initEditorUI();
-
-// Build custom levels section in sidebar
-CustomLevels.init(ui, selectLevel);
-
-// Mode toggle handlers
-ui.modePlay.onclick = () => {
-    if (!Editor.editorState.active) return;
-
-    const editedLevel = Editor.exitEditMode();
-    // Reload the current level (or the edited one if we want to test it)
-    loadLevel(state.level);
-};
-
-ui.modeEdit.onclick = () => {
-    if (Editor.editorState.active) return;
-
-    // Stop any playback
-    enterIdle();
-
-    // Enter edit mode with a fresh level
-    Editor.enterEditMode();
-};
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);
