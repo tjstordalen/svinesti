@@ -102,6 +102,7 @@ function handlePointerUp(e) {
 
 function handleRightClick(e) {
     e.preventDefault();
+    if (sourceTile) return; // Ignore during drag
     const tile = e.target.closest('.tile');
     if (tile && !tile.classList.contains('empty')) tile.classList.toggle('target');
 }
