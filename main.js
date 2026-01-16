@@ -2,6 +2,7 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 import * as CustomLevels from "./customLevels.js";
 import * as Animations from "./animations.js";
+import * as Shortcuts from "./shortcuts.js";
 import { pigSpriteUrl } from "./animations.js";
 import { levels, TILE_CLASSES } from "./levels.js";
 
@@ -23,7 +24,6 @@ const ui = {
     sidebar:        gid("sidebar"),
     sidebarToggle:  gid("sidebar-toggle"),
     splashScreen:   gid("splash-screen"),
-    readOnlyNotification: gid("editor-readonly-notification"),
     helpButton:     gid("help-button"),
     helpModal:      gid("help-modal"),
     helpClose:      gid("help-close"),
@@ -43,6 +43,7 @@ const ui = {
     comparisonTile: gid("comparison-tile"),
     comparisonAnswer: gid("comparison-answer"),
     playbackToolbar: document.querySelector(".playback-toolbar"),
+    gameNotification: gid("game-notification"),
 };
 
 // --- State ---
@@ -183,115 +184,6 @@ function hideHelp() {
         state.focusedElementBeforeHelp.focus();
         state.focusedElementBeforeHelp = null;
     }
-}
-
-const NOTIFICATION_CLICK = "Click to pause and edit code";
-const NOTIFICATION_KEY = "Press i again to pause and edit code";
-
-let lastEditorIPress = 0;  // Timestamp for double-tap i detection
-
-function showReadOnlyNotification(message = NOTIFICATION_CLICK) {
-    Animations.notify(ui.readOnlyNotification, message);
-}
-
-// --- Shortcut settings ---
-
-const SHORTCUTS_STORAGE_KEY = 'svinesti-shortcuts';
-const DEFAULT_SHORTCUTS = {
-    'ctrl+enter': false,
-    'h': false,
-    'j': false,
-    'k': false,
-    'i': false,
-    'ii': false,
-    '?': true,  // Always enabled, cannot be disabled
-};
-
-let shortcutSettings = loadShortcutSettings();
-
-function loadShortcutSettings() {
-    try {
-        const saved = localStorage.getItem(SHORTCUTS_STORAGE_KEY);
-        if (saved) {
-            return { ...DEFAULT_SHORTCUTS, ...JSON.parse(saved) };
-        }
-    } catch (e) {}
-    return { ...DEFAULT_SHORTCUTS };
-}
-
-function saveShortcutSettings() {
-    localStorage.setItem(SHORTCUTS_STORAGE_KEY, JSON.stringify(shortcutSettings));
-}
-
-function isShortcutEnabled(key) {
-    return shortcutSettings[key] !== false;
-}
-
-function toggleShortcut(key) {
-    if (key === '?') return;  // Cannot disable help shortcut
-    shortcutSettings[key] = !shortcutSettings[key];
-    saveShortcutSettings();
-    updateShortcutUI();
-}
-
-function setAllShortcuts(enabled) {
-    for (const key in shortcutSettings) {
-        if (key !== '?') shortcutSettings[key] = enabled;
-    }
-    saveShortcutSettings();
-    updateShortcutUI();
-}
-
-function updateShortcutUI() {
-    const list = document.getElementById('shortcuts-list');
-    const masterToggle = document.getElementById('shortcuts-enabled');
-    if (!list || !masterToggle) return;
-
-    // Update individual shortcuts (? is always enabled)
-    list.querySelectorAll('li[data-shortcut]').forEach(li => {
-        const key = li.dataset.shortcut;
-        if (key === '?') return;
-        li.classList.toggle('disabled', !shortcutSettings[key]);
-    });
-
-    // Update master toggle (checked if ANY toggleable shortcut is enabled)
-    const anyEnabled = Object.entries(shortcutSettings)
-        .filter(([key]) => key !== '?')
-        .some(([, v]) => v);
-    masterToggle.checked = anyEnabled;
-}
-
-function initShortcutToggles() {
-    const list = document.getElementById('shortcuts-list');
-    const masterToggle = document.getElementById('shortcuts-enabled');
-    if (!list || !masterToggle) return;
-
-    // Click on individual shortcut to toggle (except ?)
-    list.querySelectorAll('li[data-shortcut]').forEach(li => {
-        if (li.dataset.shortcut === '?') {
-            li.style.cursor = 'default';
-            return;
-        }
-        li.addEventListener('click', () => {
-            toggleShortcut(li.dataset.shortcut);
-        });
-    });
-
-    // Master toggle
-    masterToggle.addEventListener('change', () => {
-        setAllShortcuts(masterToggle.checked);
-    });
-
-    // Initialize UI state
-    updateShortcutUI();
-}
-
-function isNotificationShowing() {
-    return ui.readOnlyNotification.getAnimations().length > 0;
-}
-
-function hideNotification() {
-    ui.readOnlyNotification.getAnimations().forEach(a => a.cancel());
 }
 
 // TODO: Provide a numbered list of all the occurrences of "agent" across all files and ask for confirmation before replacing them with "pig" across the board. 
@@ -582,13 +474,6 @@ ui.levelList.querySelector("li button").click();
 
 // --- Event handlers ---
 
-ui.readOnlyNotification.onclick = () => {
-    if (state.playback.status === "playing") {
-        enterPaused();
-        hideNotification();
-    }
-};
-
 ui.fontSizeSlider.addEventListener("input", (e) => {
     ui.editor.getWrapperElement().style.fontSize = e.target.value + "px";
 });
@@ -604,91 +489,16 @@ ui.editor.on("change", () => {
 
 // Show notification when trying to interact with read-only editor
 ui.editor.on("mousedown", (cm, event) => {
-    if (cm.getOption("readOnly")) {
-        showReadOnlyNotification();
+    if (cm.getOption("readOnly") && state.playback.status === "playing") {
+        enterPaused();
+        Animations.notify(ui.gameNotification, "Paused to edit code");
     }
 });
 
 ui.editor.on("keydown", (cm, event) => {
-    if (cm.getOption("readOnly")) {
-        showReadOnlyNotification();
-    }
-});
-
-document.addEventListener("keydown", (event) => {
-    // Toggle help (always available)
-    if (event.key === "?" && isShortcutEnabled('?')) {
-        event.preventDefault();
-        if (ui.helpModal.classList.contains("show")) {
-            hideHelp();
-        } else {
-            showHelp();
-        }
-        return;
-    }
-
-    // Close help with Escape (undocumented)
-    if (event.key === "Escape" && ui.helpModal.classList.contains("show")) {
-        event.preventDefault();
-        hideHelp();
-        return;
-    }
-
-    // Skip game shortcuts when in editor mode
-    if (Editor.editorState.active) return;
-
-    // Run code
-    if (event.ctrlKey && event.key === "Enter" && isShortcutEnabled('ctrl+enter')) {
-        submitCode();
-        return;
-    }
-
-    // Playback shortcuts (only when not typing in editor)
-    if (!ui.editor.hasFocus()) {
-        // i = focus editor
-        if (event.key === "i" && isShortcutEnabled('i')) {
-            event.preventDefault();
-            if (ui.editor.getOption("readOnly")) {
-                if (isNotificationShowing()) {
-                    // Second press - pause and focus
-                    enterPaused();
-                    hideNotification();
-                    ui.editor.focus();
-                    ui.editor.setCursor(ui.editor.getCursor());
-                } else {
-                    // First press - show notification
-                    showReadOnlyNotification(NOTIFICATION_KEY);
-                }
-            } else {
-                ui.editor.focus();
-                ui.editor.setCursor(ui.editor.getCursor());
-            }
-            return;
-        }
-
-        // h, j, k = btn1, btn2, btn3
-        if (event.key === "h" && isShortcutEnabled('h')) { event.preventDefault(); ui.btn1.click(); return; }
-        if (event.key === "j" && isShortcutEnabled('j')) { event.preventDefault(); ui.btn2.click(); return; }
-        if (event.key === "k" && isShortcutEnabled('k')) { event.preventDefault(); ui.btn3.click(); return; }
-    } else {
-        // Escape or double-tap i = unfocus editor
-        if (event.key === "Escape" && isShortcutEnabled('ii')) {
-            event.preventDefault();
-            ui.editor.getInputField().blur();
-            return;
-        }
-        if (event.key === "i" && isShortcutEnabled('ii')) {
-            const now = Date.now();
-            if (now - lastEditorIPress < 300) {
-                event.preventDefault();
-                // Delete the first 'i' that was typed
-                ui.editor.execCommand("delCharBefore");
-                ui.editor.getInputField().blur();
-                lastEditorIPress = 0;
-                return;
-            }
-            lastEditorIPress = now;
-        }
+    if (cm.getOption("readOnly") && state.playback.status === "playing") {
+        enterPaused();
+        Animations.notify(ui.gameNotification, "Paused to edit code");
     }
 });
 
@@ -704,9 +514,6 @@ ui.sidebarToggle.onclick = () => {
 ui.helpButton.onclick = showHelp;
 ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
-
-// Initialize shortcut toggles
-initShortcutToggles();
 
 // --- Editor Integration ---
 
@@ -781,3 +588,40 @@ ui.modeEdit.onclick = () => {
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);
+
+// --- Shortcuts (new system) ---
+
+function toggleHelp() {
+    if (ui.helpModal.classList.contains("show")) {
+        hideHelp();
+    } else {
+        showHelp();
+    }
+}
+
+Shortcuts.register("toggle-help", "Toggle help", toggleHelp, "?");
+Shortcuts.register("run-code", "Run code", submitCode, "ctrl+enter");
+Shortcuts.register("play-pause", "Play / Pause", () => ui.btn1.click(), "h");
+Shortcuts.register("step", "Step", () => ui.btn2.click(), "j");
+Shortcuts.register("reset", "Reset", () => ui.btn3.click(), "k");
+Shortcuts.register("focus-editor", "Focus editor", () => {
+    if (ui.editor.hasFocus()) return;
+    if (ui.editor.getOption("readOnly") && state.playback.status === "playing") {
+        enterPaused();
+        Animations.notify(ui.gameNotification, "Paused to edit code");
+    }
+    ui.editor.focus();
+    ui.editor.setCursor(ui.editor.getCursor());
+}, "i");
+Shortcuts.register("escape", "Escape", () => {
+    // Close help if open
+    if (ui.helpModal.classList.contains("show")) {
+        hideHelp();
+        return;
+    }
+    // Unfocus editor if focused
+    if (ui.editor.hasFocus()) {
+        ui.editor.getInputField().blur();
+    }
+}, "escape");
+Shortcuts.initialize(gid("shortcuts-container"));

@@ -90,9 +90,6 @@
 
                 <div class="editor-wrapper">
                     <textarea id="code-input"></textarea>
-                    <div id="editor-readonly-notification" class="editor-notification">
-                        Click to pause and edit code
-                    </div>
                 </div>
 
                 <div class="playback-toolbar idle">
@@ -164,7 +161,7 @@
                         <div id="comparison-answer"></div>
                     </div>
                 </div>
-                <div id="editor-notification" class="editor-notification"></div>
+                <div id="game-notification" class="editor-notification"></div>
             </section>
         </main>
     </div>
@@ -227,23 +224,7 @@ isBlue()</code></pre>
 
                 <div class="help-column">
                     <h3>Keyboard Shortcuts</h3>
-                    <div class="shortcuts-master-toggle">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="shortcuts-enabled" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span>Enable shortcuts</span>
-                        <span class="toggle-hint">or click individual shortcuts below</span>
-                    </div>
-                    <ul id="shortcuts-list" class="shortcuts-list">
-                        <li data-shortcut="ctrl+enter"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Run code</li>
-                        <li data-shortcut="h"><kbd>H</kbd> - Play / Pause</li>
-                        <li data-shortcut="j"><kbd>J</kbd> - Step</li>
-                        <li data-shortcut="k"><kbd>K</kbd> - Reset</li>
-                        <li data-shortcut="i"><kbd>I</kbd> - Focus editor</li>
-                        <li data-shortcut="ii"><kbd>I</kbd><kbd>I</kbd> / <kbd>Esc</kbd> - Unfocus editor</li>
-                        <li data-shortcut="?"><kbd>?</kbd> - Open/Close this help</li>
-                    </ul>
+                    <div id="shortcuts-container"></div>
 
                     <h3>Level Editor</h3>
                     <p>Click <strong>Edit</strong> in the header to create custom levels.</p>

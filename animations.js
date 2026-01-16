@@ -217,16 +217,9 @@ export function notify(element, message, isError = false, duration = 2500) {
 
     element.textContent = message;
     element.style.background = isError ? NOTIFY_COLOR_ERROR : NOTIFY_COLOR_INFO;
-    element.style.pointerEvents = 'auto';
 
-    const anim = element.animate(KEYFRAMES.NOTIFICATION, {
+    return element.animate(KEYFRAMES.NOTIFICATION, {
         duration,
         easing: 'ease-in-out',
     });
-
-    anim.finished
-        .then(() => element.style.pointerEvents = 'none')
-        .catch(() => element.style.pointerEvents = 'none'); // cancelled
-
-    return anim;
 }

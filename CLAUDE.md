@@ -151,3 +151,15 @@ Tests run automatically on page load. Check browser console for results.
 
 - `Ctrl+Enter` - Run code
 - `?` - Toggle help modal
+
+Shortcuts are managed by `shortcuts.js`, which provides registration, rebinding, and persistence.
+
+## Browser Quirks
+
+### Modifier key keydown timing
+
+When a modifier key (Ctrl, Alt, Shift, Meta) is pressed, browsers are inconsistent about when `keydown` fires:
+- Some browsers fire `keydown` immediately when the modifier alone is pressed
+- Others wait until a non-modifier key is also pressed
+
+This affects shortcut rebinding: if the user wants to bind `Ctrl+A`, some browsers would fire a `keydown` for `Control` alone before the user presses `A`. The shortcut system handles this by ignoring `keydown` events where `event.key` is a modifier name (`Control`, `Alt`, `Shift`, `Meta`).
