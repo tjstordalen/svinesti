@@ -2,6 +2,7 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 import { animations } from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as Board from "./board.js";
+import * as Editor from "./editor.js";
 import { levels } from "./levels.js";
 
 const ENABLE_SPLASH_SCREEN = false;
@@ -30,6 +31,7 @@ const ui = {
     modeEdit:       gid("mode-edit"),
     playPane:       gid("play-pane"),
     editorPane:     gid("editor-pane"),
+    editorGrid:     gid("editor-grid"),
     langPython:     gid("select-lang-python"),
     langJava:       gid("select-lang-java"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
@@ -271,7 +273,7 @@ async function step() {
                 break;
 
             case "isColor":
-                ui.comparisonTile.className = 'game-tile ' + msg.color.toLowerCase();
+                ui.comparisonTile.className = 'tile ' + msg.color.toLowerCase();
                 ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
                 await animations.hudFlash(ui.colorComparison, getAnimSpeed());
                 break;
@@ -404,7 +406,7 @@ function submitCode() {
 // Hide splash screen immediately if disabled, show help
 if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     ui.splashScreen.style.display = "none";
-    showHelp();
+    // showHelp(); // TODO: REMOVE THIS LINE - temporarily disabled for editor development
 }
 
 initWorker();
@@ -482,6 +484,9 @@ ui.helpButton.onclick = showHelp;
 ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
 
+// Initialize editor
+Editor.init({ editorGrid: ui.editorGrid });
+
 // Mode toggle handlers
 ui.modePlay.onclick = () => {
     ui.playPane.hidden = false;
@@ -496,7 +501,11 @@ ui.modeEdit.onclick = () => {
     ui.editorPane.hidden = false;
     ui.modePlay.classList.remove("active");
     ui.modeEdit.classList.add("active");
+    Editor.enter();
 };
+
+// TODO: REMOVE THIS LINE - temporarily open editor pane on load for development
+ui.modeEdit.click();
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);

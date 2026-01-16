@@ -20,10 +20,14 @@ export function renderGrid(grid, level, { addIndices = false } = {}) {
     setCssVariable("--grid-n-rows", level.nRows);
     setCssVariable("--grid-n-cols", level.nCols);
 
-    const cells = level.grid.join("");
+    // Support both array of strings (levels.js) and array of arrays (editor)
+    const cells = Array.isArray(level.grid[0])
+        ? level.grid.flat()
+        : level.grid.join("");
+
     for (let i = 0; i < cells.length; i++) {
         const div = document.createElement("div");
-        div.className = "game-tile " + TILE_CLASSES[cells[i]];
+        div.className = "tile " + TILE_CLASSES[cells[i]];
         if (addIndices) div.dataset.index = i;
         grid.appendChild(div);
     }
