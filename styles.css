@@ -523,6 +523,33 @@ body {
     overflow: hidden;
 }
 
+#play-pane {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    min-width: 0;
+}
+
+#play-pane[hidden] {
+    display: none;
+}
+
+#editor-pane:not([hidden]) {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+#editor-pane .editor-placeholder {
+    color: var(--color-text-muted);
+    font-size: 2rem;
+    font-weight: 300;
+}
+
 /* ============================================
    Code Section
    ============================================ */

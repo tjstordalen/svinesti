@@ -28,6 +28,8 @@ const ui = {
     helpOverlay:    document.querySelector(".help-overlay"),
     modePlay:       gid("mode-play"),
     modeEdit:       gid("mode-edit"),
+    playPane:       gid("play-pane"),
+    editorPane:     gid("editor-pane"),
     langPython:     gid("select-lang-python"),
     langJava:       gid("select-lang-java"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
@@ -479,6 +481,22 @@ ui.sidebarToggle.onclick = () => {
 ui.helpButton.onclick = showHelp;
 ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
+
+// Mode toggle handlers
+ui.modePlay.onclick = () => {
+    ui.playPane.hidden = false;
+    ui.editorPane.hidden = true;
+    ui.modePlay.classList.add("active");
+    ui.modeEdit.classList.remove("active");
+};
+
+ui.modeEdit.onclick = () => {
+    enterIdle();
+    ui.playPane.hidden = true;
+    ui.editorPane.hidden = false;
+    ui.modePlay.classList.remove("active");
+    ui.modeEdit.classList.add("active");
+};
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);
