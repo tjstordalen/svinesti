@@ -8,11 +8,12 @@ let ui = null;
 
 // --- Drag State ---
 
-const DRAG_DELAY = 200;
-let clickStart = null;
 let sourceTile = null;
 let ghost = null;
 let isPigDrag = false;
+let isDragging = false;
+
+const tileAt = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
 
 // --- Click Cycling Maps ---
 
@@ -46,8 +47,8 @@ function handleLeftClick(e) {
 
 function handlePointerDown(e) {
 	if (!e.isPrimary || e.button !== 0) return;
-	clickStart = Date.now();
 	sourceTile = e.target.closest('.tile');
+	isDragging = false;
 
 	// Set ghost class: pig only for pig tiles, otherwise copy full class
 	const pigClass = sourceTile?.className.match(/pig-\w+/)?.[0];
@@ -56,36 +57,35 @@ function handlePointerDown(e) {
 }
 
 function handlePointerMove(e) {
-	if (clickStart === null) return;
-	const drag = Date.now() - clickStart >= DRAG_DELAY;
-	if (!drag) return;
-	ghost.style.visibility = 'visible';
+	if (sourceTile === null) return;
+	const targetTile = tileAt(e);
+
+	// Detect drag: pointer moved to a different tile
+	if (!isDragging && targetTile && targetTile !== sourceTile) {
+		isDragging = true;
+		ghost.style.visibility = 'visible';
+	}
+
+	if (!isDragging) return;
+
 	ghost.style.left = e.clientX + 'px';
 	ghost.style.top = e.clientY + 'px';
 
 	// Paint mode: copy source classes to tiles we drag over
-	if (!isPigDrag) {
-		const targetTile = document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
-		// Skip pig's tile and source tile
-		if (targetTile && targetTile !== sourceTile && !/pig-\w+/.test(targetTile.className)) {
-			targetTile.className = sourceTile.className;
-		}
+	if (!isPigDrag && targetTile && targetTile !== sourceTile && !/pig-\w+/.test(targetTile.className)) {
+		targetTile.className = sourceTile.className;
 	}
 }
 
 function handlePointerUp(e) {
-	if (clickStart === null) return;
-	const drag = Date.now() - clickStart >= DRAG_DELAY;
-	if (!drag) {
-		handleLeftClick({ target: sourceTile });
-		clickStart = null;
-		sourceTile = null;
-		return;
-	}
+	if (sourceTile === null) return;
 
-	// Pig drag: move pig to target tile
-	if (isPigDrag) {
-		const targetTile = document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
+	if (!isDragging) {
+		// Click: cycle the tile
+		handleLeftClick({ target: sourceTile });
+	} else if (isPigDrag) {
+		// Pig drag: move pig to target tile
+		const targetTile = tileAt(e);
 		if (targetTile && targetTile !== sourceTile) {
 			targetTile.className = sourceTile.className;
 			sourceTile.className = sourceTile.className.replace(/pig-(right|down|left|up)/, '').trim();
@@ -94,7 +94,6 @@ function handlePointerUp(e) {
 	// Paint drag: already handled in handlePointerMove
 
 	ghost.style.visibility = 'hidden';
-	clickStart = null;
 	sourceTile = null;
 }
 
