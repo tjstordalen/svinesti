@@ -47,6 +47,9 @@ function handleLeftClick(e) {
 
 function handlePointerDown(e) {
 	if (!e.isPrimary || e.button !== 0) return;
+	e.preventDefault();
+	e.target.setPointerCapture(e.pointerId);
+
 	sourceTile = e.target.closest('.tile');
 	isDragging = false;
 
