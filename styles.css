@@ -1249,6 +1249,11 @@ body.editor-mode #level-list {
     font-style: italic;
 }
 
+.shortcuts-list .hint kbd {
+    padding: 1px 3px;
+    font-size: 10px;
+}
+
 .toggle-switch {
     position: relative;
     width: 36px;
