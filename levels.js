@@ -1,4 +1,15 @@
-const levels = [
+// Map grid characters to CSS classes
+export const TILE_CLASSES = {
+    ".": "empty",
+    "r": "red",
+    "g": "green",
+    "b": "blue",
+    "R": "red target",
+    "G": "green target",
+    "B": "blue target",
+};
+
+export const levels = [
     {
         name: "Level 1",
         nRows: 7,

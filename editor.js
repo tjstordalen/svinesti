@@ -1,6 +1,7 @@
 // Level Editor Module
 
-import { TILE_CLASSES, pigSpriteUrl } from "./constants.js";
+import { pigSpriteUrl, notify } from "./animations.js";
+import { TILE_CLASSES } from "./levels.js";
 
 function cycleDirection(dir) {
     switch (dir) {
@@ -655,21 +656,9 @@ function initEditorUI() {
 
 // --- Notification ---
 
-let notificationTimeout = null;
-
 function showNotification(message, isError = false) {
-    clearTimeout(notificationTimeout);
-    editorUI.notification.textContent = message;
-    editorUI.notification.classList.toggle("error", isError);
-    editorUI.notification.classList.add("show");
-
-    editorUI.notification.onclick = () => {
-        editorUI.notification.classList.remove("show");
-    };
-
-    notificationTimeout = setTimeout(() => {
-        editorUI.notification.classList.remove("show");
-    }, 3000);
+    const anim = notify(editorUI.notification, message, isError, 3000);
+    editorUI.notification.onclick = () => anim.cancel();
 }
 
 // --- Exports ---

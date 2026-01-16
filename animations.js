@@ -1,0 +1,232 @@
+// --- Animation constants ---
+
+const MOVE_MULTIPLIER = 2;
+const TURN_MULTIPLIER = 1.5;
+const HUD_MULTIPLIER = 3;
+const WALK_CYCLES = 2;
+
+// Sprite URL helper
+export function pigSpriteUrl(dir, num = 1) {
+    return `url("pigs/${dir}-${num}.png")`;
+}
+
+// Generate walk keyframes for a direction
+function makeWalkKeyframes(dir) {
+    return [
+        { backgroundImage: pigSpriteUrl(dir, 1) },
+        { backgroundImage: pigSpriteUrl(dir, 2) },
+        { backgroundImage: pigSpriteUrl(dir, 3) },
+        { backgroundImage: pigSpriteUrl(dir, 2) },
+        { backgroundImage: pigSpriteUrl(dir, 1) },
+    ];
+}
+
+// Keyframe definitions for Web Animations API
+const KEYFRAMES = {
+    WALK: {
+        right: makeWalkKeyframes("right"),
+        down: makeWalkKeyframes("down"),
+        left: makeWalkKeyframes("left"),
+        up: makeWalkKeyframes("up"),
+    },
+    HOP_UP: [
+        { transform: 'translateY(0) scale(0.97, 1.03)', offset: 0 },
+        { transform: 'translateY(-3%) scale(1.01, 0.99)', offset: 1 }
+    ],
+    HOP_DOWN: [
+        { transform: 'translateY(-3%) scale(1.01, 0.99)', offset: 0 },
+        { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.25 },
+        { transform: 'translateY(0) scale(1, 1)', offset: 0.30 },
+        { transform: 'translateY(0) scale(1, 1)', offset: 1 }
+    ],
+    HUD_FLASH: [
+        { opacity: 0, offset: 0 },
+        { opacity: 1, offset: 0.15 },
+        { opacity: 1, offset: 0.85 },
+        { opacity: 0, offset: 1 }
+    ],
+    CELEBRATE: [
+        { transform: 'translateY(0) scale(1, 1)', offset: 0 },
+        { transform: 'translateY(-40px) scale(1.05, 0.95)', offset: 0.25 },
+        { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.4 },
+        { transform: 'translateY(-30px) scale(1.03, 0.97)', offset: 0.6 },
+        { transform: 'translateY(0) scale(0.97, 1.03)', offset: 0.75 },
+        { transform: 'translateY(-15px) scale(1.02, 0.98)', offset: 0.9 },
+        { transform: 'translateY(0) scale(1, 1)', offset: 1 },
+    ],
+    SHAKE: [
+        { transform: 'translate(0, 0)', offset: 0 },
+        { transform: 'translate(-8px, 4px)', offset: 0.1 },
+        { transform: 'translate(8px, -4px)', offset: 0.2 },
+        { transform: 'translate(-8px, -4px)', offset: 0.3 },
+        { transform: 'translate(8px, 4px)', offset: 0.4 },
+        { transform: 'translate(-8px, 4px)', offset: 0.5 },
+        { transform: 'translate(8px, -4px)', offset: 0.6 },
+        { transform: 'translate(-8px, -4px)', offset: 0.7 },
+        { transform: 'translate(8px, 4px)', offset: 0.8 },
+        { transform: 'translate(-4px, 2px)', offset: 0.9 },
+        { transform: 'translate(0, 0)', offset: 1 },
+    ],
+    NOTIFICATION: [
+        { opacity: 0, offset: 0 },
+        { opacity: 1, offset: 0.05 },
+        { opacity: 1, offset: 0.95 },
+        { opacity: 0, offset: 1 },
+    ],
+};
+
+// --- Animation functions ---
+
+/**
+ * Plays the walk sprite animation (legs moving)
+ * @param {HTMLElement} agent - The pig element
+ * @param {string} direction - Direction of movement
+ * @param {number} animSpeed - Base animation speed in ms
+ * @returns {Animation} - The animation object
+ */
+export function walk(agent, direction, animSpeed) {
+    const walkDuration = animSpeed * MOVE_MULTIPLIER / WALK_CYCLES;
+    return agent.animate(
+        KEYFRAMES.WALK[direction],
+        { duration: walkDuration, easing: 'steps(4)', iterations: WALK_CYCLES }
+    );
+}
+
+/**
+ * Plays the movement animation (translation across grid)
+ * @param {HTMLElement} agent - The pig element
+ * @param {number} dx - Horizontal distance in pixels
+ * @param {number} dy - Vertical distance in pixels
+ * @param {number} animSpeed - Base animation speed in ms
+ * @returns {Promise<void>}
+ */
+export async function move(agent, dx, dy, animSpeed) {
+    const anim = agent.animate([
+        { translate: '0 0' },
+        { translate: `${dx}px ${dy}px` }
+    ], {
+        duration: animSpeed * MOVE_MULTIPLIER,
+        easing: 'ease-out',
+        fill: 'forwards'
+    });
+
+    await anim.finished;
+    anim.cancel(); // Clear the animation so translate resets
+}
+
+/**
+ * Plays the turn animation (hop up, swap sprite, hop down)
+ * @param {HTMLElement} agent - The pig element
+ * @param {string} direction - The new direction to face
+ * @param {number} animSpeed - Base animation speed in ms
+ * @returns {Promise<void>}
+ */
+export async function turn(agent, direction, animSpeed) {
+    // Phase 1: hop up
+    const hopUp = agent.animate(KEYFRAMES.HOP_UP, {
+        duration: animSpeed * TURN_MULTIPLIER * 0.33,
+        easing: 'ease-out',
+        fill: 'forwards'
+    });
+    await hopUp.finished;
+
+    // Swap sprite at peak
+    agent.style.backgroundImage = pigSpriteUrl(direction);
+
+    // Phase 2: hop down
+    const hopDown = agent.animate(KEYFRAMES.HOP_DOWN, {
+        duration: animSpeed * TURN_MULTIPLIER * 0.66,
+        easing: 'ease-in',
+        fill: 'forwards'
+    });
+    await hopDown.finished;
+
+    // Reset transform
+    agent.style.transform = '';
+}
+
+/**
+ * Plays the HUD flash animation for color comparison
+ * @param {HTMLElement} hud - The color comparison HUD element
+ * @param {number} animSpeed - Base animation speed in ms
+ * @returns {Promise<void>}
+ */
+export async function hudFlash(hud, animSpeed) {
+    const anim = hud.animate(KEYFRAMES.HUD_FLASH, {
+        duration: animSpeed * HUD_MULTIPLIER,
+        easing: 'ease-in-out'
+    });
+    await anim.finished;
+}
+
+/**
+ * Plays the celebrate animation on win
+ * @param {HTMLElement} agent - The pig element
+ */
+export function celebrate(agent) {
+    agent.animate(KEYFRAMES.CELEBRATE, {
+        duration: 1500,
+        easing: 'ease-out'
+    });
+}
+
+/**
+ * Plays the loss animation (shake grid + pig falls over)
+ * @param {HTMLElement} agent - The pig element
+ * @param {string} direction - Current direction the pig is facing
+ * @param {HTMLElement} gridWrapper - The grid wrapper element (optional)
+ */
+export function lose(agent, direction, gridWrapper) {
+    if (gridWrapper) {
+        gridWrapper.animate(KEYFRAMES.SHAKE, {
+            duration: 600,
+            easing: 'ease-out'
+        });
+    }
+
+    const isLeftRight = direction === 'left' || direction === 'right';
+    const rotation = isLeftRight ? 180 : 90;
+    const translateY = isLeftRight ? '-50%' : '0';
+    const translateX = isLeftRight ? '0' : '30%';
+
+    agent.animate([
+        { transform: 'rotate(0deg) translateX(0) translateY(0)' },
+        { transform: `rotate(${rotation}deg) translateX(${translateX}) translateY(${translateY})` }
+    ], {
+        duration: 600,
+        easing: 'ease-out',
+        fill: 'forwards'
+    });
+}
+
+// Notification colors
+const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';
+const NOTIFY_COLOR_ERROR = 'rgba(180, 80, 80, 0.95)';
+
+/**
+ * Shows a notification with fade-in, hold, fade-out animation
+ * @param {HTMLElement} element - The notification element
+ * @param {string} message - Text to display
+ * @param {boolean} isError - Use error styling (red) vs info styling (green)
+ * @param {number} duration - Total duration in ms (default 2500)
+ * @returns {Animation} - The animation object (can be cancelled)
+ */
+export function notify(element, message, isError = false, duration = 2500) {
+    // Cancel any existing animation on this element
+    element.getAnimations().forEach(a => a.cancel());
+
+    element.textContent = message;
+    element.style.background = isError ? NOTIFY_COLOR_ERROR : NOTIFY_COLOR_INFO;
+    element.style.pointerEvents = 'auto';
+
+    const anim = element.animate(KEYFRAMES.NOTIFICATION, {
+        duration,
+        easing: 'ease-in-out',
+    });
+
+    anim.finished
+        .then(() => element.style.pointerEvents = 'none')
+        .catch(() => element.style.pointerEvents = 'none'); // cancelled
+
+    return anim;
+}
