@@ -538,6 +538,7 @@ ui.modePlay.onclick = () => {
     ui.editorPane.hidden = true;
     ui.modePlay.classList.add("active");
     ui.modeEdit.classList.remove("active");
+    ui.sidebarToggle.disabled = false;
 };
 
 ui.modeEdit.onclick = () => {
@@ -547,6 +548,8 @@ ui.modeEdit.onclick = () => {
     ui.editorPane.hidden = false;
     ui.modePlay.classList.remove("active");
     ui.modeEdit.classList.add("active");
+    ui.sidebar.classList.add('collapsed');
+    ui.sidebarToggle.disabled = true;
     Editor.enter();
 };
 
