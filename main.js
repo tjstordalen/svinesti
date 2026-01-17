@@ -420,33 +420,59 @@ function renderMiniGrid(level, container) {
         container.appendChild(tile);
     }
 
-    // Add pig indicator
+    // Add pig indicator with direction
     const pigIndex = level.start[0] * level.nCols + level.start[1];
-    container.children[pigIndex]?.classList.add('has-pig');
+    container.children[pigIndex]?.classList.add('pig-' + level.dir);
 }
 
-for (const lvl of levels) {
-    const item = document.createElement('div');
-    item.className = 'sidebar-level-item';
+function populateLevelList(levelArray) {
+    ui.levelList.innerHTML = '';
+    for (const lvl of levelArray) {
+        const item = document.createElement('div');
+        item.className = 'sidebar-level-item';
 
-    const miniGrid = document.createElement('div');
-    miniGrid.className = 'mini-grid';
-    renderMiniGrid(lvl, miniGrid);
+        const miniGrid = document.createElement('div');
+        miniGrid.className = 'mini-grid';
+        renderMiniGrid(lvl, miniGrid);
 
-    const name = document.createElement('div');
-    name.className = 'sidebar-level-name';
-    name.textContent = lvl.name || 'Untitled';
+        const name = document.createElement('div');
+        name.className = 'sidebar-level-name';
+        name.textContent = lvl.name || 'Untitled';
 
-    item.appendChild(miniGrid);
-    item.appendChild(name);
-    ui.levelList.appendChild(item);
+        item.appendChild(miniGrid);
+        item.appendChild(name);
+        ui.levelList.appendChild(item);
 
-    item.addEventListener('click', () => {
-        selectLevel(lvl);
-        ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
-        item.classList.add('selected');
+        item.addEventListener('click', () => {
+            selectLevel(lvl);
+            ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+            ui.sidebar.classList.add('collapsed');
+        });
+    }
+}
+
+// Tab switching
+function shuffled(arr) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+}
+
+ui.sidebarTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        ui.sidebarTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const tabName = tab.dataset.tab;
+        const levelArray = tabName === 'default' ? levels : shuffled(levels);
+        populateLevelList(levelArray);
     });
-}
+});
+
+populateLevelList(levels);
 
 // Load shared level from URL, or select first level
 const sharedLevel = Editor.importFromURL();

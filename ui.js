@@ -14,6 +14,7 @@ export const ui = {
     fontSizeSlider: gid("editor-font-size-slider"),
     sidebar:        gid("sidebar"),
     sidebarToggle:  gid("sidebar-toggle"),
+    sidebarTabs:    document.querySelectorAll(".sidebar-tab"),
     splashScreen:   gid("splash-screen"),
     helpButton:     gid("help-button"),
     helpModal:      gid("help-modal"),
