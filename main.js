@@ -2,10 +2,12 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 import { animations, pigSpriteUrl } from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as Editor from "./editor.js";
+import * as Browser from "./browser.js";
 import { levels, TILE_CLASSES } from "./levels.js";
 import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = false;
+const ENABLE_BROWSER = true; // Set to false to hide Browse tab
 
 // --- State ---
 
@@ -394,6 +396,11 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     // showHelp(); // TODO: REMOVE THIS LINE - temporarily disabled for editor development
 }
 
+// Hide browse tab if disabled
+if (!ENABLE_BROWSER) {
+    ui.modeBrowse.style.display = "none";
+}
+
 initWorker();
 
 // Initialize font size from slider
@@ -408,18 +415,57 @@ for (let lvl of levels) {
     lvl.grid[r] = row.join("");
 }
 
-// Build level list
-for (let lvl of levels) {
-    const item = document.createElement("li");
-    const btn = document.createElement("button");
-    item.appendChild(btn);
-    btn.textContent = lvl.name;
+// Build level list with thumbnails
+function renderMiniGrid(level, container) {
+    container.innerHTML = '';
+    container.style.setProperty('--mini-rows', level.nRows);
+    container.style.setProperty('--mini-cols', level.nCols);
+
+    for (const ch of level.grid.join('')) {
+        const tile = document.createElement('div');
+        tile.className = 'mini-tile ' + TILE_CLASSES[ch];
+        container.appendChild(tile);
+    }
+
+    // Add pig indicator
+    const pigIndex = level.start[0] * level.nCols + level.start[1];
+    container.children[pigIndex]?.classList.add('has-pig');
+}
+
+for (const lvl of levels) {
+    const item = document.createElement('div');
+    item.className = 'sidebar-level-item';
+
+    const miniGrid = document.createElement('div');
+    miniGrid.className = 'mini-grid';
+    renderMiniGrid(lvl, miniGrid);
+
+    const name = document.createElement('div');
+    name.className = 'sidebar-level-name';
+    name.textContent = lvl.name || 'Untitled';
+
+    item.appendChild(miniGrid);
+    item.appendChild(name);
     ui.levelList.appendChild(item);
 
-    btn.addEventListener("click", () => {
+    item.addEventListener('click', () => {
         selectLevel(lvl);
-        ui.levelList.querySelectorAll("li button").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
+        ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+    });
+}
+
+// Initialize browser with levels
+if (ENABLE_BROWSER) {
+    Browser.setLevels(levels);
+    Browser.onSelectLevel((level) => {
+        selectLevel(level);
+        setActiveMode("play");
+        // Update sidebar selection to match
+        const items = ui.levelList.querySelectorAll(".sidebar-level-item");
+        items.forEach((item, i) => {
+            item.classList.toggle("selected", levels[i] === level);
+        });
     });
 }
 
@@ -428,7 +474,7 @@ const sharedLevel = Editor.importFromURL();
 if (sharedLevel) {
     selectLevel(sharedLevel);
 } else {
-    ui.levelList.querySelector("li button").click();
+    ui.levelList.querySelector(".sidebar-level-item")?.click();
 }
 
 // --- Event handlers ---
@@ -475,26 +521,38 @@ ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
 
 // Mode toggle handlers
+function setActiveMode(mode) {
+    ui.modePlay.classList.toggle("active", mode === "play");
+    ui.modeEdit.classList.toggle("active", mode === "edit");
+    ui.modeBrowse.classList.toggle("active", mode === "browse");
+    ui.playPane.hidden = mode !== "play";
+    ui.editorPane.hidden = mode !== "edit";
+    ui.browserPane.hidden = mode !== "browse";
+    document.body.classList.toggle('editor-mode', mode === "edit");
+}
+
 ui.modePlay.onclick = () => {
-    document.body.classList.remove('editor-mode');
-    ui.playPane.hidden = false;
-    ui.editorPane.hidden = true;
-    ui.modePlay.classList.add("active");
-    ui.modeEdit.classList.remove("active");
+    Editor.exit();
+    Browser.exit();
+    setActiveMode("play");
 };
 
 ui.modeEdit.onclick = () => {
-    document.body.classList.add('editor-mode');
+    Browser.exit();
     enterIdle();
-    ui.playPane.hidden = true;
-    ui.editorPane.hidden = false;
-    ui.modePlay.classList.remove("active");
-    ui.modeEdit.classList.add("active");
+    setActiveMode("edit");
     Editor.enter();
 };
 
-// TODO: REMOVE THIS LINE - temporarily open editor pane on load for development
-ui.modeEdit.click();
+ui.modeBrowse.onclick = () => {
+    Editor.exit();
+    enterIdle();
+    setActiveMode("browse");
+    Browser.enter();
+};
+
+// TODO: REMOVE THIS LINE - temporarily open browse pane on load for development
+if (ENABLE_BROWSER) ui.modeBrowse.click();
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);

@@ -44,6 +44,7 @@
         <div class="mode-toggle">
             <button id="mode-play" class="mode-btn active">Play</button>
             <button id="mode-edit" class="mode-btn">Edit</button>
+            <button id="mode-browse" class="mode-btn">Browse</button>
         </div>
         <div class="header-spacer"></div>
         <button id="help-button" class="icon-btn" title="Help - Press ?">
@@ -62,7 +63,7 @@
             <div class="sidebar-header">
                 <h2>Levels</h2>
             </div>
-            <ul id="level-list"></ul>
+            <div id="level-list" class="sidebar-level-list"></div>
         </aside>
 
         <main id="main-content">
@@ -152,6 +153,16 @@
                 <div id="editor-grid"></div>
                 <button id="editor-share" class="btn btn-primary">Share</button>
                 <div id="editor-notification" class="editor-notification"></div>
+            </div>
+
+            <div id="browser-pane" hidden>
+                <div class="browser-list-panel">
+                    <div id="browser-list" class="browser-list"></div>
+                </div>
+                <div class="browser-preview-panel">
+                    <div id="browser-preview" class="browser-preview"></div>
+                    <button id="browser-play-btn" class="btn btn-primary">Play</button>
+                </div>
             </div>
         </main>
     </div>
