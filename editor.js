@@ -1,6 +1,7 @@
 // editor.js - Level Editor
 
 import { TILE_CLASSES, DEFAULT_LEVEL } from "./levels.js";
+import { ui } from "./ui.js";
 
 // --- Constants ---
 
@@ -11,20 +12,16 @@ const [RED, GREEN, BLUE] = COLORS;
 const PIG_DIRS = ['pig-right', 'pig-down', 'pig-left', 'pig-up'];
 const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
 
-// --- UI References ---
+// --- State ---
 
-let ui = null;
-
-// --- Grid State ---
-
-let selectedLevel = null;
-
-// --- Drag State ---
-
-let sourceTile = null;
-let ghost = null;
-let isPigDrag = false;
-let isDragging = false;
+const state = {
+    level: null,
+    drag: {
+        source: null,
+        isPig: false,
+        active: false,
+    },
+};
 
 
 const tileAt = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
@@ -32,15 +29,8 @@ const firstMatch = (tile, classes) => classes.find(c => tile.classList.contains(
 const isColor = (tile) => firstMatch(tile, COLORS);
 const isPig = (tile) => firstMatch(tile, PIG_DIRS);
 
-const CHAR_TO_COLOR = { r: RED, g: GREEN, b: BLUE };
-const charToTileClass = (ch) => {
-    if (ch === '.') return EMPTY;
-    const color = CHAR_TO_COLOR[ch.toLowerCase()];
-    return ch === ch.toUpperCase() ? color + ' ' + TARGET : color;
-};
-
 function serialize() {
-	const { nRows, nCols } = selectedLevel;
+	const { nRows, nCols } = state.level;
 	const tiles = [...ui.editorGrid.children];
 
 	const tileToChar = (tile) => {
@@ -70,7 +60,7 @@ function serialize() {
 }
 
 function load(level) {
-    selectedLevel = level;
+    state.level = level;
 
     document.documentElement.style.setProperty('--grid-n-rows', level.nRows);
     document.documentElement.style.setProperty('--grid-n-cols', level.nCols);
@@ -111,7 +101,10 @@ function handleLeftClick(e) {
     const tile = e.target.closest('.tile');
     if (!tile) return;
     for (const [from, to] of leftClickReplacements) {
-        if (tile.classList.replace(from, to)) return;
+        if (tile.classList.replace(from, to)) {
+            if (to === EMPTY) tile.classList.remove(TARGET);
+            return;
+        }
     }
 }
 
@@ -122,74 +115,73 @@ function handlePointerDown(e) {
     e.preventDefault();
     e.target.setPointerCapture(e.pointerId);
 
-    sourceTile = e.target.closest('.tile');
-    isDragging = false;
+    state.drag.source = e.target.closest('.tile');
+    state.drag.active = false;
 
     // Set ghost class: pig only for pig tiles, otherwise copy full class
-    const pigClass = isPig(sourceTile);
-    isPigDrag = pigClass !== undefined;
-    ghost.className = 'ghost ' + (pigClass ? pigClass : sourceTile?.className);
+    const pigClass = isPig(state.drag.source);
+    state.drag.isPig = pigClass !== undefined;
+    ui.ghost.className = 'ghost ' + (pigClass ? pigClass : state.drag.source?.className);
 }
 
 function handlePointerMove(e) {
-    if (sourceTile === null) return;  // No active drag
+    if (state.drag.source === null) return;  // No active drag
     const targetTile = tileAt(e);
 
     // Detect drag: pointer moved to a different tile
-    if (!isDragging && targetTile && targetTile !== sourceTile) {
-        isDragging = true;
-        ghost.style.visibility = 'visible';
+    if (!state.drag.active && targetTile && targetTile !== state.drag.source) {
+        state.drag.active = true;
+        ui.ghost.style.visibility = 'visible';
     }
 
-    if (!isDragging) return;
+    if (!state.drag.active) return;
 
-    ghost.style.left = e.clientX + 'px';
-    ghost.style.top = e.clientY + 'px';
+    ui.ghost.style.left = e.clientX + 'px';
+    ui.ghost.style.top = e.clientY + 'px';
 
     // Paint mode: copy source color to tiles we drag over
-    if (!isPigDrag && targetTile) {
+    if (!state.drag.isPig && targetTile) {
         const pigClass = isPig(targetTile);
         // Skip if painting empty over pig (would erase tile under pig)
-        if (pigClass && sourceTile.classList.contains('empty')) return;
-        targetTile.className = sourceTile.className + (pigClass ? ' ' + pigClass : '');
+        if (pigClass && state.drag.source.classList.contains('empty')) return;
+        targetTile.className = state.drag.source.className + (pigClass ? ' ' + pigClass : '');
     }
 }
 
 function handlePointerUp(e) {
-    if (sourceTile === null) return;  // No active drag
+    if (state.drag.source === null) return;  // No active drag
 
-    if (!isDragging) {
+    if (!state.drag.active) {
         // Click: cycle the tile
-        handleLeftClick({ target: sourceTile });
-    } else if (isPigDrag) {
+        handleLeftClick({ target: state.drag.source });
+    } else if (state.drag.isPig) {
         // Pig drag: move pig to target tile
         const targetTile = tileAt(e);
-        if (targetTile && targetTile !== sourceTile) {
-            const pigClass = isPig(sourceTile);
+        if (targetTile && targetTile !== state.drag.source) {
+            const pigClass = isPig(state.drag.source);
             // Keep target's color if it has one, otherwise inherit source's color
             const targetColor = isColor(targetTile);
-            const sourceColor = isColor(sourceTile);
+            const sourceColor = isColor(state.drag.source);
             const color = targetColor || sourceColor;
             targetTile.className = 'tile ' + color + ' ' + pigClass;
-            sourceTile.classList.remove(pigClass);
+            state.drag.source.classList.remove(pigClass);
         }
     }
     // Paint drag: already handled in handlePointerMove
 
-    ghost.style.visibility = 'hidden';
-    sourceTile = null;
+    ui.ghost.style.visibility = 'hidden';
+    state.drag.source = null;
 }
 
 function handleRightClick(e) {
     e.preventDefault();
-    if (sourceTile) return; // Ignore during drag
+    if (state.drag.source) return; // Ignore during drag
     const tile = e.target.closest('.tile');
     if (!tile) return;
     if (isColor(tile) && !isPig(tile)) tile.classList.toggle('target');
 }
 
 function enter() {
-    ghost = document.getElementById("ghost");
     load(DEFAULT_LEVEL);
 
     ui.editorGrid.addEventListener('contextmenu', handleRightClick);
@@ -205,14 +197,6 @@ function exit() {
     ui.editorGrid.removeEventListener('pointermove', handlePointerMove);
     ui.editorGrid.removeEventListener('pointerup', handlePointerUp);
     ui.editorGrid.removeEventListener('pointercancel', handlePointerUp);
-}
-
-// --- Initialize ---
-
-export function init(uiRefs) {
-	console.log("intializing");
-	console.log("the refs are " + uiRefs.editorGrid);
-    ui = uiRefs;
 }
 
 export { enter, exit, load, serialize };

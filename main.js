@@ -3,49 +3,9 @@ import { animations, pigSpriteUrl } from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as Editor from "./editor.js";
 import { levels, TILE_CLASSES } from "./levels.js";
+import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = false;
-
-// --- UI elements ---
-
-const gid = (id) => document.getElementById(id);
-const ui = {
-    grid:			gid("grid"),
-    codeInput:		gid("code-input"),
-    codeOutput:		gid("code-output"),
-    levelList:		gid("level-list"),
-    btn1:			gid("btn1"),
-    btn2:			gid("btn2"),
-    btn3:			gid("btn3"),
-    speedSlider:	gid("playback-speed"),
-    fontSizeSlider: gid("editor-font-size-slider"),
-    sidebar:        gid("sidebar"),
-    sidebarToggle:  gid("sidebar-toggle"),
-    splashScreen:   gid("splash-screen"),
-    helpButton:     gid("help-button"),
-    helpModal:      gid("help-modal"),
-    helpClose:      gid("help-close"),
-    helpOverlay:    document.querySelector(".help-overlay"),
-    modePlay:       gid("mode-play"),
-    modeEdit:       gid("mode-edit"),
-    playPane:       gid("play-pane"),
-    editorPane:     gid("editor-pane"),
-    editorGrid:     gid("editor-grid"),
-    langPython:     gid("select-lang-python"),
-    langJava:       gid("select-lang-java"),
-    editor: CodeMirror.fromTextArea(gid("code-input"), {
-        lineNumbers: true,
-        lineWrapping: true,
-        mode: "python",
-        theme: "default"
-    }),
-    agent: gid("agent"),
-    colorComparison: gid("color-comparison-hud"),
-    comparisonTile: gid("comparison-tile"),
-    comparisonAnswer: gid("comparison-answer"),
-    playbackToolbar: document.querySelector(".playback-toolbar"),
-    gameNotification: gid("game-notification"),
-};
 
 // --- State ---
 
@@ -448,9 +408,6 @@ for (let lvl of levels) {
     lvl.grid[r] = row.join("");
 }
 
-// Initialize editor (before level selection triggers load)
-Editor.init(ui);
-
 // Build level list
 for (let lvl of levels) {
     const item = document.createElement("li");
@@ -571,4 +528,4 @@ Shortcuts.register("unfocus-editor", "Unfocus editor", () => {
     }
 }, "escape");
 Shortcuts.register("toggle-help", "Toggle help", toggleHelp, "?");
-Shortcuts.initialize(gid("shortcuts-container"));
+Shortcuts.initialize(ui.shortcutsContainer);

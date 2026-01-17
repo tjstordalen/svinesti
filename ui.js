@@ -1,0 +1,43 @@
+// ui.js - UI element references
+
+const gid = (id) => document.getElementById(id);
+
+export const ui = {
+    grid:			gid("grid"),
+    codeInput:		gid("code-input"),
+    codeOutput:		gid("code-output"),
+    levelList:		gid("level-list"),
+    btn1:			gid("btn1"),
+    btn2:			gid("btn2"),
+    btn3:			gid("btn3"),
+    speedSlider:	gid("playback-speed"),
+    fontSizeSlider: gid("editor-font-size-slider"),
+    sidebar:        gid("sidebar"),
+    sidebarToggle:  gid("sidebar-toggle"),
+    splashScreen:   gid("splash-screen"),
+    helpButton:     gid("help-button"),
+    helpModal:      gid("help-modal"),
+    helpClose:      gid("help-close"),
+    helpOverlay:    document.querySelector(".help-overlay"),
+    modePlay:       gid("mode-play"),
+    modeEdit:       gid("mode-edit"),
+    playPane:       gid("play-pane"),
+    editorPane:     gid("editor-pane"),
+    editorGrid:     gid("editor-grid"),
+    langPython:     gid("select-lang-python"),
+    langJava:       gid("select-lang-java"),
+    editor: CodeMirror.fromTextArea(gid("code-input"), {
+        lineNumbers: true,
+        lineWrapping: true,
+        mode: "python",
+        theme: "default"
+    }),
+    agent: gid("agent"),
+    colorComparison: gid("color-comparison-hud"),
+    comparisonTile: gid("comparison-tile"),
+    comparisonAnswer: gid("comparison-answer"),
+    playbackToolbar: document.querySelector(".playback-toolbar"),
+    gameNotification: gid("game-notification"),
+    ghost: gid("ghost"),
+    shortcutsContainer: gid("shortcuts-container"),
+};
