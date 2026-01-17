@@ -2,12 +2,10 @@ import * as PigJatin from "./PigJatin/PigJatin.js";
 import { animations, pigSpriteUrl } from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as Editor from "./editor.js";
-import * as Browser from "./browser.js";
 import { levels, TILE_CLASSES } from "./levels.js";
 import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = false;
-const ENABLE_BROWSER = true; // Set to false to hide Browse tab
 
 // --- State ---
 
@@ -396,11 +394,6 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     // showHelp(); // TODO: REMOVE THIS LINE - temporarily disabled for editor development
 }
 
-// Hide browse tab if disabled
-if (!ENABLE_BROWSER) {
-    ui.modeBrowse.style.display = "none";
-}
-
 initWorker();
 
 // Initialize font size from slider
@@ -452,20 +445,6 @@ for (const lvl of levels) {
         selectLevel(lvl);
         ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
         item.classList.add('selected');
-    });
-}
-
-// Initialize browser with levels
-if (ENABLE_BROWSER) {
-    Browser.setLevels(levels);
-    Browser.onSelectLevel((level) => {
-        selectLevel(level);
-        setActiveMode("play");
-        // Update sidebar selection to match
-        const items = ui.levelList.querySelectorAll(".sidebar-level-item");
-        items.forEach((item, i) => {
-            item.classList.toggle("selected", levels[i] === level);
-        });
     });
 }
 
@@ -521,38 +500,24 @@ ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
 
 // Mode toggle handlers
-function setActiveMode(mode) {
-    ui.modePlay.classList.toggle("active", mode === "play");
-    ui.modeEdit.classList.toggle("active", mode === "edit");
-    ui.modeBrowse.classList.toggle("active", mode === "browse");
-    ui.playPane.hidden = mode !== "play";
-    ui.editorPane.hidden = mode !== "edit";
-    ui.browserPane.hidden = mode !== "browse";
-    document.body.classList.toggle('editor-mode', mode === "edit");
-}
-
 ui.modePlay.onclick = () => {
     Editor.exit();
-    Browser.exit();
-    setActiveMode("play");
+    document.body.classList.remove('editor-mode');
+    ui.playPane.hidden = false;
+    ui.editorPane.hidden = true;
+    ui.modePlay.classList.add("active");
+    ui.modeEdit.classList.remove("active");
 };
 
 ui.modeEdit.onclick = () => {
-    Browser.exit();
     enterIdle();
-    setActiveMode("edit");
+    document.body.classList.add('editor-mode');
+    ui.playPane.hidden = true;
+    ui.editorPane.hidden = false;
+    ui.modePlay.classList.remove("active");
+    ui.modeEdit.classList.add("active");
     Editor.enter();
 };
-
-ui.modeBrowse.onclick = () => {
-    Editor.exit();
-    enterIdle();
-    setActiveMode("browse");
-    Browser.enter();
-};
-
-// TODO: REMOVE THIS LINE - temporarily open browse pane on load for development
-if (ENABLE_BROWSER) ui.modeBrowse.click();
 
 // Run PigJatin tests
 PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);
