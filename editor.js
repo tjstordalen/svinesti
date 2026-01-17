@@ -23,6 +23,10 @@ const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
 // --- Validation ---
 
 function validate(level) {
+    if (!level.grid || !level.start || !level.nRows || !level.nCols) {
+        return 'Invalid level data';
+    }
+
     const { nCols, grid, start } = level;
 
     if (!/[RGB]/.test(grid.join(''))) return 'Level must have at least one target';
@@ -252,6 +256,23 @@ function exportToURL(level) {
     return `${location.origin}${location.pathname}#level=${encoded}`;
 }
 
+function importFromURL() {
+    if (!location.hash.startsWith('#level=')) return null;
+    try {
+        const encoded = location.hash.slice(7);
+        const level = JSON.parse(atob(encoded));
+        if (validate(level)) {
+            console.error('Invalid level data in URL');
+            return null;
+        }
+        history.replaceState(null, '', location.pathname);
+        return level;
+    } catch (e) {
+        console.error('Failed to decode level from URL:', e);
+        return null;
+    }
+}
+
 async function handleShareClick() {
     const level = serialize();
     const error = validate(level);
@@ -260,9 +281,7 @@ async function handleShareClick() {
         return;
     }
 
-	const compactl = compact(level);
-	console.log(compactl)
-    const url = exportToURL(compactl);
+    const url = exportToURL(compact(level));
     try {
         await navigator.clipboard.writeText(url);
         animations.notify(ui.editorNotification, 'Link copied to clipboard!');
@@ -291,4 +310,4 @@ function exit() {
     ui.editorShare.removeEventListener('click', handleShareClick);
 }
 
-export { enter, exit, load, serialize, validate };
+export { enter, exit, load, serialize, validate, importFromURL };

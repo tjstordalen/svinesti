@@ -423,8 +423,13 @@ for (let lvl of levels) {
     });
 }
 
-// Select first level
-ui.levelList.querySelector("li button").click();
+// Load shared level from URL, or select first level
+const sharedLevel = Editor.importFromURL();
+if (sharedLevel) {
+    selectLevel(sharedLevel);
+} else {
+    ui.levelList.querySelector("li button").click();
+}
 
 // --- Event handlers ---
 
