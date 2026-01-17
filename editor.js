@@ -2,7 +2,6 @@
 //
 // TODO: Remaining features from editor.js.old:
 // - Custom levels storage (localStorage persistence)
-// - URL import for loading shared levels
 // - Save/New button handlers
 // - Level name input handling
 // - onLevelSaved callback to refresh level list in main.js
@@ -280,7 +279,6 @@ async function handleShareClick() {
         animations.notify(ui.editorNotification, error, true);
         return;
     }
-
     const url = exportToURL(compact(level));
     try {
         await navigator.clipboard.writeText(url);
