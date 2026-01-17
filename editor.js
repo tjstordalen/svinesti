@@ -4,7 +4,8 @@
 
 const N_ROWS = 9;
 const N_COLS = 16;
-const EMPTY = 'empty';
+const EMPTY =  'empty';
+const TARGET = 'target';
 const COLORS = ['red', 'green', 'blue'];
 const [RED, GREEN, BLUE] = COLORS;
 const PIG_DIRS = ['pig-right', 'pig-down', 'pig-left', 'pig-up'];
@@ -23,40 +24,37 @@ let isDragging = false;
 
 
 const tileAt = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
-const hasAnyClass = (tile, classes) => classes.find(c => tile.classList.contains(c));
-const isColor = (tile) => hasAnyClass(tile, COLORS);
-const isPig = (tile) => hasAnyClass(tile, PIG_DIRS);
-
+const firstMatch = (tile, classes) => classes.find(c => tile.classList.contains(c));
+const isColor = (tile) => firstMatch(tile, COLORS);
+const isPig = (tile) => firstMatch(tile, PIG_DIRS);
 
 function serialize() {
-    const grid = [];
-    let row = '';
-    let start = null;
-    let dir = null;
+	const tiles = [...ui.editorGrid.children];
 
-    for (let i = 0; i < ui.editorGrid.children.length; i++) {
-        const tile = ui.editorGrid.children[i];
+	const tileToChar = (tile) => {
+		const color = firstMatch(tile, [RED, GREEN, BLUE, EMPTY]);
+		const hasTarget = tile.classList.contains(TARGET);
+		const ch = color === EMPTY ? '.' : color[0];
+		return hasTarget ? ch.toUpperCase() : ch.toLowerCase();
+	};
 
-        // Color: red/green/blue → r/g/b, else '.'
-        const color = isColor(tile);
-        let char = color ? color[0] : '.';
-        if (tile.classList.contains('target')) char = char.toUpperCase();
+	const chars = tiles.map(tileToChar);
+	const grid = [];
+	while (chars.length > 0) {
+		const row = chars.splice(0, N_COLS);
+		grid.push(row.join(''));
+	}
 
-        // Pig position and direction
-        const pigDir = isPig(tile)?.slice(4);
-        if (pigDir) {
-            start = [Math.floor(i / N_COLS), i % N_COLS];
-            dir = pigDir;
-        }
+	// Find pig position and direction
+	const pigIndex = tiles.findIndex(isPig);
+	if (pigIndex < 0) throw new Error('No pig found in grid');
+	const pigRow = Math.floor(pigIndex / N_COLS);
+	const pigCol = pigIndex % N_COLS;
+	const start = [pigRow, pigCol];
+	const pigClass = firstMatch(tiles[pigIndex], PIG_DIRS);
+	const direction = pigClass.slice('pig-'.length);
 
-        row += char;
-        if ((i + 1) % N_COLS === 0) {
-            grid.push(row);
-            row = '';
-        }
-    }
-
-    return { nRows: N_ROWS, nCols: N_COLS, grid, start, dir };
+	return { nRows: N_ROWS, nCols: N_COLS, grid, start, direction };
 }
 
 // --- Click Cycling Maps ---
