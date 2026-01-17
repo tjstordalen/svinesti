@@ -922,11 +922,6 @@ body.editor-mode #agent:active {
     cursor: grabbing;
 }
 
-/* In editor mode, hide built-in levels and show only custom levels */
-body.editor-mode #sidebar > .sidebar-header,
-body.editor-mode #level-list {
-    display: none;
-}
 
 #grid-wrapper {
     position: relative;

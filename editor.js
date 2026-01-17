@@ -1,10 +1,10 @@
 // editor.js - Level Editor
 
+import { TILE_CLASSES, DEFAULT_LEVEL } from "./levels.js";
+
 // --- Constants ---
 
-const N_ROWS = 9;
-const N_COLS = 16;
-const EMPTY =  'empty';
+const EMPTY = 'empty';
 const TARGET = 'target';
 const COLORS = ['red', 'green', 'blue'];
 const [RED, GREEN, BLUE] = COLORS;
@@ -15,10 +15,9 @@ const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
 
 let ui = null;
 
-// --- State ---
+// --- Grid State ---
 
-let nRows = N_ROWS;
-let nCols = N_COLS;
+let selectedLevel = null;
 
 // --- Drag State ---
 
@@ -41,6 +40,7 @@ const charToTileClass = (ch) => {
 };
 
 function serialize() {
+	const { nRows, nCols } = selectedLevel;
 	const tiles = [...ui.editorGrid.children];
 
 	const tileToChar = (tile) => {
@@ -70,21 +70,20 @@ function serialize() {
 }
 
 function load(level) {
-    nRows = level.nRows;
-    nCols = level.nCols;
+    selectedLevel = level;
 
-    document.documentElement.style.setProperty('--grid-n-rows', nRows);
-    document.documentElement.style.setProperty('--grid-n-cols', nCols);
+    document.documentElement.style.setProperty('--grid-n-rows', level.nRows);
+    document.documentElement.style.setProperty('--grid-n-cols', level.nCols);
 
     ui.editorGrid.innerHTML = '';
     for (const ch of level.grid.join('')) {
         const tile = document.createElement('div');
-        tile.className = 'tile ' + charToTileClass(ch);
+        tile.className = 'tile ' + TILE_CLASSES[ch];
         ui.editorGrid.appendChild(tile);
     }
 
     // Place pig
-    const pigIndex = level.start[0] * nCols + level.start[1];
+    const pigIndex = level.start[0] * level.nCols + level.start[1];
     ui.editorGrid.children[pigIndex].classList.add('pig-' + level.dir);
 }
 
@@ -191,22 +190,7 @@ function handleRightClick(e) {
 
 function enter() {
     ghost = document.getElementById("ghost");
-
-    nRows = N_ROWS;
-    nCols = N_COLS;
-
-    document.documentElement.style.setProperty('--grid-n-rows', nRows);
-    document.documentElement.style.setProperty('--grid-n-cols', nCols);
-
-    ui.editorGrid.innerHTML = '';
-    for (let i = 0; i < nRows * nCols; i++) {
-        const tile = document.createElement('div');
-        tile.className = 'tile empty';
-        ui.editorGrid.appendChild(tile);
-    }
-
-    // Pig starts bottom-left, facing right
-    ui.editorGrid.children[(nRows - 1) * nCols].className = 'tile blue pig-right';
+    load(DEFAULT_LEVEL);
 
     ui.editorGrid.addEventListener('contextmenu', handleRightClick);
     ui.editorGrid.addEventListener('pointerdown', handlePointerDown);
@@ -226,6 +210,8 @@ function exit() {
 // --- Initialize ---
 
 export function init(uiRefs) {
+	console.log("intializing");
+	console.log("the refs are " + uiRefs.editorGrid);
     ui = uiRefs;
 }
 

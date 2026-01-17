@@ -371,6 +371,11 @@ function initWorker() {
 // --- Actions ---
 
 function selectLevel(level) {
+	if (document.body.classList.contains('editor-mode')) {
+		console.log("We are now loading in the editor");
+        Editor.load(level);
+        return;
+    }
     enterIdle();
     storeCode();
     state.level = level;
@@ -443,6 +448,9 @@ for (let lvl of levels) {
     lvl.grid[r] = row.join("");
 }
 
+// Initialize editor (before level selection triggers load)
+Editor.init(ui);
+
 // Build level list
 for (let lvl of levels) {
     const item = document.createElement("li");
@@ -504,11 +512,9 @@ ui.helpButton.onclick = showHelp;
 ui.helpClose.onclick = hideHelp;
 ui.helpOverlay.onclick = hideHelp;
 
-// Initialize editor
-Editor.init({ editorGrid: ui.editorGrid });
-
 // Mode toggle handlers
 ui.modePlay.onclick = () => {
+    document.body.classList.remove('editor-mode');
     ui.playPane.hidden = false;
     ui.editorPane.hidden = true;
     ui.modePlay.classList.add("active");
@@ -516,6 +522,7 @@ ui.modePlay.onclick = () => {
 };
 
 ui.modeEdit.onclick = () => {
+    document.body.classList.add('editor-mode');
     enterIdle();
     ui.playPane.hidden = true;
     ui.editorPane.hidden = false;
