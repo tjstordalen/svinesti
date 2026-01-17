@@ -199,8 +199,8 @@ The level editor (`editor.js`) uses DOM classes as the source of truth during ed
 
 **Controls:**
 - **Left-click** — Cycle tile color (empty → blue → green → red → empty) or rotate pig (right → down → left → up)
-- **Left-drag** — Paint mode: copies source tile's color to tiles dragged over
-- **Pig drag** — Move pig to a new tile
+- **Left-drag** — Paint mode: copies source tile's color to tiles dragged over (preserves pig if present)
+- **Pig drag** — Move pig to a new tile; target keeps its color if colored, otherwise inherits source color
 - **Right-click** — Toggle target (star) on colored tiles
 
 **Key functions:**
