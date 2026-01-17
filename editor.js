@@ -225,7 +225,7 @@ function compact(level) {
 
 	const rows = grid;
 	const col = i => grid.map(row => row[i]).join('');
-	const columns = grid[0].map((_,i) => col(i));
+	const columns = [...grid[0]].map((_,i) => col(i));
 
     const hasColor = s => /[^.]/.test(s);
     const minR = rows.findIndex(hasColor);
@@ -245,11 +245,6 @@ function compact(level) {
         start: [start[0] - minR, start[1] - minC],
         dir,
     };
-
-
-
-
-
 }
 
 function exportToURL(level) {
@@ -265,7 +260,9 @@ async function handleShareClick() {
         return;
     }
 
-    const url = exportToURL(compact(level));
+	const compactl = compact(level);
+	console.log(compactl)
+    const url = exportToURL(compactl);
     try {
         await navigator.clipboard.writeText(url);
         animations.notify(ui.editorNotification, 'Link copied to clipboard!');
