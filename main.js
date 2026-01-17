@@ -467,8 +467,13 @@ ui.sidebarTabs.forEach(tab => {
         ui.sidebarTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         const tabName = tab.dataset.tab;
-        const levelArray = tabName === 'default' ? levels : shuffled(levels);
-        populateLevelList(levelArray);
+        if (tabName === 'default') {
+            populateLevelList(levels);
+        } else if (tabName === 'local') {
+            populateLevelList(Editor.getCustomLevels());
+        } else {
+            populateLevelList(shuffled(levels));
+        }
     });
 });
 

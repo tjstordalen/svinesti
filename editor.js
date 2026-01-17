@@ -12,6 +12,7 @@ import { animations } from "./animations.js";
 
 // --- Constants ---
 
+const STORAGE_KEY = 'svinesti-custom-levels';
 const EMPTY = 'empty';
 const TARGET = 'target';
 const COLORS = ['red', 'green', 'blue'];
@@ -288,6 +289,32 @@ async function handleShareClick() {
     }
 }
 
+// --- Local Storage ---
+
+function getCustomLevels() {
+    const json = localStorage.getItem(STORAGE_KEY);
+    return json ? JSON.parse(json) : [];
+}
+
+function saveCustomLevel(level) {
+    const levels = getCustomLevels();
+    levels.push(level);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+}
+
+function handleSaveClick() {
+    const level = serialize();
+    const error = validate(level);
+    if (error) {
+        animations.notify(ui.editorNotification, error, true);
+        return;
+    }
+    const compacted = compact(level);
+    compacted.name = 'Custom';
+    saveCustomLevel(compacted);
+    animations.notify(ui.editorNotification, 'Level saved!');
+}
+
 function enter() {
     load(DEFAULT_LEVEL);
 
@@ -296,6 +323,7 @@ function enter() {
     ui.editorGrid.addEventListener('pointermove', handlePointerMove);
     ui.editorGrid.addEventListener('pointerup', handlePointerUp);
     ui.editorGrid.addEventListener('pointercancel', handlePointerUp);
+    ui.editorSave.addEventListener('click', handleSaveClick);
     ui.editorShare.addEventListener('click', handleShareClick);
 }
 
@@ -305,7 +333,8 @@ function exit() {
     ui.editorGrid.removeEventListener('pointermove', handlePointerMove);
     ui.editorGrid.removeEventListener('pointerup', handlePointerUp);
     ui.editorGrid.removeEventListener('pointercancel', handlePointerUp);
+    ui.editorSave.removeEventListener('click', handleSaveClick);
     ui.editorShare.removeEventListener('click', handleShareClick);
 }
 
-export { enter, exit, load, serialize, validate, importFromURL };
+export { enter, exit, load, serialize, validate, importFromURL, getCustomLevels };

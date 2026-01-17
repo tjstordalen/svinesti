@@ -10,7 +10,7 @@ Svinesti is a browser-based educational programming game where students control 
 
 ### Core Files
 
-- **index.html** - Markup with CodeMirror editor, level selector, and playback controls
+- **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
 - **main.js** - Game logic, playback, UI wiring (see structure below)
 - **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify), `pigSpriteUrl()` helper
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
@@ -44,13 +44,13 @@ Sections:
 - **UI elements** - DOM references
 - **State** - All mutable state
 - **Utilities** - `selectedLanguage()`, `getAnimSpeed()`
-- **Board rendering** - `renderGrid()`, `getCell()`, `setCssVar()`, `loadLevel()`
+- **Board rendering** - `renderGrid()`, `renderMiniGrid()`, `getCell()`, `setCssVar()`, `loadLevel()`
 - **Code storage** - `storeCode()`, `loadCode()` (localStorage persistence)
 - **Playback** - `step()` (async), `playbackInit/Stop/Resume()`, `pause()`
 - **Worker management** - `initWorker()`
 - **Actions** - `selectLevel()`, `switchLanguage()`, `submitCode()`
 - **Help system** - `showHelp()`, `hideHelp()` - Modal with three-column layout showing functions, syntax, and licenses
-- **Initialize** - Setup code
+- **Initialize** - Setup code, build thumbnail-based level list in sidebar
 - **Event handlers** - UI event wiring
 
 ### Promise-Based Playback (Web Animations API)
@@ -208,6 +208,19 @@ The level editor (`editor.js`) uses DOM classes as the source of truth during ed
 - `serialize()` — Converts current DOM state to level format
 
 **Design:** DOM-as-truth is simpler for editing (no sync between model and view). Serialization walks the grid once on save.
+
+## Sidebar Level List
+
+The sidebar displays levels as visual mini-grid thumbnails rather than text buttons. Each thumbnail shows:
+- Tile colors using the same `TILE_CLASSES` mapping
+- A pink dot indicating pig starting position
+- A gold dot for target tiles (simplified from the apple icon)
+
+**Grid rendering note:** There are currently two similar functions:
+- `renderGrid()` — Main game grid, uses `.tile` class
+- `renderMiniGrid()` — Sidebar thumbnails, uses `.mini-tile` class
+
+Both share the same `TILE_CLASSES` mapping. Could potentially be unified with a `.mini-grid .tile` CSS override, but the duplication is small (~20 lines total).
 
 ## Keyboard Shortcuts
 
