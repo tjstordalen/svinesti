@@ -1,4 +1,11 @@
 // editor.js - Level Editor
+//
+// TODO: Remaining features from editor.js.old:
+// - Custom levels storage (localStorage persistence)
+// - URL import for loading shared levels
+// - Save/New button handlers
+// - Level name input handling
+// - onLevelSaved callback to refresh level list in main.js
 
 import { TILE_CLASSES, DEFAULT_LEVEL } from "./levels.js";
 import { ui } from "./ui.js";
@@ -11,6 +18,37 @@ const COLORS = ['red', 'green', 'blue'];
 const [RED, GREEN, BLUE] = COLORS;
 const PIG_DIRS = ['pig-right', 'pig-down', 'pig-left', 'pig-up'];
 const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
+
+// --- Validation ---
+
+const isColorChar = (ch) => 'rgbRGB'.includes(ch);
+
+function validate(level) {
+    const { nCols, grid, start } = level;
+
+    if (!/[RGB]/.test(grid.join(''))) return 'Level must have at least one target';
+
+    // Add sentinel columns on left and right edges so that two elements from two
+	// different rows are not adjacent when we linearize the grid below
+    const paddedRows = grid.map(row => '.' + row + '.');
+    const cells = paddedRows.join('').split('');
+    const stride = nCols + 2; // each row is now two characters wider
+    const pigIndex = start[0] * stride + start[1] + 1;
+
+    if (cells[pigIndex] === '.') return 'Pig must be on a colored tile';
+
+    function dfs(i) {
+        const c = cells[i] || '.'; // because we can index out of bounds
+        if (c === '.') return;
+        cells[i] = '.';
+        [i+1, i-1, i+stride, i-stride].forEach(dfs);
+    }
+    dfs(pigIndex);
+
+    if (cells.some(c => c !== '.')) return 'All colored tiles must be reachable from the pig';
+
+    return null;
+}
 
 // --- State ---
 
@@ -199,4 +237,4 @@ function exit() {
     ui.editorGrid.removeEventListener('pointercancel', handlePointerUp);
 }
 
-export { enter, exit, load, serialize };
+export { enter, exit, load, serialize, validate };
