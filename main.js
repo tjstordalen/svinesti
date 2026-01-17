@@ -1,9 +1,8 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
-import { animations } from "./animations.js";
+import { animations, pigSpriteUrl } from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
-import * as Board from "./board.js";
 import * as Editor from "./editor.js";
-import { levels } from "./levels.js";
+import { levels, TILE_CLASSES } from "./levels.js";
 
 const ENABLE_SPLASH_SCREEN = false;
 
@@ -186,7 +185,28 @@ function hideHelp() {
 
 // TODO: Provide a numbered list of all the occurrences of "agent" across all files and ask for confirmation before replacing them with "pig" across the board. 
 
-// --- Board rendering (play-specific wrappers) ---
+// --- Board rendering ---
+
+function setCssVar(name, value) {
+    document.documentElement.style.setProperty(name, value.toString());
+}
+
+function renderGrid(level) {
+    ui.grid.innerHTML = '';
+    setCssVar('--grid-n-rows', level.nRows);
+    setCssVar('--grid-n-cols', level.nCols);
+
+    const cells = level.grid.join('');
+    for (const char of cells) {
+        const tile = document.createElement('div');
+        tile.className = 'tile ' + TILE_CLASSES[char];
+        ui.grid.appendChild(tile);
+    }
+}
+
+function getCell(row, col) {
+    return ui.grid.children[row * state.level.nCols + col];
+}
 
 function updateAgentEdgeClasses(row, col) {
     // Flip HUD to left when near right edge (HUD needs 2 tiles of space)
@@ -194,13 +214,13 @@ function updateAgentEdgeClasses(row, col) {
 }
 
 function placePig(row, col) {
-    Board.placePig(ui.grid, ui.agent, state.level.nCols, row, col);
+    getCell(row, col).appendChild(ui.agent);
     updateAgentEdgeClasses(row, col);
 }
 
 async function moveAnimated(toRow, toCol) {
     const fromRect = ui.agent.getBoundingClientRect();
-    const toCell = Board.getCell(ui.grid, state.level.nCols, toRow, toCol);
+    const toCell = getCell(toRow, toCol);
     const toRect = toCell.getBoundingClientRect();
 
     const dx = toRect.left - fromRect.left;
@@ -218,11 +238,11 @@ function loadLevel(level) {
     ui.agent.getAnimations().forEach(a => a.cancel());
     ui.agent.style.transform = '';
 
-    Board.renderGrid(ui.grid, level);
+    renderGrid(level);
 
     const [row, col] = level.start;
     placePig(row, col);
-    Board.setPigDirection(ui.agent, level.dir);
+    ui.agent.style.backgroundImage = pigSpriteUrl(level.dir);
 }
 
 // --- Code storage ---

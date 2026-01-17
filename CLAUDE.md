@@ -11,8 +11,11 @@ Svinesti is a browser-based educational programming game where students control 
 ### Core Files
 
 - **index.html** - Markup with CodeMirror editor, level selector, and playback controls
-- **main.js** - All application logic (see structure below)
-- **levels.js** - Level definitions with grid, dimensions, starting position, and direction
+- **main.js** - Game logic, playback, UI wiring (see structure below)
+- **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify), `pigSpriteUrl()` helper
+- **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
+- **shortcuts.js** - Keyboard shortcut registration, rebinding, and persistence
+- **levels.js** - Level definitions and `TILE_CLASSES` mapping (see Data-Driven Mappings below)
 - **worker.js** - Web Worker that loads Pyodide and executes student code with 1-second timeout
 - **svinesti.py** - Python game engine running in Pyodide. Defines `move()`, `turnLeft()`, `turnRight()`, `isRed()`, `isGreen()`, `isBlue()` and execution tracing
 
@@ -26,12 +29,13 @@ const state = {
     level: null,
     worker: null,
     workerTimeout: null,
-    isSingleStepping: false,  // Flag to indicate single-step execution mode
-    currentAnimation: null,   // Track running animation for cancel on stop
+    isSingleStepping: false,   // Flag to indicate single-step execution mode
+    focusedElementBeforeHelp: null,  // Track which element to refocus after help closes
+    currentDirection: null,    // Track pig's current direction during playback
     playback: {
-        status: "idle",       // "idle" | "playing" | "paused"
-        trace: null,          // Array of events from execution
-        index: 0,             // Current position in trace
+        status: "idle",        // "idle" | "playing" | "paused"
+        trace: null,           // Array of events from execution
+        index: 0,              // Current position in trace
     },
 };
 ```
@@ -39,9 +43,8 @@ const state = {
 Sections:
 - **UI elements** - DOM references
 - **State** - All mutable state
-- **Utilities** - `setCssVar()`, `selectedLanguage()`, `getAnimSpeed()`
-- **Keyframe definitions** - Constants for Web Animations API (`WALK_KEYFRAMES`, `HOP_UP/DOWN_KEYFRAMES`, etc.)
-- **Board rendering** - `move()`, `turn()`, `loadLevel()`
+- **Utilities** - `selectedLanguage()`, `getAnimSpeed()`
+- **Board rendering** - `renderGrid()`, `getCell()`, `setCssVar()`, `loadLevel()`
 - **Code storage** - `storeCode()`, `loadCode()` (localStorage persistence)
 - **Playback** - `step()` (async), `playbackInit/Stop/Resume()`, `pause()`
 - **Worker management** - `initWorker()`
@@ -57,32 +60,35 @@ The playback system uses the **Web Animations API** with async/await to coordina
 **How it works:**
 
 1. `step()` is an async function that processes one trace event
-2. For animated events, it calls `element.animate(keyframes, options)` which returns an Animation object
-3. `await animation.finished` pauses execution until the animation completes
+2. For animated events, it calls functions from `animations.js` which use the Web Animations API
+3. `await` pauses execution until the animation completes
 4. After animation completes (or immediately for non-animated events), execution continues
 5. If `status === "playing"`, `step()` calls itself recursively (non-blocking)
 
 ```
-step() → animate() → await finished → step() → animate() → ...
+step() → animations.move() → await → step() → animations.turn() → ...
 ```
 
 **Animation types:**
 
 | Event | Implementation | Behavior |
 |-------|---------------|----------|
-| `move` | `ui.agent.animate(WALK_KEYFRAMES[dir], {...})` | Walking animation, then continue |
-| `turn` | Two sequential animations: hop up → swap image → hop down | Two-phase turn with image swap at peak |
-| `isColor` | `ui.colorComparison.animate(HUD_FLASH_KEYFRAMES, {...})` | Flash HUD, then continue |
+| `move` | `animations.walk()` + `animations.move()` | Sprite animation + translation |
+| `turn` | `animations.turn()` | Hop up → swap sprite → hop down |
+| `isColor` | `animations.hudFlash()` | Flash HUD, then continue |
 | `collected` | No animation | Immediate `step()` call |
-| `gameover` | No animation | Stops playback |
+| `gameover` | `animations.celebrate()` or `animations.lose()` | Win/lose animation |
 | `lineExecuted` | No animation | Immediate recursive `step()` call |
 
 **Keyframe definitions:**
 
-All keyframes are defined in JavaScript constants at the top of main.js:
-- `WALK_KEYFRAMES` - Object with keyframes for each direction (right, down, left, up)
-- `HOP_UP_KEYFRAMES` / `HOP_DOWN_KEYFRAMES` - Turn animation phases
-- `HUD_FLASH_KEYFRAMES` - Color comparison HUD fade in/out
+All keyframes are defined in `animations.js` in the `KEYFRAMES` object:
+- `WALK` - Object with keyframes for each direction (right, down, left, up)
+- `HOP_UP` / `HOP_DOWN` - Turn animation phases
+- `HUD_FLASH` - Color comparison HUD fade in/out
+- `CELEBRATE` - Win bounce animation
+- `SHAKE` - Loss grid shake
+- `NOTIFICATION` - Toast fade in/out
 
 **Pause behavior:**
 
@@ -143,9 +149,65 @@ Tests run automatically on page load. Check browser console for results.
     nCols: 8,
     grid: ["......bB", ...],  // r,g,b = tiles; R,G,B = tiles with stars; . = empty
     start: [6, 0],            // starting [row, col]
-    dir: 0                    // 0=right, 1=down, 2=left, 3=up
+    dir: "right"              // "right" | "down" | "left" | "up"
 }
 ```
+
+## Data-Driven Mappings
+
+Prefer lookup tables over conditionals. A mapping with a loop is cleaner than a chain of if-statements.
+
+**TILE_CLASSES** (levels.js) — Maps grid characters to CSS classes:
+
+```javascript
+const TILE_CLASSES = {
+    ".": "empty",
+    "r": "red",
+    "g": "green",
+    "b": "blue",
+    "R": "red target",
+    "G": "green target",
+    "B": "blue target",
+};
+```
+
+Used when rendering the grid — one loop, no conditionals:
+
+```javascript
+for (const char of level.grid.join('')) {
+    tile.className = 'tile ' + TILE_CLASSES[char];
+}
+```
+
+**editor.js** uses the same pattern for serialization (reverse mapping) and click cycling:
+
+```javascript
+const classToChar = { empty: '.', red: 'r', green: 'g', blue: 'b' };
+const leftClickReplacements = [
+    ["pig-right", "pig-down"],
+    ["pig-down", "pig-left"],
+    // ...
+    ["empty", "blue"],
+    ["blue", "green"],
+    // ...
+];
+```
+
+## Level Editor
+
+The level editor (`editor.js`) uses DOM classes as the source of truth during editing, then serializes to the level format for saving/sharing.
+
+**Controls:**
+- **Left-click** — Cycle tile color (empty → blue → green → red → empty) or rotate pig (right → down → left → up)
+- **Left-drag** — Paint mode: copies source tile's color to tiles dragged over
+- **Pig drag** — Move pig to a new tile
+- **Right-click** — Toggle target (star) on colored tiles
+
+**Key functions:**
+- `enter()` / `exit()` — Mode switching, attaches/detaches event listeners
+- `serialize()` — Converts current DOM state to level format
+
+**Design:** DOM-as-truth is simpler for editing (no sync between model and view). Serialization walks the grid once on save.
 
 ## Keyboard Shortcuts
 

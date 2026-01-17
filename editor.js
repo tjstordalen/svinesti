@@ -1,6 +1,9 @@
 // editor.js - Level Editor
 
-import * as Board from "./board.js";
+// --- Constants ---
+
+const N_ROWS = 9;
+const N_COLS = 16;
 
 // --- UI References ---
 
@@ -14,6 +17,39 @@ let isPigDrag = false;
 let isDragging = false;
 
 const tileAt = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
+
+// --- Serialization ---
+
+function serialize() {
+    const grid = [];
+    let row = '';
+    let start = null;
+    let dir = null;
+
+    for (let i = 0; i < ui.editorGrid.children.length; i++) {
+        const tile = ui.editorGrid.children[i];
+
+        // Color: red/green/blue → r/g/b, else '.'
+        const color = ['red', 'green', 'blue'].find(c => tile.classList.contains(c));
+        let char = color ? color[0] : '.';
+        if (tile.classList.contains('target')) char = char.toUpperCase();
+
+        // Pig position and direction
+        const pigDir = tile.className.match(/pig-(\w+)/)?.[1];
+        if (pigDir) {
+            start = [Math.floor(i / N_COLS), i % N_COLS];
+            dir = pigDir;
+        }
+
+        row += char;
+        if ((i + 1) % N_COLS === 0) {
+            grid.push(row);
+            row = '';
+        }
+    }
+
+    return { nRows: N_ROWS, nCols: N_COLS, grid, start, dir };
+}
 
 // --- Click Cycling Maps ---
 
@@ -46,58 +82,67 @@ function handleLeftClick(e) {
 // --- Pig Drag Handlers ---
 
 function handlePointerDown(e) {
-	if (!e.isPrimary || e.button !== 0) return;
-	e.preventDefault();
-	e.target.setPointerCapture(e.pointerId);
+    if (!e.isPrimary || e.button !== 0) return;
+    e.preventDefault();
+    e.target.setPointerCapture(e.pointerId);
 
-	sourceTile = e.target.closest('.tile');
-	isDragging = false;
+    sourceTile = e.target.closest('.tile');
+    isDragging = false;
 
-	// Set ghost class: pig only for pig tiles, otherwise copy full class
-	const pigClass = sourceTile?.className.match(/pig-\w+/)?.[0];
-	isPigDrag = pigClass !== undefined;
-	ghost.className = 'ghost ' + (pigClass ? pigClass : sourceTile?.className);
+    // Set ghost class: pig only for pig tiles, otherwise copy full class
+    const pigClass = sourceTile?.className.match(/pig-\w+/)?.[0];
+    isPigDrag = pigClass !== undefined;
+    ghost.className = 'ghost ' + (pigClass ? pigClass : sourceTile?.className);
 }
 
 function handlePointerMove(e) {
-	if (sourceTile === null) return;
-	const targetTile = tileAt(e);
+    if (sourceTile === null) return;
+    const targetTile = tileAt(e);
 
-	// Detect drag: pointer moved to a different tile
-	if (!isDragging && targetTile && targetTile !== sourceTile) {
-		isDragging = true;
-		ghost.style.visibility = 'visible';
-	}
+    // Detect drag: pointer moved to a different tile
+    if (!isDragging && targetTile && targetTile !== sourceTile) {
+        isDragging = true;
+        ghost.style.visibility = 'visible';
+    }
 
-	if (!isDragging) return;
+    if (!isDragging) return;
 
-	ghost.style.left = e.clientX + 'px';
-	ghost.style.top = e.clientY + 'px';
+    ghost.style.left = e.clientX + 'px';
+    ghost.style.top = e.clientY + 'px';
 
-	// Paint mode: copy source classes to tiles we drag over
-	if (!isPigDrag && targetTile && targetTile !== sourceTile && !/pig-\w+/.test(targetTile.className)) {
-		targetTile.className = sourceTile.className;
-	}
+    // Paint mode: copy source color to tiles we drag over
+    if (!isPigDrag && targetTile) {
+        const pigClass = targetTile.className.match(/pig-\w+/)?.[0];
+        // Skip if painting empty over pig (would erase tile under pig)
+        if (pigClass && sourceTile.classList.contains('empty')) return;
+        targetTile.className = sourceTile.className + (pigClass ? ' ' + pigClass : '');
+    }
 }
 
 function handlePointerUp(e) {
-	if (sourceTile === null) return;
+    if (sourceTile === null) return;
 
-	if (!isDragging) {
-		// Click: cycle the tile
-		handleLeftClick({ target: sourceTile });
-	} else if (isPigDrag) {
-		// Pig drag: move pig to target tile
-		const targetTile = tileAt(e);
-		if (targetTile && targetTile !== sourceTile) {
-			targetTile.className = sourceTile.className;
-			sourceTile.className = sourceTile.className.replace(/pig-(right|down|left|up)/, '').trim();
-		}
-	}
-	// Paint drag: already handled in handlePointerMove
+    if (!isDragging) {
+        // Click: cycle the tile
+        handleLeftClick({ target: sourceTile });
+    } else if (isPigDrag) {
+        // Pig drag: move pig to target tile
+        const targetTile = tileAt(e);
+        if (targetTile && targetTile !== sourceTile) {
+            const pigClass = sourceTile.className.match(/pig-\w+/)[0];
+            // Keep target's color if it has one, otherwise inherit source's color
+            const targetColor = ['red', 'green', 'blue'].find(c => targetTile.classList.contains(c));
+            const sourceColor = ['red', 'green', 'blue'].find(c => sourceTile.classList.contains(c));
+            const color = targetColor || sourceColor;
+            const targetStar = targetTile.classList.contains('target') ? ' target' : '';
+            targetTile.className = 'tile ' + color + targetStar + ' ' + pigClass;
+            sourceTile.classList.remove(pigClass);
+        }
+    }
+    // Paint drag: already handled in handlePointerMove
 
-	ghost.style.visibility = 'hidden';
-	sourceTile = null;
+    ghost.style.visibility = 'hidden';
+    sourceTile = null;
 }
 
 function handleRightClick(e) {
@@ -108,21 +153,24 @@ function handleRightClick(e) {
 }
 
 function enter() {
-    const emptyLevel = {
-        nRows: 9,
-        nCols: 16,
-        grid: Array.from({ length: 9 }, () => Array(16).fill('.')),
-    };
-    Board.renderGrid(ui.editorGrid, emptyLevel, { addIndices: true });
+    document.documentElement.style.setProperty('--grid-n-rows', N_ROWS);
+    document.documentElement.style.setProperty('--grid-n-cols', N_COLS);
 
-    // Add pig to a starting tile (bottom-left, facing right)
-    const startTile = ui.editorGrid.children[8 * 16]; // row 8, col 0
-    startTile.className = 'tile blue pig-right';
+    ui.editorGrid.innerHTML = '';
+    for (let i = 0; i < N_ROWS * N_COLS; i++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile empty';
+        ui.editorGrid.appendChild(tile);
+    }
+
+    // Pig starts bottom-left, facing right
+    ui.editorGrid.children[(N_ROWS - 1) * N_COLS].className = 'tile blue pig-right';
 
     ui.editorGrid.addEventListener('contextmenu', handleRightClick);
     ui.editorGrid.addEventListener('pointerdown', handlePointerDown);
     ui.editorGrid.addEventListener('pointermove', handlePointerMove);
     ui.editorGrid.addEventListener('pointerup', handlePointerUp);
+    ui.editorGrid.addEventListener('pointercancel', handlePointerUp);
 }
 
 function exit() {
@@ -130,6 +178,7 @@ function exit() {
     ui.editorGrid.removeEventListener('pointerdown', handlePointerDown);
     ui.editorGrid.removeEventListener('pointermove', handlePointerMove);
     ui.editorGrid.removeEventListener('pointerup', handlePointerUp);
+    ui.editorGrid.removeEventListener('pointercancel', handlePointerUp);
 }
 
 // --- Initialize ---
@@ -139,4 +188,4 @@ export function init(uiRefs) {
     ghost = document.getElementById("ghost");
 }
 
-export { enter, exit };
+export { enter, exit, serialize };
