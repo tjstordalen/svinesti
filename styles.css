@@ -988,7 +988,6 @@ body.editor-mode #level-list {
     background-size: 90%;
     background-repeat: no-repeat;
     background-position: center;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 .pig-right { background-image: url('pigs/right-1.png'); }
