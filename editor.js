@@ -4,8 +4,11 @@
 
 const N_ROWS = 9;
 const N_COLS = 16;
+const EMPTY = 'empty';
 const COLORS = ['red', 'green', 'blue'];
+const [RED, GREEN, BLUE] = COLORS;
 const PIG_DIRS = ['pig-right', 'pig-down', 'pig-left', 'pig-up'];
+const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
 
 // --- UI References ---
 
@@ -64,16 +67,16 @@ function serialize() {
 // the pig, rather than changing the tile color.
 const leftClickReplacements = [
     // Pig directions (clockwise) - checked first
-    ["pig-right", "pig-down"],
-    ["pig-down", "pig-left"],
-    ["pig-left", "pig-up"],
-    ["pig-up", "pig-right"],
+    [PIG_RIGHT, PIG_DOWN],
+    [PIG_DOWN, PIG_LEFT],
+    [PIG_LEFT, PIG_UP],
+    [PIG_UP, PIG_RIGHT],
 
     // Tile colors - checked if no pig class present
-    ["empty", "blue"],
-    ["blue", "green"],
-    ["green", "red"],
-    ["red", "empty"],
+    [EMPTY, BLUE],
+    [BLUE, GREEN],
+    [GREEN, RED],
+    [RED, EMPTY],
 ]
 
 function handleLeftClick(e) {
