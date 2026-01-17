@@ -19,12 +19,11 @@ let isPigDrag = false;
 let isDragging = false;
 
 
-
-
-
-
 const tileAt = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
 const hasAnyClass = (tile, classes) => classes.find(c => tile.classList.contains(c));
+const isColor = (tile) => hasAnyClass(tile, COLORS);
+const isPig = (tile) => hasAnyClass(tile, PIG_DIRS);
+
 
 function serialize() {
     const grid = [];
@@ -36,12 +35,12 @@ function serialize() {
         const tile = ui.editorGrid.children[i];
 
         // Color: red/green/blue → r/g/b, else '.'
-        const color = hasAnyClass(tile, COLORS);
+        const color = isColor(tile);
         let char = color ? color[0] : '.';
         if (tile.classList.contains('target')) char = char.toUpperCase();
 
         // Pig position and direction
-        const pigDir = hasAnyClass(tile, PIG_DIRS)?.slice(4);
+        const pigDir = isPig(tile)?.slice(4);
         if (pigDir) {
             start = [Math.floor(i / N_COLS), i % N_COLS];
             dir = pigDir;
@@ -96,7 +95,7 @@ function handlePointerDown(e) {
     isDragging = false;
 
     // Set ghost class: pig only for pig tiles, otherwise copy full class
-    const pigClass = hasAnyClass(sourceTile, PIG_DIRS);
+    const pigClass = isPig(sourceTile);
     isPigDrag = pigClass !== undefined;
     ghost.className = 'ghost ' + (pigClass ? pigClass : sourceTile?.className);
 }
@@ -118,7 +117,7 @@ function handlePointerMove(e) {
 
     // Paint mode: copy source color to tiles we drag over
     if (!isPigDrag && targetTile) {
-        const pigClass = hasAnyClass(targetTile, PIG_DIRS);
+        const pigClass = isPig(targetTile);
         // Skip if painting empty over pig (would erase tile under pig)
         if (pigClass && sourceTile.classList.contains('empty')) return;
         targetTile.className = sourceTile.className + (pigClass ? ' ' + pigClass : '');
@@ -135,10 +134,10 @@ function handlePointerUp(e) {
         // Pig drag: move pig to target tile
         const targetTile = tileAt(e);
         if (targetTile && targetTile !== sourceTile) {
-            const pigClass = hasAnyClass(sourceTile, PIG_DIRS);
+            const pigClass = isPig(sourceTile);
             // Keep target's color if it has one, otherwise inherit source's color
-            const targetColor = hasAnyClass(targetTile, COLORS);
-            const sourceColor = hasAnyClass(sourceTile, COLORS);
+            const targetColor = isColor(targetTile);
+            const sourceColor = isColor(sourceTile);
             const color = targetColor || sourceColor;
             targetTile.className = 'tile ' + color + ' ' + pigClass;
             sourceTile.classList.remove(pigClass);
@@ -155,9 +154,7 @@ function handleRightClick(e) {
     if (sourceTile) return; // Ignore during drag
     const tile = e.target.closest('.tile');
     if (!tile) return;
-    const isColor = hasAnyClass(tile, COLORS);
-    const isPig = hasAnyClass(tile, PIG_DIRS);
-    if (isColor && !isPig) tile.classList.toggle('target');
+    if (isColor(tile) && !isPig(tile)) tile.classList.toggle('target');
 }
 
 function enter() {
