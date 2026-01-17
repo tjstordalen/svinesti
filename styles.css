@@ -1027,6 +1027,17 @@ body.editor-mode #agent:active {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
+.ghost.pig-right,
+.ghost.pig-down,
+.ghost.pig-left,
+.ghost.pig-up {
+    background-size: 90%;
+}
+.ghost.pig-right { background-image: url('pigs/right-1.png'); }
+.ghost.pig-down { background-image: url('pigs/down-1.png'); }
+.ghost.pig-left { background-image: url('pigs/left-1.png'); }
+.ghost.pig-up { background-image: url('pigs/up-1.png'); }
+
 /* Agent (Pig) */
 #agent {
     box-sizing: border-box;

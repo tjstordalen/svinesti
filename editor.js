@@ -159,10 +159,9 @@ function handlePointerDown(e) {
     state.drag.source = e.target.closest('.tile');
     state.drag.active = false;
 
-    // Set ghost class: pig only for pig tiles, otherwise copy full class
     const pigClass = isPig(state.drag.source);
     state.drag.isPig = pigClass !== undefined;
-    ui.ghost.className = 'ghost ' + (pigClass ? pigClass : state.drag.source?.className);
+    ui.ghost.className = pigClass ? 'ghost ' + pigClass : 'ghost ' + state.drag.source?.className;
 }
 
 function handlePointerMove(e) {
