@@ -9,6 +9,7 @@
 
 import { TILE_CLASSES, DEFAULT_LEVEL } from "./levels.js";
 import { ui } from "./ui.js";
+import { animations } from "./animations.js";
 
 // --- Constants ---
 
@@ -20,8 +21,6 @@ const PIG_DIRS = ['pig-right', 'pig-down', 'pig-left', 'pig-up'];
 const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
 
 // --- Validation ---
-
-const isColorChar = (ch) => 'rgbRGB'.includes(ch);
 
 function validate(level) {
     const { nCols, grid, start } = level;
@@ -92,9 +91,9 @@ function serialize() {
 	const pigCol = pigIndex % nCols;
 	const start = [pigRow, pigCol];
 	const pigClass = firstMatch(tiles[pigIndex], PIG_DIRS);
-	const direction = pigClass.slice('pig-'.length);
+	const dir = pigClass.slice('pig-'.length);
 
-	return { nRows, nCols, grid, start, direction };
+	return { nRows, nCols, grid, start, dir };
 }
 
 function load(level) {
@@ -219,6 +218,62 @@ function handleRightClick(e) {
     if (isColor(tile) && !isPig(tile)) tile.classList.toggle('target');
 }
 
+// --- Share ---
+
+function compact(level) {
+    const { grid, start, dir } = level;
+
+	const rows = grid;
+	const col = i => grid.map(row => row[i]).join('');
+	const columns = grid[0].map((_,i) => col(i));
+
+    const hasColor = s => /[^.]/.test(s);
+    const minR = rows.findIndex(hasColor);
+    const maxR = rows.findLastIndex(hasColor);
+    const minC = columns.findIndex(hasColor);
+    const maxC = columns.findLastIndex(hasColor);
+
+    const newGrid = [];
+    for (let r = minR; r <= maxR; r++) {
+        newGrid.push(grid[r].slice(minC, maxC + 1));
+    }
+
+    return {
+        nRows: maxR - minR + 1,
+        nCols: maxC - minC + 1,
+        grid: newGrid,
+        start: [start[0] - minR, start[1] - minC],
+        dir,
+    };
+
+
+
+
+
+}
+
+function exportToURL(level) {
+    const encoded = btoa(JSON.stringify(level));
+    return `${location.origin}${location.pathname}#level=${encoded}`;
+}
+
+async function handleShareClick() {
+    const level = serialize();
+    const error = validate(level);
+    if (error) {
+        animations.notify(ui.editorNotification, error, true);
+        return;
+    }
+
+    const url = exportToURL(compact(level));
+    try {
+        await navigator.clipboard.writeText(url);
+        animations.notify(ui.editorNotification, 'Link copied to clipboard!');
+    } catch (e) {
+        prompt('Copy this link to share your level:', url);
+    }
+}
+
 function enter() {
     load(DEFAULT_LEVEL);
 
@@ -227,6 +282,7 @@ function enter() {
     ui.editorGrid.addEventListener('pointermove', handlePointerMove);
     ui.editorGrid.addEventListener('pointerup', handlePointerUp);
     ui.editorGrid.addEventListener('pointercancel', handlePointerUp);
+    ui.editorShare.addEventListener('click', handleShareClick);
 }
 
 function exit() {
@@ -235,6 +291,7 @@ function exit() {
     ui.editorGrid.removeEventListener('pointermove', handlePointerMove);
     ui.editorGrid.removeEventListener('pointerup', handlePointerUp);
     ui.editorGrid.removeEventListener('pointercancel', handlePointerUp);
+    ui.editorShare.removeEventListener('click', handleShareClick);
 }
 
 export { enter, exit, load, serialize, validate };

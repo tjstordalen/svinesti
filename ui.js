@@ -24,6 +24,8 @@ export const ui = {
     playPane:       gid("play-pane"),
     editorPane:     gid("editor-pane"),
     editorGrid:     gid("editor-grid"),
+    editorShare:    gid("editor-share"),
+    editorNotification: gid("editor-notification"),
     langPython:     gid("select-lang-python"),
     langJava:       gid("select-lang-java"),
     editor: CodeMirror.fromTextArea(gid("code-input"), {
