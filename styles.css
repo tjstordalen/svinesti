@@ -925,16 +925,6 @@ body.editor-mode #agent:active {
 }
 
 /* ============================================
-   Responsive Adjustments
-   ============================================ */
-@media (max-width: 900px) {
-    #code-section {
-        flex: 1;
-        max-width: none;
-    }
-}
-
-/* ============================================
    Help Modal
    ============================================ */
 .help-modal {
@@ -1215,8 +1205,13 @@ body.editor-mode #agent:active {
     }
 }
 
-/* Responsive help modal */
+/* Responsive adjustments */
 @media (max-width: 900px) {
+    #code-section {
+        flex: 1;
+        max-width: none;
+    }
+
     .help-content {
         grid-template-columns: 1fr;
         gap: 24px;
