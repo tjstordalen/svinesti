@@ -60,6 +60,11 @@ body {
 }
 
 /* Scrollbar Styling */
+* {
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-text-muted) var(--color-bg);
+}
+
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
