@@ -12,12 +12,34 @@ Svinesti is a browser-based educational programming game where students control 
 
 - **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
 - **main.js** - Game logic, playback, UI wiring (see structure below)
-- **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify), `pigSpriteUrl()` helper
+- **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify/confetti), `pigSpriteUrl()` helper
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
 - **shortcuts.js** - Keyboard shortcut registration, rebinding, and persistence
 - **levels.js** - Level definitions and `TILE_CLASSES` mapping (see Data-Driven Mappings below)
 - **worker.js** - Web Worker that loads Pyodide and executes student code with 1-second timeout
 - **svinesti.py** - Python game engine running in Pyodide. Defines `move()`, `turnLeft()`, `turnRight()`, `isRed()`, `isGreen()`, `isBlue()` and execution tracing
+
+### CSS Structure
+
+Styles are organized in `css/` directory with modular files:
+
+| File | Contents |
+|------|----------|
+| `base.css` | CSS variables, reset, body, scrollbar, notification utility |
+| `layout.css` | App container, main content, play/editor panes, responsive breakpoints |
+| `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
+| `sidebar.css` | Sidebar, tabs, level list, mini-grid thumbnails |
+| `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
+| `game.css` | Grid, tiles, colors, pig sprites, ghost, agent, color HUD, confetti |
+| `help.css` | Help modal, shortcuts list, toggle switch, fadeIn/slideUp keyframes |
+| `splash.css` | Splash screen overlay, animated pig, walk/shadow keyframes |
+
+**Design notes:**
+- Each file has a header comment listing its contents
+- Tile colors use standalone classes (`.red`, `.green`, `.blue`, `.empty`) shared across grid, mini-grid, and ghost
+- Pig sprites also use standalone classes (`.pig-right`, `.pig-down`, `.pig-left`, `.pig-up`)
+- Mini-grid uses `.mini-grid .tile` for container scoping rather than a separate `.mini-tile` class
+- All gameplay animations use Web Animations API; only splash screen uses CSS keyframes (intentionally, for pre-JS loading)
 
 ### main.js Structure
 
@@ -82,13 +104,14 @@ step() → animations.move() → await → step() → animations.turn() → ...
 
 **Keyframe definitions:**
 
-All keyframes are defined in `animations.js` in the `KEYFRAMES` object:
-- `WALK` - Object with keyframes for each direction (right, down, left, up)
-- `HOP_UP` / `HOP_DOWN` - Turn animation phases
-- `HUD_FLASH` - Color comparison HUD fade in/out
-- `CELEBRATE` - Win bounce animation
-- `SHAKE` - Loss grid shake
-- `NOTIFICATION` - Toast fade in/out
+All keyframes are defined in `animations.js`:
+- `KEYFRAMES.WALK` - Object with keyframes for each direction (right, down, left, up)
+- `KEYFRAMES.HOP_UP` / `KEYFRAMES.HOP_DOWN` - Turn animation phases
+- `KEYFRAMES.HUD_FLASH` - Color comparison HUD fade in/out
+- `KEYFRAMES.CELEBRATE` - Win bounce animation
+- `KEYFRAMES.SHAKE` - Loss grid shake
+- `KEYFRAMES.NOTIFICATION` - Toast fade in/out
+- `makeConfettiKeyframes(drift, rotation)` - Dynamic confetti fall (per-piece drift/rotation)
 
 **Pause behavior:**
 
@@ -213,14 +236,10 @@ The level editor (`editor.js`) uses DOM classes as the source of truth during ed
 
 The sidebar displays levels as visual mini-grid thumbnails rather than text buttons. Each thumbnail shows:
 - Tile colors using the same `TILE_CLASSES` mapping
-- A pink dot indicating pig starting position
-- A gold dot for target tiles (simplified from the apple icon)
+- Pig sprite via `::after` pseudo-element (layered over tile color)
+- Apple icon for target tiles
 
-**Grid rendering note:** There are currently two similar functions:
-- `renderGrid()` — Main game grid, uses `.tile` class
-- `renderMiniGrid()` — Sidebar thumbnails, uses `.mini-tile` class
-
-Both share the same `TILE_CLASSES` mapping. Could potentially be unified with a `.mini-grid .tile` CSS override, but the duplication is small (~20 lines total).
+Both `renderGrid()` and `renderMiniGrid()` use the same `.tile` class with shared color classes. Mini-grid specifics are scoped via `.mini-grid .tile`.
 
 ## Keyboard Shortcuts
 
