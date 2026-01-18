@@ -247,7 +247,7 @@ function confetti(container) {
     container.innerHTML = '';
 
     // Create confetti pieces
-    const numPieces = 40;
+    const numPieces = 200;
     for (let i = 0; i < numPieces; i++) {
         const piece = document.createElement('div');
         piece.className = 'confetti';
@@ -264,7 +264,7 @@ function confetti(container) {
 
         // Random animation properties
         const duration = 2 + Math.random() * 2; // 2-4 seconds
-        const delay = Math.random() * 0.5; // 0-0.5 seconds
+        const delay = Math.random() * 0.7; // 0-0.5 seconds
         const drift = (Math.random() - 0.5) * 100; // -50 to 50px
         const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
 
