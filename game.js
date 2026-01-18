@@ -15,7 +15,6 @@ const state = {
 
     // Playback
     status: "idle",       // "idle" | "playing" | "paused"
-    trace: null,          // reversed; pop to consume
 
     // Worker
     worker: null,
@@ -23,6 +22,22 @@ const state = {
 
     // Flags
     isSingleStepping: false,
+};
+
+const playback = {
+    trace: null,
+
+    load(trace) {
+        this.trace = trace.slice().reverse();
+    },
+
+    next() {
+        return this.trace?.pop();
+    },
+
+    clear() {
+        this.trace = null;
+    },
 };
 
 let config = {
@@ -121,13 +136,13 @@ function enterState(status, { trace = null, resetBoard = true } = {}) {
 
     // Trace initialization (playing/paused with new trace)
     if (trace !== null) {
-        state.trace = trace.slice().reverse();
+        playback.load(trace);
         loadLevel(state.level);
     }
 
     // Idle-specific resets
     if (status === "idle") {
-        state.trace = null;
+        playback.clear();
         removeEditorHighlight();
         if (resetBoard && state.grid) {
             state.grid.pig.getAnimations().forEach(a => a.cancel());
@@ -171,7 +186,7 @@ async function moveAnimated(toRow, toCol) {
 async function step() {
     if (state.status === "idle") return;
 
-    const msg = state.trace.pop();
+    const msg = playback.next();
     if (msg === undefined) return;
 
     const pig = state.grid.pig;
