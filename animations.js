@@ -21,6 +21,14 @@ function makeWalkKeyframes(dir) {
     ];
 }
 
+// Generate confetti fall keyframes with drift and rotation
+function makeConfettiKeyframes(drift, rotation) {
+    return [
+        { opacity: 1, transform: 'translateY(-20px) translateX(0) rotate(0deg)' },
+        { opacity: 0.7, transform: `translateY(100vh) translateX(${drift}px) rotate(${rotation}deg)` }
+    ];
+}
+
 // Keyframe definitions for Web Animations API
 const KEYFRAMES = {
     WALK: {
@@ -256,13 +264,16 @@ function confetti(container) {
 
         // Random animation properties
         const duration = 2 + Math.random() * 2; // 2-4 seconds
+        const delay = Math.random() * 0.5; // 0-0.5 seconds
         const drift = (Math.random() - 0.5) * 100; // -50 to 50px
         const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
 
-        piece.style.setProperty('--drift', drift + 'px');
-        piece.style.setProperty('--rotation', rotation + 'deg');
-        piece.style.animationDuration = duration + 's';
-        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        piece.animate(makeConfettiKeyframes(drift, rotation), {
+            duration: duration * 1000,
+            delay: delay * 1000,
+            easing: 'linear',
+            fill: 'both'
+        });
 
         container.appendChild(piece);
     }
