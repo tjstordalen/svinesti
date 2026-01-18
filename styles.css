@@ -793,20 +793,20 @@ body.editor-mode #agent:active {
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
-/* Pig direction classes (for editor) */
-.tile.pig-right,
-.tile.pig-down,
-.tile.pig-left,
-.tile.pig-up {
+/* Pig direction classes (editor tiles and ghost) */
+.pig-right,
+.pig-down,
+.pig-left,
+.pig-up {
     background-size: 90%;
     background-repeat: no-repeat;
     background-position: center;
 }
 
-.tile.pig-right { background-image: url('pigs/right-1.png'); }
-.tile.pig-down { background-image: url('pigs/down-1.png'); }
-.tile.pig-left { background-image: url('pigs/left-1.png'); }
-.tile.pig-up { background-image: url('pigs/up-1.png'); }
+.pig-right { background-image: url('pigs/right-1.png'); }
+.pig-down { background-image: url('pigs/down-1.png'); }
+.pig-left { background-image: url('pigs/left-1.png'); }
+.pig-up { background-image: url('pigs/up-1.png'); }
 
 /* Ghost (for dragging in editor) */
 .ghost {
@@ -827,17 +827,6 @@ body.editor-mode #agent:active {
     opacity: 0.95;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
-
-.ghost.pig-right,
-.ghost.pig-down,
-.ghost.pig-left,
-.ghost.pig-up {
-    background-size: 90%;
-}
-.ghost.pig-right { background-image: url('pigs/right-1.png'); }
-.ghost.pig-down { background-image: url('pigs/down-1.png'); }
-.ghost.pig-left { background-image: url('pigs/left-1.png'); }
-.ghost.pig-up { background-image: url('pigs/up-1.png'); }
 
 /* Agent (Pig) */
 #agent {
