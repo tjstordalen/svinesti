@@ -11,11 +11,11 @@ Svinesti is a browser-based educational programming game where students control 
 ### Core Files
 
 - **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
-- **main.js** - Application entry point, UI wiring, level management (see structure below)
-- **playback.js** - Execution engine: state machine, trace playback, worker management (see structure below)
+- **main.js** - App shell: help modal, sidebar, mode switching (see structure below)
+- **game.js** - Game mode: grid, code editor, playback, worker (see structure below)
 - **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify/confetti), `pigSpriteUrl()` helper
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
-- **shortcuts.js** - Keyboard shortcut registration, rebinding, and persistence
+- **shortcuts.js** - Keyboard shortcut factory function with enable/disable lifecycle
 - **levels.js** - Level definitions and `TILE_CLASSES` mapping (see Data-Driven Mappings below)
 - **worker.js** - Web Worker that loads Pyodide and executes student code with 1-second timeout
 - **svinesti.py** - Python game engine running in Pyodide. Defines `move()`, `turnLeft()`, `turnRight()`, `isRed()`, `isGreen()`, `isBlue()` and execution tracing
@@ -44,30 +44,27 @@ Styles are organized in `css/` directory with modular files:
 
 ### main.js Structure
 
-Application entry point. Flat procedural style:
+App shell. Orchestrates modes and global UI:
 
 ```javascript
 const state = {
-    level: null,                     // Current level object
     focusedElementBeforeHelp: null,  // Track focus for help modal
 };
 ```
 
 Sections:
-- **Utilities** - `selectedLanguage()`
-- **Board rendering** - `renderGrid()`, `renderMiniGrid()`, `getCell()`, `setCssVar()`, `loadLevel()`, `placePig()`
-- **Code storage** - `storeCode()`, `loadCode()` (localStorage persistence)
-- **Actions** - `selectLevel()`, `switchLanguage()`, `submitCode()`
-- **Help system** - `showHelp()`, `hideHelp()` - Modal with three-column layout
-- **Initialize** - Playback.init(), level list setup, URL import
-- **Event handlers** - Editor events, mode toggle, shortcuts
+- **Help modal** - `showHelp()`, `hideHelp()`, `toggleHelp()`
+- **Level list** - `renderMiniGrid()`, `populateLevelList()`, `shuffled()`
+- **Initialize** - Game.init(), level list setup, URL import, Game.enter()
+- **Event handlers** - Sidebar toggle, help modal, mode toggle, global shortcuts
 
-### playback.js Structure
+### game.js Structure
 
-Execution engine module. Manages playback state machine and worker lifecycle:
+Game mode module. Owns everything inside `#play-pane`:
 
 ```javascript
 const state = {
+    level: null,              // Current level object
     status: "idle",           // "idle" | "playing" | "paused"
     trace: null,              // Array of events from execution
     index: 0,                 // Current position in trace
@@ -79,22 +76,23 @@ const state = {
 ```
 
 **Exports:**
-- `init(config)` - Initialize with callbacks: `{ loadLevel, getLevel, onWorkerReady, onSubmit }`
-- `enterIdle(resetBoard?)` - Reset to idle state
-- `enterPlaying(trace?)` - Start/resume playback
-- `enterPaused(trace?)` - Pause playback
-- `submit(pythonCode)` - Send code to worker
-- `getStatus()` - Returns current status
-- `isStepping()` / `setStepping(val)` - Step mode accessors
+- `init({ shortcutsContainer, onWorkerReady })` - Initialize module
+- `enter()` - Activate game mode (enable shortcuts)
+- `exit()` - Deactivate game mode (disable shortcuts, reset playback)
+- `selectLevel(level)` - Store code, load level, reset playback
+- `getLevel()` - Returns current level
+- `getStatus()` - Returns playback status
+- `enterIdle({ resetBoard? })` - Reset to idle state
+- `enterPlaying({ trace? })` - Start/resume playback
+- `enterPaused({ trace? })` - Pause playback
 
-**Internal functions:**
-- `step()` - Process one trace event, recurse if playing
-- `initWorker()` - Create/restart worker, set up message handlers
-- `hideSplashScreen()` - Fade out splash after worker ready
-- `getAnimSpeed()` - Read speed slider value
-- `getCell()`, `placePig()`, `moveAnimated()` - Grid helpers for playback
-
-**Dependency injection:** main.js passes `loadLevel` and `getLevel` callbacks to avoid circular imports. Playback module never imports from main.js.
+**Internal sections:**
+- **Grid rendering** - `renderGrid()`, `getCell()`, `placePig()`, `loadLevel()`
+- **Code storage** - `storeCode()`, `loadCode()`, `switchLanguage()`
+- **State machine** - `enterIdle()`, `enterPlaying()`, `enterPaused()`
+- **Playback** - `step()`, `moveAnimated()`
+- **Worker** - `initWorker()`, `submitCode()`, `hideSplashScreen()`
+- **Shortcuts** - Game-mode shortcuts (play/pause, step, reset, focus editor)
 
 ### Promise-Based Playback (Web Animations API)
 
@@ -264,10 +262,18 @@ Both `renderGrid()` and `renderMiniGrid()` use the same `.tile` class with share
 
 ## Keyboard Shortcuts
 
-- `Ctrl+Enter` - Run code
-- `?` - Toggle help modal
+Game mode shortcuts (managed by game.js):
+- `H` - Play / Pause (also `Ctrl+H` from editor)
+- `J` - Step (also `Ctrl+J` from editor)
+- `K` - Reset
+- `I` - Focus editor
+- `Escape` - Unfocus editor
 
-Shortcuts are managed by `shortcuts.js`, which provides registration, rebinding, and persistence.
+Global shortcuts (always active):
+- `?` - Toggle help modal
+- `Escape` - Close help modal
+
+Shortcuts are managed by `shortcuts.js`, which exports a `createShortcuts(storageKey)` factory function. Each mode creates its own shortcuts instance and calls `enable()`/`disable()` on enter/exit. This allows modal shortcuts that don't conflict between game and editor modes.
 
 ## Browser Quirks
 
