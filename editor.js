@@ -6,7 +6,8 @@
 // - Level name input handling
 // - onLevelSaved callback to refresh level list in main.js
 
-import { TILE_CLASSES, DEFAULT_LEVEL } from "./levels.js";
+import { DEFAULT_LEVEL } from "./levels.js";
+import { createGrid, TILE_CLASSES } from "./grid.js";
 import { ui } from "./ui.js";
 import { animations } from "./animations.js";
 
@@ -57,6 +58,7 @@ function validate(level) {
 
 const state = {
     level: null,
+    grid: null,
     drag: {
         source: null,
         isPig: false,
@@ -73,8 +75,7 @@ const isColor = (tile) => firstMatch(tile, COLORS);
 const isPig = (tile) => firstMatch(tile, PIG_DIRS);
 
 function serialize() {
-	const { nRows, nCols } = state.level;
-	const tiles = [...ui.editorGrid.children];
+	const { nRows, nCols, tiles } = state.grid;
 
 	const tileToChar = (tile) => {
 		const color = firstMatch(tile, [RED, GREEN, BLUE, EMPTY]);
@@ -104,20 +105,24 @@ function serialize() {
 
 function load(level) {
     state.level = level;
+    state.grid = createGrid(ui.editorGrid, level.nRows, level.nCols, level);
 
-    document.documentElement.style.setProperty('--grid-n-rows', level.nRows);
-    document.documentElement.style.setProperty('--grid-n-cols', level.nCols);
+    // Add pig-* class to tile for editor click cycling logic
+    const [row, col] = level.start;
+    state.grid.getCell(row, col).classList.add('pig-' + level.dir);
+}
 
-    ui.editorGrid.innerHTML = '';
-    for (const ch of level.grid.join('')) {
-        const tile = document.createElement('div');
-        tile.className = 'tile ' + TILE_CLASSES[ch];
-        ui.editorGrid.appendChild(tile);
-    }
+function syncPigToClass() {
+    const { tiles, nCols } = state.grid;
+    const pigTile = tiles.find(t => PIG_DIRS.some(d => t.classList.contains(d)));
+    if (!pigTile) return;
 
-    // Place pig
-    const pigIndex = level.start[0] * level.nCols + level.start[1];
-    ui.editorGrid.children[pigIndex].classList.add('pig-' + level.dir);
+    const index = tiles.indexOf(pigTile);
+    const row = Math.floor(index / nCols);
+    const col = index % nCols;
+    const dir = PIG_DIRS.find(d => pigTile.classList.contains(d)).slice(4);
+
+    state.grid.placePig(row, col, dir);
 }
 
 // --- Click Cycling Maps ---
@@ -146,6 +151,7 @@ function handleLeftClick(e) {
     for (const [from, to] of leftClickReplacements) {
         if (tile.classList.replace(from, to)) {
             if (to === EMPTY) tile.classList.remove(TARGET);
+            syncPigToClass();
             return;
         }
     }
@@ -241,6 +247,8 @@ function handleGridClick(e) {
             state.drag.active = false;
             state.drag.carrying = false;
             state.drag.justStartedCarrying = false;
+
+            syncPigToClass();
         } else {
             // Stamp source color to target tile, stay in carrying mode
             const pigClass = isPig(targetTile);

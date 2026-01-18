@@ -1,14 +1,3 @@
-// Map grid characters to CSS classes
-export const TILE_CLASSES = {
-    ".": "empty",
-    "r": "red",
-    "g": "green",
-    "b": "blue",
-    "R": "red target",
-    "G": "green target",
-    "B": "blue target",
-};
-
 // Empty 9x16 grid for new levels in editor
 export const DEFAULT_LEVEL = {
     name: "New Level",

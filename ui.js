@@ -36,8 +36,7 @@ export const ui = {
         mode: "python",
         theme: "default"
     }),
-    pig: gid("pig"),
-    colorComparison: gid("color-comparison-hud"),
+    colorComparisonHud: gid("color-comparison-hud"),
     comparisonTile: gid("comparison-tile"),
     comparisonAnswer: gid("comparison-answer"),
     playbackToolbar: document.querySelector(".playback-toolbar"),

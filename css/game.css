@@ -3,6 +3,34 @@
  * Grid, tiles, colors, pig sprites, ghost (drag preview), pig element, color HUD, confetti
  */
 
+/* Base grid styling - all contexts */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+}
+
+.grid .pig {
+    box-sizing: border-box;
+    background-size: 90%;
+    background-repeat: no-repeat;
+    background-position: center;
+    position: relative;
+    z-index: 100;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* Editor: suppress class-based pig background (class is data-only) */
+#editor-grid .pig-right,
+#editor-grid .pig-down,
+#editor-grid .pig-left,
+#editor-grid .pig-up {
+    background-image: none;
+}
+
 /* Game Section */
 #game-section {
     position: relative;
@@ -51,11 +79,11 @@ body.editor-mode .tile:hover {
 }
 
 /* Pig draggable in editor mode */
-body.editor-mode #pig {
+body.editor-mode .pig {
     cursor: grab;
 }
 
-body.editor-mode #pig:active {
+body.editor-mode .pig:active {
     cursor: grabbing;
 }
 
@@ -67,11 +95,8 @@ body.editor-mode #pig:active {
 }
 
 #grid {
-    display: grid;
-    grid-template-columns: repeat(var(--grid-n-cols), 1fr);
-    grid-template-rows: repeat(var(--grid-n-rows), 1fr);
-    width: min(100cqw - 48px, (100cqh - 80px) * (var(--grid-n-cols) / var(--grid-n-rows)));
-    height: min((100cqw - 48px) * (var(--grid-n-rows) / var(--grid-n-cols)), 100cqh - 80px);
+    width: min(100cqw - 48px, (100cqh - 80px) * (var(--cols) / var(--rows)));
+    height: min((100cqw - 48px) * (var(--rows) / var(--cols)), 100cqh - 80px);
     border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: var(--shadow-lg);
@@ -139,20 +164,6 @@ body.editor-mode #pig:active {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-/* Pig */
-#pig {
-    box-sizing: border-box;
-    background-size: 90%;
-    background-repeat: no-repeat;
-    background-position: center;
-    position: relative;
-    z-index: 100;
-    height: 100%;
-    width: 100%;
-    transform-origin: center;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
 /* Color Comparison HUD */
 #color-comparison-hud {
     position: absolute;
@@ -176,7 +187,7 @@ body.editor-mode #pig:active {
 }
 
 /* Flip to left side when in rightmost column */
-#pig.near-right-edge #color-comparison-hud {
+.pig.near-right-edge #color-comparison-hud {
     left: auto;
     right: 100%;
     margin-left: 0;

@@ -3,7 +3,8 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 import * as Game from "./game.js";
-import { levels, TILE_CLASSES } from "./levels.js";
+import { createGrid } from "./grid.js";
+import { levels } from "./levels.js";
 import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = false;
@@ -42,22 +43,6 @@ function toggleHelp() {
 
 // --- Level list ---
 
-function renderMiniGrid(level, container) {
-    container.innerHTML = '';
-    container.style.setProperty('--mini-rows', level.nRows);
-    container.style.setProperty('--mini-cols', level.nCols);
-
-    for (const ch of level.grid.join('')) {
-        const tile = document.createElement('div');
-        tile.className = 'tile ' + TILE_CLASSES[ch];
-        container.appendChild(tile);
-    }
-
-    // Add pig indicator with direction
-    const pigIndex = level.start[0] * level.nCols + level.start[1];
-    container.children[pigIndex]?.classList.add('pig-' + level.dir);
-}
-
 function populateLevelList(levelArray) {
     ui.levelList.innerHTML = '';
     for (const lvl of levelArray) {
@@ -66,7 +51,7 @@ function populateLevelList(levelArray) {
 
         const miniGrid = document.createElement('div');
         miniGrid.className = 'mini-grid';
-        renderMiniGrid(lvl, miniGrid);
+        createGrid(miniGrid, lvl.nRows, lvl.nCols, lvl);
 
         const name = document.createElement('div');
         name.className = 'sidebar-level-name';

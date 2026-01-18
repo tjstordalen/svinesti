@@ -1,9 +1,9 @@
 // game.js - Game mode (grid, code editor, playback)
 
 import * as PigJatin from "./PigJatin/PigJatin.js";
-import { animations, pigSpriteUrl } from "./animations.js";
+import { animations } from "./animations.js";
 import { createShortcuts } from "./shortcuts.js";
-import { TILE_CLASSES } from "./levels.js";
+import { createGrid } from "./grid.js";
 import { ui } from "./ui.js";
 
 // --- State ---
@@ -11,6 +11,7 @@ import { ui } from "./ui.js";
 const state = {
     // Level
     level: null,
+    grid: null,
 
     // Playback
     status: "idle",       // "idle" | "playing" | "paused"
@@ -44,10 +45,6 @@ function getAnimSpeed() {
     return ui.speedSlider.max - ui.speedSlider.value;
 }
 
-function setCssVar(name, value) {
-    document.documentElement.style.setProperty(name, value.toString());
-}
-
 function removeEditorHighlight() {
     for (let i = 0; i < ui.editor.lineCount(); i++) {
         ui.editor.removeLineClass(i, "background", "highlighted-line");
@@ -56,43 +53,10 @@ function removeEditorHighlight() {
 
 // --- Grid rendering ---
 
-function renderGrid(level) {
-    ui.grid.innerHTML = '';
-    setCssVar('--grid-n-rows', level.nRows);
-    setCssVar('--grid-n-cols', level.nCols);
-
-    const cells = level.grid.join('');
-    for (const char of cells) {
-        const tile = document.createElement('div');
-        tile.className = 'tile ' + TILE_CLASSES[char];
-        ui.grid.appendChild(tile);
-    }
-}
-
-function getCell(row, col) {
-    return ui.grid.children[row * state.level.nCols + col];
-}
-
-function updatePigEdgeClasses(row, col) {
-    ui.pig.classList.toggle('near-right-edge', col >= state.level.nCols - 2);
-}
-
-function placePig(row, col) {
-    getCell(row, col).appendChild(ui.pig);
-    updatePigEdgeClasses(row, col);
-}
-
 function loadLevel(level) {
     if (level === null) return;
-
-    ui.pig.getAnimations().forEach(a => a.cancel());
-    ui.pig.style.transform = '';
-
-    renderGrid(level);
-
-    const [row, col] = level.start;
-    placePig(row, col);
-    ui.pig.style.backgroundImage = pigSpriteUrl(level.dir);
+    state.grid = createGrid(ui.grid, level.nRows, level.nCols, level);
+    state.grid.pig.appendChild(ui.colorComparisonHud);
 }
 
 // --- Code storage ---
@@ -148,7 +112,9 @@ export function enterIdle({ resetBoard = true } = {}) {
     ui.btn3.onclick = () => enterIdle();
 
     if (resetBoard) {
-        ui.pig.getAnimations().forEach(a => a.cancel());
+        if (state.grid) {
+            state.grid.pig.getAnimations().forEach(a => a.cancel());
+        }
         loadLevel(state.level);
     }
 }
@@ -207,16 +173,17 @@ export function enterPaused({ trace = null } = {}) {
 // --- Playback ---
 
 async function moveAnimated(toRow, toCol) {
-    const fromRect = ui.pig.getBoundingClientRect();
-    const toCell = getCell(toRow, toCol);
+    const pig = state.grid.pig;
+    const fromRect = pig.getBoundingClientRect();
+    const toCell = state.grid.getCell(toRow, toCol);
     const toRect = toCell.getBoundingClientRect();
 
     const dx = toRect.left - fromRect.left;
     const dy = toRect.top - fromRect.top;
 
-    await animations.move(ui.pig, dx, dy, getAnimSpeed());
+    await animations.move(pig, dx, dy, getAnimSpeed());
 
-    placePig(toRow, toCol);
+    state.grid.placePig(toRow, toCol, state.currentDirection);
 }
 
 async function step() {
@@ -224,6 +191,8 @@ async function step() {
 
     const msg = state.trace[state.index++];
     if (!msg) return;
+
+    const pig = state.grid.pig;
 
     try {
         switch (msg.type) {
@@ -239,35 +208,34 @@ async function step() {
 
             case "move":
                 // Run walk animation and movement in parallel
-                animations.walk(ui.pig, msg.dir, getAnimSpeed());
+                animations.walk(pig, msg.dir, getAnimSpeed());
                 await moveAnimated(msg.pos[0], msg.pos[1]);
                 break;
 
             case "turn":
-                await animations.turn(ui.pig, msg.dir, getAnimSpeed());
+                await animations.turn(pig, msg.dir, getAnimSpeed());
                 state.currentDirection = msg.dir;
                 break;
 
             case "isColor":
                 ui.comparisonTile.className = 'tile ' + msg.color.toLowerCase();
                 ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
-                await animations.hudFlash(ui.colorComparison, getAnimSpeed());
+                await animations.hudFlash(ui.colorComparisonHud, getAnimSpeed());
                 break;
 
             case "collected":
                 const [r, c] = msg.pos;
-                const index = state.level.nCols * r + c;
-                ui.grid.children[index].classList.remove("target");
+                state.grid.tiles[r * state.grid.nCols + c].classList.remove("target");
                 // No animation - continue immediately
                 break;
 
             case "gameover":
                 console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
                 if (msg.win) {
-                    animations.celebrate(ui.pig);
+                    animations.celebrate(pig);
                 } else {
                     const gridWrapper = document.getElementById('grid-wrapper');
-                    animations.lose(ui.pig, state.currentDirection, gridWrapper);
+                    animations.lose(pig, state.currentDirection, gridWrapper);
                 }
                 enterIdle({ resetBoard: false });
                 return;
