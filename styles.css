@@ -774,17 +774,9 @@ body.editor-mode #agent:active {
     box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
 }
 
-.tile.red {
-    background-color: var(--tile-red);
-}
-
-.tile.green {
-    background-color: var(--tile-green);
-}
-
-.tile.blue {
-    background-color: var(--tile-blue);
-}
+:is(.tile, .mini-tile).red { background-color: var(--tile-red); }
+:is(.tile, .mini-tile).green { background-color: var(--tile-green); }
+:is(.tile, .mini-tile).blue { background-color: var(--tile-blue); }
 
 .tile.target::before {
     content: "";
@@ -1255,10 +1247,6 @@ body.editor-mode #agent:active {
     min-width: 0;
     min-height: 0;
 }
-
-.mini-tile.red { background-color: var(--tile-red); }
-.mini-tile.green { background-color: var(--tile-green); }
-.mini-tile.blue { background-color: var(--tile-blue); }
 
 .mini-tile.target {
     position: relative;
