@@ -14,12 +14,12 @@ Svinesti is a browser-based educational programming game where students control 
 - **main.js** - App shell: help modal, sidebar, mode switching (see structure below)
 - **game.js** - Game mode: code editor, playback, worker (see structure below)
 - **grid.js** - Unified grid rendering module (see structure below)
-- **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify/confetti), `pigSpriteUrl()` helper
+- **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify/confetti), `pigSpriteUrl()` helper, `ABORT` constant and `handleAbortException` wrapper for cancelled animations
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
 - **shortcuts.js** - Keyboard shortcut factory function with enable/disable lifecycle
 - **levels.js** - Level definitions and `DEFAULT_LEVEL` for editor
-- **worker.js** - Web Worker that loads Pyodide and executes student code with 1-second timeout
-- **svinesti.py** - Python game engine running in Pyodide. Defines `move()`, `turnLeft()`, `turnRight()`, `isRed()`, `isGreen()`, `isBlue()` and execution tracing
+- **worker.js** - Web Worker that loads Pyodide and executes student code with 1-second timeout. Uses `cache: 'no-store'` for svinesti.py fetch to avoid stale code issues
+- **svinesti.py** - Python game engine running in Pyodide. Defines `move()`, `turnLeft()`, `turnRight()`, `isRed()`, `isGreen()`, `isBlue()`. Execution tracing attaches line numbers to animated events (popping preceding `lineExecuted`) so JS can highlight during animation
 
 ### CSS Structure
 
@@ -68,12 +68,19 @@ const state = {
     level: null,              // Current level object
     grid: null,               // Grid object from createGrid()
     status: "idle",           // "idle" | "playing" | "paused"
-    trace: null,              // Array of events from execution
-    index: 0,                 // Current position in trace
     worker: null,             // Web Worker instance
     workerTimeout: null,      // Timeout for worker restart
-    isSingleStepping: false,  // Step mode flag
-    currentDirection: null,   // Pig direction during playback
+    pendingResolve: null,     // Promise resolver for worker response
+};
+
+const playback = {
+    trace: null,              // Reversed array, consumed via pop()
+    stepping: false,          // Mutex to prevent overlapping step animations
+    load(trace),              // Reverse and store trace
+    next(),                   // Pop next event (returns undefined when empty)
+    clear(),                  // Reset trace to null
+    play(),                   // Process events while status === "playing"
+    step(),                   // Process single event with mutex guard
 };
 ```
 
@@ -91,9 +98,9 @@ const state = {
 **Internal sections:**
 - **Grid rendering** - `loadLevel()` (creates grid via `createGrid()`)
 - **Code storage** - `storeCode()`, `loadCode()`, `switchLanguage()`
-- **State machine** - `enterIdle()`, `enterPlaying()`, `enterPaused()`
-- **Playback** - `step()`, `moveAnimated()`
-- **Worker** - `initWorker()`, `submitCode()`, `hideSplashScreen()`
+- **State machine** - `enterState()`, `BUTTON_HANDLERS` table, `submitAndEnter()`
+- **Playback** - `processEvent()`, `moveAnimated()`, `highlightLine()`
+- **Worker** - `initWorker()`, `getCode()`, `execute()`, `hideSplashScreen()`
 - **Shortcuts** - Game-mode shortcuts (play/pause, step, reset, focus editor)
 
 ### grid.js Structure
@@ -130,26 +137,42 @@ The playback system uses the **Web Animations API** with async/await to coordina
 
 **How it works:**
 
-1. `step()` is an async function that processes one trace event
-2. For animated events, it calls functions from `animations.js` which use the Web Animations API
-3. `await` pauses execution until the animation completes
-4. After animation completes (or immediately for non-animated events), execution continues
-5. If `status === "playing"`, `step()` calls itself recursively (non-blocking)
+1. `playback.play()` loops while `status === "playing"`, calling `processEvent()` for each trace event
+2. `playback.step()` processes a single event with a mutex guard (`stepping` flag) to prevent overlapping animations
+3. `processEvent()` highlights the line (from `msg.lineno`), then handles the event type
+4. For animated events, it calls functions from `animations.js` which use the Web Animations API
+5. `await` pauses execution until the animation completes
 
 ```
-step() → animations.move() → await → step() → animations.turn() → ...
+playback.play() → processEvent() → animations.move() → processEvent() → ...
 ```
 
-**Animation types:**
+**Event types:**
 
 | Event | Implementation | Behavior |
 |-------|---------------|----------|
+| `lineExecuted` | `highlightLine()` + delay | Pause for `LINE_PAUSE_MULTIPLIER * animSpeed` |
 | `move` | `animations.walk()` + `animations.move()` | Sprite animation + translation |
 | `turn` | `animations.turn()` | Hop up → swap sprite → hop down |
 | `isColor` | `animations.hudFlash()` | Flash HUD, then continue |
-| `collected` | No animation | Immediate `step()` call |
-| `gameover` | `animations.celebrate()` or `animations.lose()` | Win/lose animation |
-| `lineExecuted` | No animation | Immediate recursive `step()` call |
+| `collected` | Remove `.target` class | Instant, no animation |
+| `gameover` | `animations.celebrate()` or `animations.lose()` | Win/lose animation, then `enterIdle()` |
+
+**Line number attachment (svinesti.py):**
+
+The Python `trace()` method attaches line numbers to events:
+- `lineExecuted` events are pushed to trace normally
+- Animated events (move, turn, isColor) pop the preceding `lineExecuted` and copy its `lineno`
+- Consequence events (collected, gameover) inherit `lineno` from the previous event
+
+This allows JS to highlight the correct line AS the animation plays, not before.
+
+**Abort handling (animations.js):**
+
+Animation functions are wrapped with `handleAbortException()`:
+- If animation is cancelled (user pauses/resets), `AbortError` is caught
+- Returns `animations.ABORT` constant instead of throwing
+- Callers check for `ABORT` to exit early (e.g., skip `movePigTo()` after cancelled move)
 
 **Keyframe definitions:**
 
@@ -172,8 +195,9 @@ All keyframes are defined in `animations.js`:
 - **Sequential code is actually sequential**: Turn animation logic is three lines in order, not scattered across listener
 - **No event listeners needed**: Promises tell us when animations finish
 - **Speed slider works instantly**: Duration recalculated fresh for each animation via `getAnimSpeed()`
-- **Pause/resume is simple**: Just check `status` before calling `step()` - no intervals or callbacks to manage
+- **Pause/resume is simple**: Just check `status` before calling `play()` - no intervals or callbacks to manage
 - **Clean control flow**: Adding animations is just defining keyframes and calling `.animate()`
+- **Step mutex**: Prevents animation overlap when spam-clicking step button
 
 ### PigJatin Language (Java-like alternative)
 

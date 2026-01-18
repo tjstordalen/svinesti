@@ -50,6 +50,8 @@ const playback = {
     stepping: false,
 
     async step() {
+		// disable the step functionality until the animation finishes
+		// otherwise, multiple animations can overlap
         if (this.stepping) return;
         this.stepping = true;
         try {
