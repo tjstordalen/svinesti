@@ -12,11 +12,12 @@ Svinesti is a browser-based educational programming game where students control 
 
 - **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
 - **main.js** - App shell: help modal, sidebar, mode switching (see structure below)
-- **game.js** - Game mode: grid, code editor, playback, worker (see structure below)
+- **game.js** - Game mode: code editor, playback, worker (see structure below)
+- **grid.js** - Unified grid rendering module (see structure below)
 - **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify/confetti), `pigSpriteUrl()` helper
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
 - **shortcuts.js** - Keyboard shortcut factory function with enable/disable lifecycle
-- **levels.js** - Level definitions and `TILE_CLASSES` mapping (see Data-Driven Mappings below)
+- **levels.js** - Level definitions and `DEFAULT_LEVEL` for editor
 - **worker.js** - Web Worker that loads Pyodide and executes student code with 1-second timeout
 - **svinesti.py** - Python game engine running in Pyodide. Defines `move()`, `turnLeft()`, `turnRight()`, `isRed()`, `isGreen()`, `isBlue()` and execution tracing
 
@@ -54,7 +55,7 @@ const state = {
 
 Sections:
 - **Help modal** - `showHelp()`, `hideHelp()`, `toggleHelp()`
-- **Level list** - `renderMiniGrid()`, `populateLevelList()`, `shuffled()`
+- **Level list** - `populateLevelList()`, `shuffled()`
 - **Initialize** - Game.init(), level list setup, URL import, Game.enter()
 - **Event handlers** - Sidebar toggle, help modal, mode toggle, global shortcuts
 
@@ -65,6 +66,7 @@ Game mode module. Owns everything inside `#play-pane`:
 ```javascript
 const state = {
     level: null,              // Current level object
+    grid: null,               // Grid object from createGrid()
     status: "idle",           // "idle" | "playing" | "paused"
     trace: null,              // Array of events from execution
     index: 0,                 // Current position in trace
@@ -87,12 +89,40 @@ const state = {
 - `enterPaused({ trace? })` - Pause playback
 
 **Internal sections:**
-- **Grid rendering** - `renderGrid()`, `getCell()`, `placePig()`, `loadLevel()`
+- **Grid rendering** - `loadLevel()` (creates grid via `createGrid()`)
 - **Code storage** - `storeCode()`, `loadCode()`, `switchLanguage()`
 - **State machine** - `enterIdle()`, `enterPlaying()`, `enterPaused()`
 - **Playback** - `step()`, `moveAnimated()`
 - **Worker** - `initWorker()`, `submitCode()`, `hideSplashScreen()`
 - **Shortcuts** - Game-mode shortcuts (play/pause, step, reset, focus editor)
+
+### grid.js Structure
+
+Unified grid rendering for all contexts (game, editor, thumbnails). Factory function returns an object with direct access to DOM elements:
+
+```javascript
+const grid = createGrid(container, nRows, nCols, level);
+// Returns:
+{
+    container,              // The grid container element
+    tiles,                  // Array of tile elements (direct access, no DOM queries)
+    pig,                    // The pig element
+    nRows,
+    nCols,
+    getCell(row, col),      // Returns tiles[row * nCols + col]
+    placePig(row, col, dir) // Moves pig to cell, sets sprite
+}
+```
+
+**Key design decisions:**
+- Tiles stored in array eliminates DOM queries and avoids selector collisions (e.g., `#comparison-tile` inside HUD also has `.tile` class)
+- Single `createGrid()` handles all contexts — game grid, editor grid, sidebar thumbnails
+- Pig element created dynamically, positioned via `placePig()`
+- CSS variables `--rows` and `--cols` set on container for grid layout
+
+**Exports:**
+- `createGrid(container, nRows, nCols, level?)` - Factory function
+- `TILE_CLASSES` - Character-to-class mapping (`.`, `r`, `g`, `b`, `R`, `G`, `B`)
 
 ### Promise-Based Playback (Web Animations API)
 
@@ -199,7 +229,7 @@ Tests run automatically on page load. Check browser console for results.
 
 Prefer lookup tables over conditionals. A mapping with a loop is cleaner than a chain of if-statements.
 
-**TILE_CLASSES** (levels.js) — Maps grid characters to CSS classes:
+**TILE_CLASSES** (grid.js) — Maps grid characters to CSS classes:
 
 ```javascript
 const TILE_CLASSES = {
@@ -255,10 +285,10 @@ The level editor (`editor.js`) uses DOM classes as the source of truth during ed
 
 The sidebar displays levels as visual mini-grid thumbnails rather than text buttons. Each thumbnail shows:
 - Tile colors using the same `TILE_CLASSES` mapping
-- Pig sprite via `::after` pseudo-element (layered over tile color)
+- Pig element (same as game grid, created by `createGrid()`)
 - Apple icon for target tiles
 
-Both `renderGrid()` and `renderMiniGrid()` use the same `.tile` class with shared color classes. Mini-grid specifics are scoped via `.mini-grid .tile`.
+All grids (game, editor, thumbnails) use `createGrid()` with shared `.tile` and `.pig` classes. Mini-grid specifics are scoped via `.mini-grid`.
 
 ## Keyboard Shortcuts
 
