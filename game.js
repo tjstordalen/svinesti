@@ -19,9 +19,7 @@ const state = {
     // Worker
     worker: null,
     workerTimeout: null,
-
-    // Flags
-    isSingleStepping: false,
+    pendingResolve: null,
 };
 
 const playback = {
@@ -38,6 +36,31 @@ const playback = {
     clear() {
         this.trace = null;
     },
+
+    async play() {
+        while (state.status === "playing") {
+            const msg = this.next();
+            if (msg === undefined) return;
+
+            const result = await processEvent(msg);
+            if (result === "done") return;
+        }
+    },
+
+    stepping: false,
+
+    async step() {
+        if (this.stepping) return;
+        this.stepping = true;
+        try {
+            const msg = this.next();
+            if (msg !== undefined) {
+                await processEvent(msg);
+            }
+        } finally {
+            this.stepping = false;
+        }
+    },
 };
 
 let config = {
@@ -50,12 +73,21 @@ const shortcuts = createShortcuts('svinesti-game-shortcuts-v1');
 
 // --- Utilities ---
 
+const LINE_PAUSE_MULTIPLIER = 1.5;
+
 function selectedLanguage() {
     return document.querySelector('.lang-btn.active').dataset.lang;
 }
 
 function getAnimSpeed() {
     return ui.speedSlider.max - ui.speedSlider.value;
+}
+
+function highlightLine(lineno) {
+    for (let i = 0; i < ui.editor.lineCount(); i++) {
+        if (i === lineno - 1) ui.editor.addLineClass(i, "background", "highlighted-line");
+        else ui.editor.removeLineClass(i, "background", "highlighted-line");
+    }
 }
 
 function removeEditorHighlight() {
@@ -105,20 +137,28 @@ function switchLanguage(newLang) {
 
 // --- State machine ---
 
+async function submitAndEnter(enterFn) {
+    ui.codeOutput.textContent = "";
+    const code = getCode();
+    if (code === null) return;
+    const trace = await execute(code);
+    if (trace) enterFn({ trace });
+}
+
 const BUTTON_HANDLERS = {
     idle: {
-        btn1: () => submitCode(),
-        btn2: () => { state.isSingleStepping = true; submitCode(); },
+        btn1: () => submitAndEnter(enterPlaying),
+        btn2: () => submitAndEnter(enterPaused),
         btn3: () => enterIdle(),
     },
     playing: {
         btn1: () => enterPaused(),
-        btn2: () => { enterPaused(); step(); },
+        btn2: () => { enterPaused(); playback.step(); },
         btn3: () => enterIdle(),
     },
     paused: {
         btn1: () => enterPlaying(),
-        btn2: () => step(),
+        btn2: () => playback.step(),
         btn3: () => enterIdle(),
     },
 };
@@ -132,7 +172,6 @@ function wireButtons(status) {
 
 function enterState(status, { trace = null, resetBoard = true } = {}) {
     state.status = status;
-    state.isSingleStepping = (status === "paused");
 
     // Trace initialization (playing/paused with new trace)
     if (trace !== null) {
@@ -159,7 +198,7 @@ function enterState(status, { trace = null, resetBoard = true } = {}) {
 
     // Start playback chain
     if (status === "playing") {
-        step();
+        playback.play();
     }
 }
 
@@ -169,82 +208,62 @@ export const enterPaused = (opts) => enterState("paused", opts);
 
 // --- Playback ---
 
-async function moveAnimated(toRow, toCol) {
+const DIRECTION_DELTAS = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
+
+async function moveAnimated(dir, toRow, toCol) {
     const pig = state.grid.pig;
-    const fromRect = pig.getBoundingClientRect();
-    const toCell = state.grid.getCell(toRow, toCol);
-    const toRect = toCell.getBoundingClientRect();
+    const p = pig.parentElement; // a tile
+    const [mx, my] = DIRECTION_DELTAS[dir];
+    const [dx, dy] = [mx * p.offsetWidth, my * p.offsetHeight];
 
-    const dx = toRect.left - fromRect.left;
-    const dy = toRect.top - fromRect.top;
-
-    await animations.move(pig, dx, dy, getAnimSpeed());
-
+    if (await animations.move(pig, dx, dy, getAnimSpeed()) === animations.ABORT) return animations.ABORT;
     state.grid.movePigTo(toRow, toCol);
 }
 
-async function step() {
-    if (state.status === "idle") return;
-
-    const msg = playback.next();
-    if (msg === undefined) return;
-
+async function processEvent(msg) {
     const pig = state.grid.pig;
 
-    try {
-        switch (msg.type) {
-            case "lineExecuted":
-                const lineno = msg.lineno - 1;
-                for (let i = 0; i < ui.editor.lineCount(); i++) {
-                    if (i === lineno) ui.editor.addLineClass(i, "background", "highlighted-line");
-                    else ui.editor.removeLineClass(i, "background", "highlighted-line");
-                }
-                // Continue immediately to next trace event (skip pause for line highlights)
-                step();
-                return;
-
-            case "move":
-                // Run walk animation and movement in parallel
-                animations.walk(pig, msg.dir, getAnimSpeed());
-                await moveAnimated(msg.pos[0], msg.pos[1]);
-                break;
-
-            case "turn":
-                await animations.turn(pig, msg.dir, getAnimSpeed());
-                break;
-
-            case "isColor":
-                ui.comparisonTile.className = 'tile ' + msg.color.toLowerCase();
-                ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
-                await animations.hudFlash(ui.colorComparisonHud, getAnimSpeed());
-                break;
-
-            case "collected":
-                const [r, c] = msg.pos;
-                state.grid.tiles[r * state.grid.nCols + c].classList.remove("target");
-                // No animation - continue immediately
-                break;
-
-            case "gameover":
-                console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-                if (msg.win) {
-                    animations.celebrate(pig);
-                } else {
-                    const gridWrapper = document.getElementById('grid-wrapper');
-                    animations.lose(pig, gridWrapper);
-                }
-                enterIdle({ resetBoard: false });
-                return;
-        }
-    } catch (e) {
-        // Animation was cancelled (user paused/stopped)
-        if (e.name === 'AbortError') return;
-        throw e;
+    // Highlight line (attached to animated events, or standalone lineExecuted)
+    if (msg.lineno !== undefined) {
+        highlightLine(msg.lineno);
     }
 
-    // Continue playback chain
-    if (state.status === "playing") {
-        step(); // Don't await - let it run asynchronously
+    switch (msg.type) {
+        case "lineExecuted":
+            // Standalone line (loops, assignments) - add brief pause
+            await new Promise(r => setTimeout(r, getAnimSpeed() * LINE_PAUSE_MULTIPLIER));
+            break;
+
+        case "move":
+            animations.walk(pig, msg.dir, getAnimSpeed());
+            if (await moveAnimated(msg.dir, msg.pos[0], msg.pos[1]) === animations.ABORT) return;
+            break;
+
+        case "turn":
+            if (await animations.turn(pig, msg.dir, getAnimSpeed()) === animations.ABORT) return;
+            break;
+
+        case "isColor":
+            ui.comparisonTile.className = 'tile ' + msg.color.toLowerCase();
+            ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
+            if (await animations.hudFlash(ui.colorComparisonHud, getAnimSpeed()) === animations.ABORT) return;
+            break;
+
+        case "collected":
+            const [r, c] = msg.pos;
+            state.grid.tiles[r * state.grid.nCols + c].classList.remove("target");
+            break;
+
+        case "gameover":
+            console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
+            if (msg.win) {
+                animations.celebrate(pig);
+            } else {
+                const gridWrapper = document.getElementById('grid-wrapper');
+                animations.lose(pig, gridWrapper);
+            }
+            enterIdle({ resetBoard: false });
+            return "done";
     }
 }
 
@@ -273,15 +292,13 @@ function initWorker() {
                 hideSplashScreen();
             }, 1500);
         } else if (event.data.type === "execution-trace") {
-            if (state.isSingleStepping) {
-                enterPaused({ trace: event.data.trace });
-            } else {
-                enterPlaying({ trace: event.data.trace });
-            }
-            state.isSingleStepping = false;
+            state.pendingResolve?.(event.data.trace);
+            state.pendingResolve = null;
         } else if (event.data.type === "execution-failed") {
             ui.codeOutput.textContent = event.data.errorMessage;
             ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
+            state.pendingResolve?.(null);
+            state.pendingResolve = null;
         }
         clearTimeout(state.workerTimeout);
     };
@@ -289,13 +306,7 @@ function initWorker() {
 
 // --- Code submission ---
 
-function submitCode() {
-    if (state.status === "paused") {
-        enterPlaying();
-        return;
-    }
-
-    ui.codeOutput.textContent = "";
+function getCode() {
     let program = ui.editor.getValue();
 
     if (selectedLanguage() === "java") {
@@ -303,17 +314,23 @@ function submitCode() {
         if (!success) {
             ui.codeOutput.textContent = error.msg;
             ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
-            return;
+            return null;
         }
         program = code;
     }
 
-    state.worker.postMessage({
-        code: program,
-        level: JSON.stringify(state.level)
-    });
+    return program;
+}
 
-    state.workerTimeout = setTimeout(initWorker, 1000);
+function execute(code) {
+    return new Promise((resolve) => {
+        state.pendingResolve = resolve;
+        state.worker.postMessage({
+            code: code,
+            level: JSON.stringify(state.level)
+        });
+        state.workerTimeout = setTimeout(initWorker, 1000);
+    });
 }
 
 // --- Event handlers (internal) ---

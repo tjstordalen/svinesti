@@ -83,6 +83,21 @@ const KEYFRAMES = {
     ],
 };
 
+// --- Abort handling ---
+
+const ABORT = "abort";
+
+function handleAbortException(fn) {
+    return async (...args) => {
+        try {
+            await fn(...args);
+        } catch (e) {
+            if (e.name === "AbortError") return ABORT;
+            throw e;
+        }
+    };
+}
+
 // --- Animation functions ---
 
 /**
@@ -108,7 +123,7 @@ function walk(pig, direction, animSpeed) {
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-async function move(pig, dx, dy, animSpeed) {
+async function moveThrowsAbort(pig, dx, dy, animSpeed) {
     const anim = pig.animate([
         { translate: '0 0' },
         { translate: `${dx}px ${dy}px` }
@@ -129,7 +144,7 @@ async function move(pig, dx, dy, animSpeed) {
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-async function turn(pig, direction, animSpeed) {
+async function turnThrowsAbort(pig, direction, animSpeed) {
     // Phase 1: hop up
     const hopUp = pig.animate(KEYFRAMES.HOP_UP, {
         duration: animSpeed * TURN_MULTIPLIER * 0.33,
@@ -160,7 +175,7 @@ async function turn(pig, direction, animSpeed) {
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-async function hudFlash(hud, animSpeed) {
+async function hudFlashThrowsAbort(hud, animSpeed) {
     const anim = hud.animate(KEYFRAMES.HUD_FLASH, {
         duration: animSpeed * HUD_MULTIPLIER,
         easing: 'ease-in-out'
@@ -297,10 +312,11 @@ function confetti(container) {
 // --- Exports ---
 
 export const animations = {
+    ABORT,
     walk,
-    move,
-    turn,
-    hudFlash,
+    move: handleAbortException(moveThrowsAbort),
+    turn: handleAbortException(turnThrowsAbort),
+    hudFlash: handleAbortException(hudFlashThrowsAbort),
     celebrate,
     lose,
     notify,

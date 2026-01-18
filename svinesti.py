@@ -63,7 +63,30 @@ class State():
         self.nOps = 0 
 
     def trace(self, msg):
-       self.messages.append(msg)
+        # Line tracing emits lineExecuted BEFORE the line runs, so the trace looks like:
+        #   lineExecuted(4), move, lineExecuted(5), turn, ...
+        #
+        # For animated actions (move, turn, isColor), we want to highlight the line
+        # AS the animation plays. So we pop the preceding lineExecuted and attach
+        # its line number to the action:
+        #   move(line=4), turn(line=5), ...
+        #
+        # Remaining lineExecuted events (loops, arithmetic) get an artificial delay
+        # in the JS playback so students can follow the code flow.
+        #
+        # Consequences (collected, gameover) inherit the line from the action that
+        # caused them, so the entire causal chain knows which line triggered it.
+
+        if msg["type"] == "lineExecuted":
+            self.messages.append(msg)
+            return
+
+        prev = self.messages[-1];
+        if prev["type"] == "lineExecuted":
+            self.messages.pop()
+
+        msg["lineno"] = prev["lineno"];
+        self.messages.append(msg)
 
     def __getitem__(self, key):
         r,c = key

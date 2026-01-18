@@ -11,7 +11,7 @@ try {
 		console.log("    Fetching file.");
 
 		const pythonScriptPath = "./svinesti.py";
-		const response = await fetch(pythonScriptPath);
+		const response = await fetch(pythonScriptPath, { cache: 'no-store' });
 		console.log("    File fetched.");
 		const code = await response.text()
 		await pyodide.runPython(code);
