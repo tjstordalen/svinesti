@@ -416,7 +416,7 @@ function renderMiniGrid(level, container) {
 
     for (const ch of level.grid.join('')) {
         const tile = document.createElement('div');
-        tile.className = 'mini-tile ' + TILE_CLASSES[ch];
+        tile.className = 'tile ' + TILE_CLASSES[ch];
         container.appendChild(tile);
     }
 
