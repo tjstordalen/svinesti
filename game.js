@@ -15,8 +15,7 @@ const state = {
 
     // Playback
     status: "idle",       // "idle" | "playing" | "paused"
-    trace: null,
-    index: 0,
+    trace: null,          // reversed; pop to consume
 
     // Worker
     worker: null,
@@ -91,75 +90,67 @@ function switchLanguage(newLang) {
 
 // --- State machine ---
 
-export function enterIdle({ resetBoard = true } = {}) {
-    // State
-    state.status = "idle";
-    state.isSingleStepping = false;
-    state.trace = null;
-    state.index = 0;
+const BUTTON_HANDLERS = {
+    idle: {
+        btn1: () => submitCode(),
+        btn2: () => { state.isSingleStepping = true; submitCode(); },
+        btn3: () => enterIdle(),
+    },
+    playing: {
+        btn1: () => enterPaused(),
+        btn2: () => { enterPaused(); step(); },
+        btn3: () => enterIdle(),
+    },
+    paused: {
+        btn1: () => enterPlaying(),
+        btn2: () => step(),
+        btn3: () => enterIdle(),
+    },
+};
 
-    // UI
-    ui.playbackToolbar.className = "playback-toolbar idle";
-    ui.editor.setOption("readOnly", false);
-    removeEditorHighlight();
+function wireButtons(status) {
+    const h = BUTTON_HANDLERS[status];
+    ui.btn1.onclick = h.btn1;
+    ui.btn2.onclick = h.btn2;
+    ui.btn3.onclick = h.btn3;
+}
 
-    // Behavior
-    ui.btn1.onclick = submitCode;
-    ui.btn2.onclick = () => { state.isSingleStepping = true; submitCode(); };
-    ui.btn3.onclick = () => enterIdle();
+function enterState(status, { trace = null, resetBoard = true } = {}) {
+    state.status = status;
+    state.isSingleStepping = (status === "paused");
 
-    if (resetBoard) {
-        if (state.grid) {
+    // Trace initialization (playing/paused with new trace)
+    if (trace !== null) {
+        state.trace = trace.slice().reverse();
+        loadLevel(state.level);
+    }
+
+    // Idle-specific resets
+    if (status === "idle") {
+        state.trace = null;
+        removeEditorHighlight();
+        if (resetBoard && state.grid) {
             state.grid.pig.getAnimations().forEach(a => a.cancel());
+            loadLevel(state.level);
         }
-        loadLevel(state.level);
-    }
-}
-
-export function enterPlaying({ trace = null } = {}) {
-    // State
-    state.status = "playing";
-    state.isSingleStepping = false;
-
-    if (trace !== null) {
-        state.trace = trace;
-        state.index = 0;
-        loadLevel(state.level);
     }
 
     // UI
-    ui.playbackToolbar.className = "playback-toolbar playing";
-    ui.editor.setOption("readOnly", "nocursor");
+    ui.playbackToolbar.className = "playback-toolbar " + status;
+    ui.editor.setOption("readOnly", status === "playing" ? "nocursor" : false);
 
-    // Behavior
-    ui.btn1.onclick = () => enterPaused();
-    ui.btn2.onclick = () => { enterPaused(); step(); };
-    ui.btn3.onclick = () => enterIdle();
+    // Buttons
+    wireButtons(status);
 
-    // Start playback
-    step();
-}
-
-export function enterPaused({ trace = null } = {}) {
-    // State
-    state.status = "paused";
-    state.isSingleStepping = true;
-
-    if (trace !== null) {
-        state.trace = trace;
-        state.index = 0;
-        loadLevel(state.level);
+    // Start playback chain
+    if (status === "playing") {
+        step();
     }
-
-    // UI
-    ui.playbackToolbar.className = "playback-toolbar paused";
-    ui.editor.setOption("readOnly", false);
-
-    // Behavior
-    ui.btn1.onclick = () => enterPlaying();
-    ui.btn2.onclick = () => step();
-    ui.btn3.onclick = () => enterIdle();
 }
+
+export const enterIdle = (opts) => enterState("idle", opts);
+export const enterPlaying = (opts) => enterState("playing", opts);
+export const enterPaused = (opts) => enterState("paused", opts);
 
 // --- Playback ---
 
@@ -180,8 +171,8 @@ async function moveAnimated(toRow, toCol) {
 async function step() {
     if (state.status === "idle") return;
 
-    const msg = state.trace[state.index++];
-    if (!msg) return;
+    const msg = state.trace.pop();
+    if (msg === undefined) return;
 
     const pig = state.grid.pig;
 
