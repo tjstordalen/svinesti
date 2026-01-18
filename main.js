@@ -42,8 +42,6 @@ function hideHelp() {
     }
 }
 
-// TODO: Provide a numbered list of all the occurrences of "agent" across all files and ask for confirmation before replacing them with "pig" across the board.
-
 // --- Board rendering ---
 
 function setCssVar(name, value) {
@@ -68,23 +66,23 @@ function getCell(row, col) {
 }
 
 function placePig(row, col) {
-    getCell(row, col).appendChild(ui.agent);
+    getCell(row, col).appendChild(ui.pig);
     // Flip HUD to left when near right edge (HUD needs 2 tiles of space)
-    ui.agent.classList.toggle('near-right-edge', col >= state.level.nCols - 2);
+    ui.pig.classList.toggle('near-right-edge', col >= state.level.nCols - 2);
 }
 
 function loadLevel(level) {
     if (level === null) return;
 
     // Cancel and reset pig animations/transforms
-    ui.agent.getAnimations().forEach(a => a.cancel());
-    ui.agent.style.transform = '';
+    ui.pig.getAnimations().forEach(a => a.cancel());
+    ui.pig.style.transform = '';
 
     renderGrid(level);
 
     const [row, col] = level.start;
     placePig(row, col);
-    ui.agent.style.backgroundImage = pigSpriteUrl(level.dir);
+    ui.pig.style.backgroundImage = pigSpriteUrl(level.dir);
 }
 
 // --- Code storage ---

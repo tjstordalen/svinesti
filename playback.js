@@ -59,7 +59,7 @@ export function enterIdle(resetBoard = true) {
     ui.btn3.onclick = () => enterIdle();
 
     if (resetBoard) {
-        ui.agent.getAnimations().forEach(a => a.cancel());
+        ui.pig.getAnimations().forEach(a => a.cancel());
         config.loadLevel(config.getLevel());
     }
 }
@@ -121,24 +121,24 @@ function getCell(row, col) {
     return ui.grid.children[row * config.getLevel().nCols + col];
 }
 
-function updateAgentEdgeClasses(row, col) {
-    ui.agent.classList.toggle('near-right-edge', col >= config.getLevel().nCols - 2);
+function updatePigEdgeClasses(row, col) {
+    ui.pig.classList.toggle('near-right-edge', col >= config.getLevel().nCols - 2);
 }
 
 function placePig(row, col) {
-    getCell(row, col).appendChild(ui.agent);
-    updateAgentEdgeClasses(row, col);
+    getCell(row, col).appendChild(ui.pig);
+    updatePigEdgeClasses(row, col);
 }
 
 async function moveAnimated(toRow, toCol) {
-    const fromRect = ui.agent.getBoundingClientRect();
+    const fromRect = ui.pig.getBoundingClientRect();
     const toCell = getCell(toRow, toCol);
     const toRect = toCell.getBoundingClientRect();
 
     const dx = toRect.left - fromRect.left;
     const dy = toRect.top - fromRect.top;
 
-    await animations.move(ui.agent, dx, dy, getAnimSpeed());
+    await animations.move(ui.pig, dx, dy, getAnimSpeed());
 
     placePig(toRow, toCol);
 }
@@ -163,12 +163,12 @@ async function step() {
 
             case "move":
                 // Run walk animation and movement in parallel
-                animations.walk(ui.agent, msg.dir, getAnimSpeed());
+                animations.walk(ui.pig, msg.dir, getAnimSpeed());
                 await moveAnimated(msg.pos[0], msg.pos[1]);
                 break;
 
             case "turn":
-                await animations.turn(ui.agent, msg.dir, getAnimSpeed());
+                await animations.turn(ui.pig, msg.dir, getAnimSpeed());
                 state.currentDirection = msg.dir;
                 break;
 
@@ -188,10 +188,10 @@ async function step() {
             case "gameover":
                 console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
                 if (msg.win) {
-                    animations.celebrate(ui.agent);
+                    animations.celebrate(ui.pig);
                 } else {
                     const gridWrapper = document.getElementById('grid-wrapper');
-                    animations.lose(ui.agent, state.currentDirection, gridWrapper);
+                    animations.lose(ui.pig, state.currentDirection, gridWrapper);
                 }
                 enterIdle(false);
                 return;

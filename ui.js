@@ -36,7 +36,7 @@ export const ui = {
         mode: "python",
         theme: "default"
     }),
-    agent: gid("agent"),
+    pig: gid("pig"),
     colorComparison: gid("color-comparison-hud"),
     comparisonTile: gid("comparison-tile"),
     comparisonAnswer: gid("comparison-answer"),

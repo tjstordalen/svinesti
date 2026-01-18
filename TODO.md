@@ -6,7 +6,7 @@ Currently pig sprites are rendered three different ways:
 
 | Context | Method |
 |---------|--------|
-| Main game | `#agent` element inside tile |
+| Main game | `#pig` element inside tile |
 | Editor tiles | `.tile.pig-*` background-image |
 | Mini-grid | `.tile.pig-*::after` pseudo-element |
 | Ghost | `.ghost.pig-*` background-image |

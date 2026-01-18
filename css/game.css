@@ -1,6 +1,6 @@
 /*
  * game.css - Game board and gameplay elements
- * Grid, tiles, colors, pig sprites, ghost (drag preview), agent, color HUD, confetti
+ * Grid, tiles, colors, pig sprites, ghost (drag preview), pig element, color HUD, confetti
  */
 
 /* Game Section */
@@ -51,11 +51,11 @@ body.editor-mode .tile:hover {
 }
 
 /* Pig draggable in editor mode */
-body.editor-mode #agent {
+body.editor-mode #pig {
     cursor: grab;
 }
 
-body.editor-mode #agent:active {
+body.editor-mode #pig:active {
     cursor: grabbing;
 }
 
@@ -139,8 +139,8 @@ body.editor-mode #agent:active {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-/* Agent (Pig) */
-#agent {
+/* Pig */
+#pig {
     box-sizing: border-box;
     background-size: 90%;
     background-repeat: no-repeat;
@@ -176,7 +176,7 @@ body.editor-mode #agent:active {
 }
 
 /* Flip to left side when in rightmost column */
-#agent.near-right-edge #color-comparison-hud {
+#pig.near-right-edge #color-comparison-hud {
     left: auto;
     right: 100%;
     margin-left: 0;

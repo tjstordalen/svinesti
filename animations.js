@@ -87,14 +87,14 @@ const KEYFRAMES = {
 
 /**
  * Plays the walk sprite animation (legs moving)
- * @param {HTMLElement} agent - The pig element
+ * @param {HTMLElement} pig - The pig element
  * @param {string} direction - Direction of movement
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Animation} - The animation object
  */
-function walk(agent, direction, animSpeed) {
+function walk(pig, direction, animSpeed) {
     const walkDuration = animSpeed * MOVE_MULTIPLIER / WALK_CYCLES;
-    return agent.animate(
+    return pig.animate(
         KEYFRAMES.WALK[direction],
         { duration: walkDuration, easing: 'steps(4)', iterations: WALK_CYCLES }
     );
@@ -102,14 +102,14 @@ function walk(agent, direction, animSpeed) {
 
 /**
  * Plays the movement animation (translation across grid)
- * @param {HTMLElement} agent - The pig element
+ * @param {HTMLElement} pig - The pig element
  * @param {number} dx - Horizontal distance in pixels
  * @param {number} dy - Vertical distance in pixels
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-async function move(agent, dx, dy, animSpeed) {
-    const anim = agent.animate([
+async function move(pig, dx, dy, animSpeed) {
+    const anim = pig.animate([
         { translate: '0 0' },
         { translate: `${dx}px ${dy}px` }
     ], {
@@ -124,14 +124,14 @@ async function move(agent, dx, dy, animSpeed) {
 
 /**
  * Plays the turn animation (hop up, swap sprite, hop down)
- * @param {HTMLElement} agent - The pig element
+ * @param {HTMLElement} pig - The pig element
  * @param {string} direction - The new direction to face
  * @param {number} animSpeed - Base animation speed in ms
  * @returns {Promise<void>}
  */
-async function turn(agent, direction, animSpeed) {
+async function turn(pig, direction, animSpeed) {
     // Phase 1: hop up
-    const hopUp = agent.animate(KEYFRAMES.HOP_UP, {
+    const hopUp = pig.animate(KEYFRAMES.HOP_UP, {
         duration: animSpeed * TURN_MULTIPLIER * 0.33,
         easing: 'ease-out',
         fill: 'forwards'
@@ -139,10 +139,10 @@ async function turn(agent, direction, animSpeed) {
     await hopUp.finished;
 
     // Swap sprite at peak
-    agent.style.backgroundImage = pigSpriteUrl(direction);
+    pig.style.backgroundImage = pigSpriteUrl(direction);
 
     // Phase 2: hop down
-    const hopDown = agent.animate(KEYFRAMES.HOP_DOWN, {
+    const hopDown = pig.animate(KEYFRAMES.HOP_DOWN, {
         duration: animSpeed * TURN_MULTIPLIER * 0.66,
         easing: 'ease-in',
         fill: 'forwards'
@@ -150,7 +150,7 @@ async function turn(agent, direction, animSpeed) {
     await hopDown.finished;
 
     // Reset transform
-    agent.style.transform = '';
+    pig.style.transform = '';
 }
 
 /**
@@ -169,11 +169,11 @@ async function hudFlash(hud, animSpeed) {
 
 /**
  * Plays the celebrate animation on win
- * @param {HTMLElement} agent - The pig element
+ * @param {HTMLElement} pig - The pig element
  */
-function celebrate(agent) {
+function celebrate(pig) {
     confetti(document.getElementById('confetti-container'));
-    agent.animate(KEYFRAMES.CELEBRATE, {
+    pig.animate(KEYFRAMES.CELEBRATE, {
         duration: 1500,
         easing: 'ease-out'
     });
@@ -181,11 +181,11 @@ function celebrate(agent) {
 
 /**
  * Plays the loss animation (shake grid + pig falls over)
- * @param {HTMLElement} agent - The pig element
+ * @param {HTMLElement} pig - The pig element
  * @param {string} direction - Current direction the pig is facing
  * @param {HTMLElement} gridWrapper - The grid wrapper element (optional)
  */
-function lose(agent, direction, gridWrapper) {
+function lose(pig, direction, gridWrapper) {
     if (gridWrapper) {
         gridWrapper.animate(KEYFRAMES.SHAKE, {
             duration: 600,
@@ -198,7 +198,7 @@ function lose(agent, direction, gridWrapper) {
     const translateY = isLeftRight ? '-50%' : '0';
     const translateX = isLeftRight ? '0' : '30%';
 
-    agent.animate([
+    pig.animate([
         { transform: 'rotate(0deg) translateX(0) translateY(0)' },
         { transform: `rotate(${rotation}deg) translateX(${translateX}) translateY(${translateY})` }
     ], {

@@ -31,7 +31,7 @@ Styles are organized in `css/` directory with modular files:
 | `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
 | `sidebar.css` | Sidebar, tabs, level list, mini-grid thumbnails |
 | `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
-| `game.css` | Grid, tiles, colors, pig sprites, ghost, agent, color HUD, confetti |
+| `game.css` | Grid, tiles, colors, pig sprites, ghost, pig element, color HUD, confetti |
 | `help.css` | Help modal, shortcuts list, toggle switch, fadeIn/slideUp keyframes |
 | `splash.css` | Splash screen overlay, animated pig, walk/shadow keyframes |
 
