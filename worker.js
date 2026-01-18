@@ -1,3 +1,6 @@
+// Web Worker that runs student code in Pyodide (Python in WebAssembly).
+// Loads once, then executes each submission in an isolated namespace.
+
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.js");
 
 let pyodide = null;
@@ -6,18 +9,21 @@ async function init() {
 	pyodide = await loadPyodide();
 	pyodide.setStdout({ batched: (text) => console.log(text) });
 
+	// no-store: avoid stale code during development
 	const response = await fetch("./svinesti.py", { cache: 'no-store' });
 	if (!response.ok) {
 		throw new Error(`Failed to fetch svinesti.py: ${response.status}`);
 	}
 	const engineCode = await response.text();
-	await pyodide.runPython(engineCode);
+	await pyodide.runPython(engineCode);  // defines State, move(), turnLeft(), etc.
 
 	self.postMessage({ type: 'ready' });
 	self.onmessage = handleMessage;
 }
 
 async function handleMessage(event) {
+	// Each execution gets a fresh namespace copy so student code can't
+	// pollute globals or affect subsequent runs
 	let isolatedNamespace = null;
 	try {
 		isolatedNamespace = pyodide.globals.copy();
@@ -31,30 +37,30 @@ async function handleMessage(event) {
 		self.postMessage({ type: "execution-failed", errorMessage: e.message });
 	} finally {
 		if (isolatedNamespace) {
-			isolatedNamespace.destroy();
+			isolatedNamespace.destroy();  // prevent memory leak
 		}
 	}
 }
 
 function injectUserCode(levelJSON, userCode) {
-	const indent = "    ";
+	// we are injecting their code into a function, so we have to indent
 	const indentedUserCode = userCode
 		.split("\n")
-		.map(line => indent + line)
-		.join("\n") + "\n";
+		.map(line => "    " + line.replace(/\t/g, "    "))
+		.join("\n");               
 
-	// Indentation matters — this is Python
-	return `
-state = State(json.loads("""${levelJSON}"""))
-def submitted_code():
-${indentedUserCode}
-
-try:
-    submitted_code()
-except GracefulExit:
-    pass
-
-state.messages`;
+	return [
+		`state = State(json.loads(${JSON.stringify(levelJSON)}))`,
+		"def submitted_code():",  // we put the students code inside a function so
+		indentedUserCode,         // that we can recover their line numbers.
+		"",                       // line in function == line in student code
+		"try:",
+		"    submitted_code()",
+		"except GracefulExit:",   // student program has control, so we "gracefully"
+		"    pass",               // exit by throwing an exception
+		"",
+		"state.messages"          // the last statement is returned by pyodide to JS
+	].join("\n");
 }
 
 init().catch(e => console.error("Worker initialization failed:", e));
