@@ -140,6 +140,7 @@ async function turn(pig, direction, animSpeed) {
 
     // Swap sprite at peak
     pig.style.backgroundImage = pigSpriteUrl(direction);
+    pig.className = 'pig pig-' + direction;
 
     // Phase 2: hop down
     const hopDown = pig.animate(KEYFRAMES.HOP_DOWN, {
@@ -179,13 +180,25 @@ function celebrate(pig) {
     });
 }
 
+const DIE_PARAMS = {
+    right: { rotation: 180, dx: '0', dy: '-50%' },
+    left:  { rotation: 180, dx: '0', dy: '-50%' },
+    up:    { rotation: 90, dx: '30%', dy: '0' },
+    down:  { rotation: 90, dx: '30%', dy: '0' },
+};
+
+function getDirection(pig) {
+    for (const dir of ['right', 'down', 'left', 'up']) {
+        if (pig.classList.contains('pig-' + dir)) return dir;
+    }
+}
+
 /**
  * Plays the loss animation (shake grid + pig falls over)
  * @param {HTMLElement} pig - The pig element
- * @param {string} direction - Current direction the pig is facing
  * @param {HTMLElement} gridWrapper - The grid wrapper element (optional)
  */
-function lose(pig, direction, gridWrapper) {
+function lose(pig, gridWrapper) {
     if (gridWrapper) {
         gridWrapper.animate(KEYFRAMES.SHAKE, {
             duration: 600,
@@ -193,14 +206,11 @@ function lose(pig, direction, gridWrapper) {
         });
     }
 
-    const isLeftRight = direction === 'left' || direction === 'right';
-    const rotation = isLeftRight ? 180 : 90;
-    const translateY = isLeftRight ? '-50%' : '0';
-    const translateX = isLeftRight ? '0' : '30%';
+    const { rotation, dx, dy } = DIE_PARAMS[getDirection(pig)];
 
     pig.animate([
         { transform: 'rotate(0deg) translateX(0) translateY(0)' },
-        { transform: `rotate(${rotation}deg) translateX(${translateX}) translateY(${translateY})` }
+        { transform: `rotate(${rotation}deg) translateX(${dx}) translateY(${dy})` }
     ], {
         duration: 600,
         easing: 'ease-out',

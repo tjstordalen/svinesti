@@ -17,7 +17,6 @@ const state = {
     status: "idle",       // "idle" | "playing" | "paused"
     trace: null,
     index: 0,
-    currentDirection: null,
 
     // Worker
     worker: null,
@@ -102,8 +101,6 @@ export function enterIdle({ resetBoard = true } = {}) {
     // UI
     ui.playbackToolbar.className = "playback-toolbar idle";
     ui.editor.setOption("readOnly", false);
-    ui.btn1.classList.remove("pauseIcon");
-    ui.btn1.classList.add("playIcon");
     removeEditorHighlight();
 
     // Behavior
@@ -127,15 +124,12 @@ export function enterPlaying({ trace = null } = {}) {
     if (trace !== null) {
         state.trace = trace;
         state.index = 0;
-        state.currentDirection = state.level.dir;
         loadLevel(state.level);
     }
 
     // UI
     ui.playbackToolbar.className = "playback-toolbar playing";
     ui.editor.setOption("readOnly", "nocursor");
-    ui.btn1.classList.remove("playIcon");
-    ui.btn1.classList.add("pauseIcon");
 
     // Behavior
     ui.btn1.onclick = () => enterPaused();
@@ -154,15 +148,12 @@ export function enterPaused({ trace = null } = {}) {
     if (trace !== null) {
         state.trace = trace;
         state.index = 0;
-        state.currentDirection = state.level.dir;
         loadLevel(state.level);
     }
 
     // UI
     ui.playbackToolbar.className = "playback-toolbar paused";
     ui.editor.setOption("readOnly", false);
-    ui.btn1.classList.remove("pauseIcon");
-    ui.btn1.classList.add("playIcon");
 
     // Behavior
     ui.btn1.onclick = () => enterPlaying();
@@ -183,7 +174,7 @@ async function moveAnimated(toRow, toCol) {
 
     await animations.move(pig, dx, dy, getAnimSpeed());
 
-    state.grid.placePig(toRow, toCol, state.currentDirection);
+    state.grid.movePigTo(toRow, toCol);
 }
 
 async function step() {
@@ -214,7 +205,6 @@ async function step() {
 
             case "turn":
                 await animations.turn(pig, msg.dir, getAnimSpeed());
-                state.currentDirection = msg.dir;
                 break;
 
             case "isColor":
@@ -235,7 +225,7 @@ async function step() {
                     animations.celebrate(pig);
                 } else {
                     const gridWrapper = document.getElementById('grid-wrapper');
-                    animations.lose(pig, state.currentDirection, gridWrapper);
+                    animations.lose(pig, gridWrapper);
                 }
                 enterIdle({ resetBoard: false });
                 return;

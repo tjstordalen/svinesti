@@ -52,6 +52,13 @@ export function createGrid(container, nRows, nCols, level = null) {
         placePig(row, col, dir) {
             this.getCell(row, col).appendChild(pig);
             pig.style.backgroundImage = pigSpriteUrl(dir);
+            pig.className = 'pig pig-' + dir;
+            pig.style.transform = '';
+            pig.classList.toggle('near-right-edge', col >= nCols - 2);
+        },
+
+        movePigTo(row, col) {
+            this.getCell(row, col).appendChild(pig);
             pig.style.transform = '';
             pig.classList.toggle('near-right-edge', col >= nCols - 2);
         },
