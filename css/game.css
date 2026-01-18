@@ -1,3 +1,8 @@
+/*
+ * game.css - Game board and gameplay elements
+ * Grid, tiles, colors, pig sprites, ghost (drag preview), agent, color HUD, confetti
+ */
+
 /* Game Section */
 #game-section {
     position: relative;

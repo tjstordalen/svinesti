@@ -1,3 +1,8 @@
+/*
+ * header.css - Top navigation bar
+ * App header, title, mode toggle (Play/Edit), icon buttons
+ */
+
 /* Header */
 .app-header {
     height: var(--header-height);

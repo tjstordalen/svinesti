@@ -1,3 +1,8 @@
+/*
+ * sidebar.css - Level selection panel
+ * Sidebar, tabs (Default/Local/Community), level list, mini-grid thumbnails
+ */
+
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);

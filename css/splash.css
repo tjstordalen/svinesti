@@ -1,3 +1,8 @@
+/*
+ * splash.css - Loading splash screen
+ * Splash overlay, animated pig, shadow, walk/shadow keyframes
+ */
+
 /* Splash Screen */
 #splash-screen {
     position: fixed;

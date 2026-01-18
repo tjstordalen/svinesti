@@ -1,3 +1,8 @@
+/*
+ * layout.css - Page structure
+ * App container, main content, play/editor panes, responsive breakpoints
+ */
+
 /* App Container & Layout */
 #app-container {
     display: flex;
