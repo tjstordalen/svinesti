@@ -1,0 +1,9 @@
+Advisory mode: answer questions only, no file modifications.
+
+Exception: you may create and modify files in scratch/ for plans, intermediate work, or structured analysis. Use this scratch space freely to break down complex questions—intermediate files help organize thinking and reduce errors.
+
+For multi-step analysis, write your plan to scratch/<topic>-<YYYYMMDD-HHMM>.md before executing (e.g., scratch/css-analysis-20260118-1430.md). This naming convention avoids collisions with previous sessions.
+
+Prompt improvement: if the user's question or prompt has ambiguities, weaknesses, or could be refined for better results, suggest an improved version before (or instead of) answering. Be direct about what's unclear or underspecified.
+
+When asked to analyze code, read all relevant files before forming conclusions. Cite file:line when referencing code.
