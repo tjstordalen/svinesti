@@ -11,7 +11,8 @@ Svinesti is a browser-based educational programming game where students control 
 ### Core Files
 
 - **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
-- **main.js** - Game logic, playback, UI wiring (see structure below)
+- **main.js** - Application entry point, UI wiring, level management (see structure below)
+- **playback.js** - Execution engine: state machine, trace playback, worker management (see structure below)
 - **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify/confetti), `pigSpriteUrl()` helper
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
 - **shortcuts.js** - Keyboard shortcut registration, rebinding, and persistence
@@ -43,37 +44,57 @@ Styles are organized in `css/` directory with modular files:
 
 ### main.js Structure
 
-Flat procedural style with two structs and plain functions:
+Application entry point. Flat procedural style:
 
 ```javascript
-const ui = { /* DOM element references */ };
 const state = {
-    level: null,
-    worker: null,
-    workerTimeout: null,
-    isSingleStepping: false,   // Flag to indicate single-step execution mode
-    focusedElementBeforeHelp: null,  // Track which element to refocus after help closes
-    currentDirection: null,    // Track pig's current direction during playback
-    playback: {
-        status: "idle",        // "idle" | "playing" | "paused"
-        trace: null,           // Array of events from execution
-        index: 0,              // Current position in trace
-    },
+    level: null,                     // Current level object
+    focusedElementBeforeHelp: null,  // Track focus for help modal
 };
 ```
 
 Sections:
-- **UI elements** - DOM references
-- **State** - All mutable state
-- **Utilities** - `selectedLanguage()`, `getAnimSpeed()`
-- **Board rendering** - `renderGrid()`, `renderMiniGrid()`, `getCell()`, `setCssVar()`, `loadLevel()`
+- **Utilities** - `selectedLanguage()`
+- **Board rendering** - `renderGrid()`, `renderMiniGrid()`, `getCell()`, `setCssVar()`, `loadLevel()`, `placePig()`
 - **Code storage** - `storeCode()`, `loadCode()` (localStorage persistence)
-- **Playback** - `step()` (async), `playbackInit/Stop/Resume()`, `pause()`
-- **Worker management** - `initWorker()`
 - **Actions** - `selectLevel()`, `switchLanguage()`, `submitCode()`
-- **Help system** - `showHelp()`, `hideHelp()` - Modal with three-column layout showing functions, syntax, and licenses
-- **Initialize** - Setup code, build thumbnail-based level list in sidebar
-- **Event handlers** - UI event wiring
+- **Help system** - `showHelp()`, `hideHelp()` - Modal with three-column layout
+- **Initialize** - Playback.init(), level list setup, URL import
+- **Event handlers** - Editor events, mode toggle, shortcuts
+
+### playback.js Structure
+
+Execution engine module. Manages playback state machine and worker lifecycle:
+
+```javascript
+const state = {
+    status: "idle",           // "idle" | "playing" | "paused"
+    trace: null,              // Array of events from execution
+    index: 0,                 // Current position in trace
+    worker: null,             // Web Worker instance
+    workerTimeout: null,      // Timeout for worker restart
+    isSingleStepping: false,  // Step mode flag
+    currentDirection: null,   // Pig direction during playback
+};
+```
+
+**Exports:**
+- `init(config)` - Initialize with callbacks: `{ loadLevel, getLevel, onWorkerReady, onSubmit }`
+- `enterIdle(resetBoard?)` - Reset to idle state
+- `enterPlaying(trace?)` - Start/resume playback
+- `enterPaused(trace?)` - Pause playback
+- `submit(pythonCode)` - Send code to worker
+- `getStatus()` - Returns current status
+- `isStepping()` / `setStepping(val)` - Step mode accessors
+
+**Internal functions:**
+- `step()` - Process one trace event, recurse if playing
+- `initWorker()` - Create/restart worker, set up message handlers
+- `hideSplashScreen()` - Fade out splash after worker ready
+- `getAnimSpeed()` - Read speed slider value
+- `getCell()`, `placePig()`, `moveAnimated()` - Grid helpers for playback
+
+**Dependency injection:** main.js passes `loadLevel` and `getLevel` callbacks to avoid circular imports. Playback module never imports from main.js.
 
 ### Promise-Based Playback (Web Animations API)
 
