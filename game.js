@@ -337,9 +337,23 @@ function execute(code) {
         });
         // Restart worker if hung (e.g., infinite loop)
         state.workerTimeout = setTimeout(() => {
-            ui.codeOutput.textContent = "Code took too long — stopped. (Infinite loop?)";
             resolveExecution(null);
-            initWorker();
+            initWorker();  // resets grid first, so we animate the fresh pig
+            ui.codeOutput.textContent = "Code took too long — stopped. (Infinite loop?)";
+            animations.notify(ui.gameNotification, "Infinite loop?", true, 3000);
+            document.getElementById('grid-wrapper').animate([
+                { transform: 'rotate(0deg)', boxShadow: '0 0 40px rgba(255, 80, 80, 0.8)' },
+                { transform: 'rotate(2deg)', boxShadow: '0 0 60px rgba(255, 80, 80, 0.8)' },
+                { transform: 'rotate(-2deg)', boxShadow: '0 0 60px rgba(255, 80, 80, 0.8)' },
+                { transform: 'rotate(0deg)', boxShadow: '0 0 40px rgba(255, 80, 80, 0.8)' }
+            ], { duration: 150, iterations: 6 });
+            state.grid.pig.animate([
+                { transform: 'translate(-15%, -20%) rotate(-20deg)' },
+                { transform: 'translate(15%, -15%) rotate(25deg)' },
+                { transform: 'translate(10%, 5%) rotate(-15deg)' },
+                { transform: 'translate(-10%, 0%) rotate(20deg)' },
+                { transform: 'translate(0, -5%) rotate(0deg)' }
+            ], { duration: 180, iterations: 5, easing: 'ease-in-out' });
         }, WORKER_TIMEOUT_MS);
     });
 }
