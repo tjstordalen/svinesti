@@ -111,3 +111,18 @@ body {
     color: #9dd4be;
     text-decoration: none;
 }
+
+/* Light notification variant (for warnings/errors with links) */
+.notification.light {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.notification.light a {
+    color: var(--color-interactive);
+}
+
+.notification.light a:hover {
+    color: var(--color-interactive-dark);
+}

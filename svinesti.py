@@ -36,7 +36,7 @@ DIR_NAMES = ["right", "down", "left", "up"]
 DIR_VECTORS = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # right, down, left, up
 TURN_LEFT = -1
 TURN_RIGHT = 1
-MAX_OPS = 10000  # prevent infinite loops
+MAX_OPS = 1000  # prevent infinite loops
 
 
 class State:
@@ -85,6 +85,7 @@ class State:
     def count_op(self):
         self.op_count += 1
         if self.op_count > MAX_OPS:
+            self.trace({"type": "gameover", "win": False, "reason": "timeout"})
             raise GracefulExit
 
 
@@ -93,7 +94,6 @@ def _has_stars_remaining(state):
 
 
 def _do_move(state):
-    state.count_op()
     dr, dc = DIR_VECTORS[state.dir]
     r, c = state.pos
     state.pos = (r + dr, c + dc)
@@ -112,13 +112,11 @@ def _do_move(state):
 
 
 def _do_turn(state, direction):
-    state.count_op()
     state.dir = (state.dir + direction) % len(DIR_VECTORS)
     state.trace({"type": "turn", "dir": DIR_NAMES[state.dir]})
 
 
 def _do_is_color(state, color):
-    state.count_op()
     result = state[state.pos].lower() == color[0].lower()
     state.trace({"type": "isColor", "color": color, "result": result})
     return result
@@ -163,6 +161,7 @@ def line_tracer(frame, event, arg):
             user_line = mapped
 
         state.trace({"type": "lineExecuted", "lineno": user_line})
+        state.count_op()
 
     return line_tracer
 

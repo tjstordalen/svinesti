@@ -310,13 +310,19 @@ const NOTIFY_COLOR_ERROR = 'rgba(60, 60, 70, 0.95)';   // dark slate
 /**
  * Toast notification - fades in, holds, fades out.
  * Cancels any existing animation on the element first.
+ * @param {string} className - Optional CSS class for styling (e.g., "light")
  */
-function notify(element, message, isError = false, duration = 2500) {
+function notify(element, message, isError = false, duration = 2500, className = null) {
     element.getAnimations().forEach(a => a.cancel());
     if (message !== null) {
         element.textContent = message;
     }
-    element.style.background = isError ? NOTIFY_COLOR_ERROR : NOTIFY_COLOR_INFO;
+    if (className) {
+        element.style.background = '';
+        element.classList.add(className);
+    } else {
+        element.style.background = isError ? NOTIFY_COLOR_ERROR : NOTIFY_COLOR_INFO;
+    }
 
     return element.animate(KEYFRAMES.NOTIFICATION, {
         duration,

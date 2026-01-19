@@ -145,7 +145,17 @@ async function submitAndEnter(enterFn) {
     const code = getCode();
     if (code === null) return;
     const trace = await execute(code);
-    if (trace) enterFn({ trace });
+    if (!trace) return;
+
+    // Check if trace ends with timeout - show notification immediately
+    const lastEvent = trace[trace.length - 1];
+    if (lastEvent?.reason === "timeout") {
+        ui.codeOutput.textContent = "Infinite loop detected — stopped.";
+        ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
+        animations.notify(ui.gameNotification, null, false, 10000, "light");
+    }
+
+    enterFn({ trace });
 }
 
 const BUTTON_HANDLERS = {
@@ -259,7 +269,13 @@ async function processEvent(msg) {
 
         case "gameover":
             console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-            if (msg.win) {
+            if (msg.reason === "timeout") {
+                const gridWrapper = document.getElementById('grid-wrapper');
+                ui.codeOutput.textContent = "Infinite loop detected — stopped.";
+                ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
+                animations.notify(ui.gameNotification, null, false, 10000, "light");
+                animations.timeout(gridWrapper, pig);
+            } else if (msg.win) {
                 animations.celebrate(pig);
             } else {
                 const gridWrapper = document.getElementById('grid-wrapper');
@@ -272,7 +288,7 @@ async function processEvent(msg) {
 
 // --- Worker management ---
 
-const WORKER_TIMEOUT_MS = 1000;  // restart if hung
+const WORKER_TIMEOUT_MS = 3000;  // safety net; Python MAX_OPS fires first
 const SPLASH_DELAY_MS = 1500;
 const FADE_DURATION_MS = 500;
 
@@ -341,7 +357,7 @@ function execute(code) {
             initWorker();  // resets grid first, so we animate the fresh pig
             ui.codeOutput.textContent = "Code took too long — stopped. (Infinite loop?)";
             ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
-            animations.notify(ui.gameNotification, null, true, 5000);
+            animations.notify(ui.gameNotification, null, false, 10000, "light");
             animations.timeout(document.getElementById('grid-wrapper'), state.grid.pig);
         }, WORKER_TIMEOUT_MS);
     });
