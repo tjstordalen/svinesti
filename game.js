@@ -25,7 +25,7 @@ const playback = {
     trace: null, 
 
     load(trace) {
-		// the trace is reversed, so we can take the next one by popping from the end 
+		// reverse the trace so the next message is always trace.pop()
         this.trace = trace.slice().reverse();
     },
 
@@ -146,7 +146,7 @@ async function submitAndEnter(enterFn) {
     let trace = await execute(code);
     if (!trace) return;
 
-    // Check if trace ends with timeout - show notification immediately, truncate trace
+    // Check if trace ends with timeout - show notification and animation immediately
     const lastEvent = trace[trace.length - 1];
     if (lastEvent?.reason === "timeout") {
         ui.codeOutput.textContent =
@@ -155,6 +155,10 @@ async function submitAndEnter(enterFn) {
         ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
         animations.notify(ui.gameNotification, null, false, 10000, "light");
         trace = trace.slice(-100);
+
+        enterFn({ trace });
+        animations.timeout(document.getElementById('grid-wrapper'), state.grid.pig);
+        return;
     }
 
     enterFn({ trace });
@@ -271,15 +275,10 @@ async function processEvent(msg) {
 
         case "gameover":
             console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-            if (msg.reason === "timeout") {
-                const gridWrapper = document.getElementById('grid-wrapper');
-                ui.codeOutput.textContent = "Infinite loop detected — stopped.";
-                ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
-                animations.notify(ui.gameNotification, null, false, 10000, "light");
-                animations.timeout(gridWrapper, pig);
-            } else if (msg.win) {
+            // timeout animation already played when detected in submitAndEnter
+            if (msg.win) {
                 animations.celebrate(pig);
-            } else {
+            } else if (msg.reason !== "timeout") {
                 const gridWrapper = document.getElementById('grid-wrapper');
                 animations.lose(pig, gridWrapper);
             }
