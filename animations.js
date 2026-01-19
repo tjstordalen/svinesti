@@ -134,6 +134,12 @@ const KEYFRAMES = {
         { transform: 'translate(-10%, 0%) rotate(20deg)' },
         { transform: 'translate(0, -5%) rotate(0deg)' }
     ],
+
+    // FLASH: brief background color pulse to draw attention
+    FLASH: [
+        { backgroundColor: 'rgba(126, 176, 155, 0.4)' },  // light sage green
+        { backgroundColor: 'transparent' }
+    ],
 };
 
 // --- Abort handling ---
@@ -330,6 +336,16 @@ function notify(element, message, isError = false, duration = 2500, className = 
     });
 }
 
+/**
+ * Flash background - brief color pulse to draw attention to an element.
+ */
+function flash(element, duration = 400) {
+    return element.animate(KEYFRAMES.FLASH, {
+        duration,
+        easing: 'ease-out',
+    });
+}
+
 // --- Confetti ---
 
 const CONFETTI_COLORS = ['#FF8A8A', '#58E0B8', '#85D0FF', '#FFD700', '#FF6B6B', '#4ECDC4'];
@@ -386,4 +402,5 @@ export const animations = {
     lose,
     timeout,
     notify,
+    flash,
 };

@@ -152,6 +152,7 @@ async function submitAndEnter(enterFn) {
         ui.codeOutput.textContent =
             "Infinite loop detected after 10,000 operations.\n" +
             "Replaying the last part to show where it got stuck.";
+        animations.flash(ui.codeOutput);
         ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
         animations.notify(ui.gameNotification, null, false, 10000, "light");
         trace = trace.slice(-100);
@@ -293,7 +294,6 @@ const SPLASH_DELAY_MS = 1500;
 const FADE_DURATION_MS = 500;
 
 function resolveExecution(result) {
-    console.timeEnd("[game] execute roundtrip");
     state.pendingResolve?.(result);
     state.pendingResolve = null;
 }
@@ -322,6 +322,7 @@ function initWorker() {
             case "execution-failed":
                 ui.codeOutput.textContent = data.errorMessage;
                 ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
+                animations.flash(ui.codeOutput);
                 resolveExecution(null);
                 break;
         }
@@ -338,6 +339,7 @@ function getCode() {
     if (!success) {
         ui.codeOutput.textContent = error.msg;
         ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
+        animations.flash(ui.codeOutput);
         return null;
     }
     return code;
@@ -346,7 +348,6 @@ function getCode() {
 function execute(code) {
     return new Promise((resolve) => {
         state.pendingResolve = resolve;
-        console.time("[game] execute roundtrip");
         state.worker.postMessage({
             code,
             level: JSON.stringify(state.level)

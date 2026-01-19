@@ -4,6 +4,7 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.js");
 
 let pyodide = null;
+let engineCode = null;
 
 async function init() {
 	console.time("[worker] loadPyodide");
@@ -19,12 +20,8 @@ async function init() {
 	if (!response.ok) {
 		throw new Error(`Failed to fetch svinesti.py: ${response.status}`);
 	}
-	const engineCode = await response.text();
+	engineCode = await response.text();
 	console.timeEnd("[worker] fetch svinesti.py");
-
-	console.time("[worker] run svinesti.py");
-	await pyodide.runPython(engineCode);
-	console.timeEnd("[worker] run svinesti.py");
 
 	console.log("[worker] ready");
 	self.postMessage({ type: 'ready' });
@@ -32,11 +29,12 @@ async function init() {
 }
 
 async function handleMessage(event) {
-	// Each execution gets a fresh namespace copy so student code can't
-	// pollute globals or affect subsequent runs
+	// Each execution gets a fresh namespace with its own line_tracer and state,
+	// so student code can't pollute globals or affect subsequent runs.
 	let isolatedNamespace = null;
 	try {
 		isolatedNamespace = pyodide.globals.copy();
+		pyodide.runPython(engineCode, { globals: isolatedNamespace });
 		const userCode = injectUserCode(event.data.level, event.data.code);
 		const result = pyodide.runPython(userCode, { globals: isolatedNamespace });
 		self.postMessage({
@@ -48,7 +46,7 @@ async function handleMessage(event) {
 		self.postMessage({ type: "execution-failed", errorMessage: e.message });
 	} finally {
 		if (isolatedNamespace) {
-			isolatedNamespace.destroy();  // prevent memory leak
+			isolatedNamespace.destroy();
 		}
 	}
 }
