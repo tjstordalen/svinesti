@@ -18,8 +18,6 @@ const state = {
 
     // Worker
     worker: null,
-    workerReady: false,
-    workerTimeout: null,
     pendingResolve: null,
 };
 
@@ -292,7 +290,6 @@ async function processEvent(msg) {
 
 // --- Worker management ---
 
-const WORKER_TIMEOUT_MS = 3000;  // safety net; Python MAX_OPS fires first
 const SPLASH_DELAY_MS = 1500;
 const FADE_DURATION_MS = 500;
 
@@ -300,7 +297,6 @@ function resolveExecution(result) {
     console.timeEnd("[game] execute roundtrip");
     state.pendingResolve?.(result);
     state.pendingResolve = null;
-    clearTimeout(state.workerTimeout);
 }
 
 function hideSplashScreen() {
@@ -312,22 +308,13 @@ function hideSplashScreen() {
     }, FADE_DURATION_MS);
 }
 
-function setWorkerReady(ready) {
-    state.workerReady = ready;
-    ui.btn1.disabled = !ready;
-    ui.btn2.disabled = !ready;
-}
-
 function initWorker() {
     enterIdle();
-    if (state.worker) state.worker.terminate();
-    setWorkerReady(false);
 
     state.worker = new Worker("worker.js");
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
             case "ready":
-                setWorkerReady(true);
                 setTimeout(hideSplashScreen, SPLASH_DELAY_MS);
                 break;
             case "execution-trace":
@@ -365,17 +352,6 @@ function execute(code) {
             code,
             level: JSON.stringify(state.level)
         });
-        // Restart worker if hung (e.g., infinite loop)
-        state.workerTimeout = setTimeout(() => {
-            resolveExecution(null);
-            initWorker();  // resets grid first, so we animate the fresh pig
-            ui.codeOutput.textContent =
-                "Code took too long (over 3 seconds) — stopped.\n" +
-                "Possible infinite loop, or very slow operation.";
-            ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
-            animations.notify(ui.gameNotification, null, false, 10000, "light");
-            animations.timeout(document.getElementById('grid-wrapper'), state.grid.pig);
-        }, WORKER_TIMEOUT_MS);
     });
 }
 
