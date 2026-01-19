@@ -340,7 +340,8 @@ function execute(code) {
             resolveExecution(null);
             initWorker();  // resets grid first, so we animate the fresh pig
             ui.codeOutput.textContent = "Code took too long — stopped. (Infinite loop?)";
-            animations.notify(ui.gameNotification, "Infinite loop?", true, 3000);
+            ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
+            animations.notify(ui.gameNotification, null, true, 5000);
             animations.timeout(document.getElementById('grid-wrapper'), state.grid.pig);
         }, WORKER_TIMEOUT_MS);
     });

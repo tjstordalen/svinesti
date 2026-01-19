@@ -96,9 +96,18 @@ body {
     font-size: 0.95rem;
     font-weight: 600;
     box-shadow: var(--shadow-lg);
-    pointer-events: none;
-    cursor: pointer;
+    pointer-events: auto;
     opacity: 0;
-    z-index: 200;
+    z-index: 1000;
     white-space: nowrap;
+}
+
+.notification a {
+    color: #7eb09b;
+    text-decoration: underline;
+}
+
+.notification a:hover {
+    color: #9dd4be;
+    text-decoration: none;
 }

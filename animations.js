@@ -304,8 +304,8 @@ function timeout(gridWrapper, pig) {
 
 // --- Notification ---
 
-const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';   // green-ish
-const NOTIFY_COLOR_ERROR = 'rgba(180, 80, 80, 0.95)';  // red-ish
+const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';   // sage green
+const NOTIFY_COLOR_ERROR = 'rgba(60, 60, 70, 0.95)';   // dark slate
 
 /**
  * Toast notification - fades in, holds, fades out.
@@ -313,7 +313,9 @@ const NOTIFY_COLOR_ERROR = 'rgba(180, 80, 80, 0.95)';  // red-ish
  */
 function notify(element, message, isError = false, duration = 2500) {
     element.getAnimations().forEach(a => a.cancel());
-    element.textContent = message;
+    if (message !== null) {
+        element.textContent = message;
+    }
     element.style.background = isError ? NOTIFY_COLOR_ERROR : NOTIFY_COLOR_INFO;
 
     return element.animate(KEYFRAMES.NOTIFICATION, {
