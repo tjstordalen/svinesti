@@ -36,7 +36,7 @@ DIR_NAMES = ["right", "down", "left", "up"]
 DIR_VECTORS = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # right, down, left, up
 TURN_LEFT = -1
 TURN_RIGHT = 1
-MAX_OPS = 1000  # prevent infinite loops
+MAX_OPS = 10000  # prevent infinite loops
 
 
 class State:
