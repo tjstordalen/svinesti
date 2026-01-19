@@ -149,6 +149,39 @@ p code, li code {
     box-shadow: none;
 }
 
+/* Side-by-side code examples */
+.code-side-by-side {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.code-side-by-side .code-column {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: calc(50% - 0.5rem);
+    display: flex;
+    flex-direction: column;
+}
+
+.code-side-by-side .code-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.code-side-by-side pre {
+    flex: 1;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .code-side-by-side {
+        flex-direction: column;
+    }
+}
+
 /* Warning/tip boxes */
 .warning {
     background: var(--color-error-bg);
@@ -206,3 +239,4 @@ li {
     color: var(--color-text-muted);
     font-style: italic;
 }
+

@@ -13,173 +13,140 @@
 
     <p>
         An <strong>infinite loop</strong> is a loop that never stops running.
-        Your program gets stuck repeating the same instructions forever,
-        like a dog chasing its own tail — except less cute and more frustrating.
-    </p>
-
-    <p>
+        Your program gets stuck repeating the same instructions forever.
         When Svinesti detects that your code has been running for too long
-        (more than 1 second — an eternity in computer time), it assumes you
-        have an infinite loop and stops your program. Otherwise your browser
-        would freeze, and nobody wants that.
+        (more than one second — an eternity in computer time), it assumes you
+        have an infinite loop and stops your program. This doesn't normally
+        happen automatically, so it's a good idea to learn how to avoid it!
     </p>
-
-    <h2>How Does an Infinite Loop Happen?</h2>
 
     <p>
         Loops repeat code <em>while</em> a condition is true. An infinite loop
         happens when that condition <strong>never becomes false</strong>.
-        It's like asking "are we there yet?" when you're walking in circles.
+        This usually happens because you forgot to change something inside
+        the loop, or because the condition is faulty and can never become true.
     </p>
-
-    <p>This usually happens because:</p>
-    <ul>
-        <li>You forgot to change something inside the loop</li>
-        <li>The condition can never be satisfied</li>
-        <li>Your pig is spinning in place like a confused ballerina</li>
-    </ul>
-
-    <h2>Example: The Classic Mistake</h2>
 
     <p>
         Here's a common infinite loop. Can you spot the problem?
     </p>
 
-    <div class="code-example">
-        <div class="code-tabs">
-            <button class="code-tab active" onclick="showTab(this, 'python1')">Python</button>
-            <button class="code-tab" onclick="showTab(this, 'java1')">Java</button>
-        </div>
-        <div id="python1" class="code-panel active">
+    <div class="code-side-by-side">
+        <div class="code-column">
+            <div class="code-label">Python</div>
 <pre><code><span class="code-comment"># Goal: move forward 5 times</span>
 count = 0
 while count < 5:
-    move()
-    <span class="code-comment"># Oops! We forgot to increase count!</span></code></pre>
+    move()</code></pre>
         </div>
-        <div id="java1" class="code-panel">
+        <div class="code-column">
+            <div class="code-label">Java</div>
 <pre><code><span class="code-comment">// Goal: move forward 5 times</span>
 int count = 0;
 while (count < 5) {
     move();
-    <span class="code-comment">// Oops! We forgot to increase count!</span>
 }</code></pre>
         </div>
     </div>
 
-    <div class="warning">
-        <div class="warning-title">The Problem</div>
-        <code>count</code> starts at 0 and never changes. Since 0 is always
-        less than 5, the loop runs forever! The pig moves until it falls off
-        the edge of the world (or hits a wall, or we stop it).
-    </div>
-
-    <h2>The Fix</h2>
-
     <p>
-        Make sure something changes inside your loop that will eventually
-        make the condition false:
+        We forgot to increase <code>count</code> inside the loop! It stays zero forever,
+        so it will be less than five forever. In the case of Svinesti, this program
+        would actually stop when the pig steps on an empty tile or tries to leave the
+        level. But if it just stayed in the same position if it could not go
+        forwards, the program would run forever. Doing <code>count = count + 1</code>
+        inside the loops fixes the code.
     </p>
 
-    <div class="code-example">
-        <div class="code-tabs">
-            <button class="code-tab active" onclick="showTab(this, 'python2')">Python</button>
-            <button class="code-tab" onclick="showTab(this, 'java2')">Java</button>
-        </div>
-        <div id="python2" class="code-panel active">
-<pre><code><span class="code-comment"># Goal: move forward 5 times</span>
-count = 0
-while count < 5:
-    move()
-    count = count + 1  <span class="code-comment"># Now count increases!</span></code></pre>
-        </div>
-        <div id="java2" class="code-panel">
-<pre><code><span class="code-comment">// Goal: move forward 5 times</span>
-int count = 0;
-while (count < 5) {
-    move();
-    count = count + 1;  <span class="code-comment">// Now count increases!</span>
-}</code></pre>
-        </div>
-    </div>
-
-    <div class="tip">
-        <div class="tip-title">Now it works!</div>
-        <code>count</code> goes 0, 1, 2, 3, 4, 5. When it reaches 5, the
-        condition <code>count < 5</code> becomes false, and the loop stops.
-        The pig moves exactly 5 times. Victory!
-    </div>
-
-    <h2>Another Example: The Spinning Pig</h2>
-
     <p>
-        This one's sneaky. The pig just... spins. Forever. Like a very
-        committed breakdancer.
+        Here is one where that can actually occur in Svinesti, but that you would probably never write.
     </p>
 
-    <div class="code-example">
-        <div class="code-tabs">
-            <button class="code-tab active" onclick="showTab(this, 'python3')">Python</button>
-            <button class="code-tab" onclick="showTab(this, 'java3')">Java</button>
+    <div class="code-side-by-side">
+        <div class="code-column">
+            <div class="code-label">Python</div>
+<pre><code>while isRed():
+    turnLeft()</code></pre>
         </div>
-        <div id="python3" class="code-panel active">
-<pre><code><span class="code-comment"># Goal: turn until we're NOT on a red tile</span>
-while isRed():
-    turnLeft()
-<span class="code-comment"># But wait... turning doesn't change what tile we're on!</span>
-<span class="code-comment"># The pig just spins in place forever.</span></code></pre>
-        </div>
-        <div id="java3" class="code-panel">
-<pre><code><span class="code-comment">// Goal: turn until we're NOT on a red tile</span>
-while (isRed()) {
+        <div class="code-column">
+            <div class="code-label">Java</div>
+<pre><code>while (isRed()) {
     turnLeft();
-}
-<span class="code-comment">// But wait... turning doesn't change what tile we're on!</span>
-<span class="code-comment">// The pig just spins in place forever.</span></code></pre>
+}</code></pre>
         </div>
     </div>
 
-    <div class="warning">
-        <div class="warning-title">The Problem</div>
-        <code>turnLeft()</code> changes which way the pig is facing, but it
-        doesn't move the pig to a different tile. If the pig starts on a red
-        tile, it will <em>always</em> be on a red tile, no matter how much it
-        turns. Dizzy pig, infinite loop.
+    <p>
+        The pig spins forever if the current square is red.
+        The examples above are obviously wrong, but as your program grows bigger, they can be
+        easy to miss. Also, some infinite loops are more sneaky, like the next one.
+    </p>
+
+    <div class="code-side-by-side">
+        <div class="code-column">
+            <div class="code-label">Python</div>
+<pre><code><span class="code-comment"># Goal: stop when count is 0 or 5</span>
+count = 3
+while count != 0 or count != 5:
+    move()
+    count = count + 1</code></pre>
+        </div>
+        <div class="code-column">
+            <div class="code-label">Java</div>
+<pre><code><span class="code-comment">// Goal: stop when count is 0 or 5</span>
+int count = 3;
+while (count != 0 || count != 5) {
+    move();
+    count = count + 1;
+}</code></pre>
+        </div>
     </div>
 
-    <div class="tip">
-        <div class="tip-title">Tip</div>
-        Before writing a loop, ask yourself: <em>"What will make this loop stop?"</em>
-        If you can't answer that question, you might be about to write an
-        infinite loop. Your pig will thank you for thinking ahead.
+    <p>
+        Simple! "While count isn't zero or five, continue". Right? Right?! The computer takes
+        everything literally: if <em>either</em> count isn't zero, or count isn't
+        five, continue. If count is zero it can't be five, and vice versa, so one
+        of the two conditions will always be satisfied.
+        <strong>This condition literally can not be</strong> <code>false</code>. The correct condition is:
+    </p>
+
+    <div class="code-side-by-side">
+        <div class="code-column">
+            <div class="code-label">Python</div>
+<pre><code><span class="code-comment"># Goal: stop when count is 0 or 5</span>
+count = 3
+while count != 0 and count != 5:
+    move()
+    count = count + 1</code></pre>
+        </div>
+        <div class="code-column">
+            <div class="code-label">Java</div>
+<pre><code><span class="code-comment">// Goal: stop when count is 0 or 5</span>
+int count = 3;
+while (count != 0 &amp;&amp; count != 5) {
+    move();
+    count = count + 1;
+}</code></pre>
+        </div>
     </div>
 
-    <h2>Quick Checklist</h2>
+    <p>
+        This condition is false when count reaches five, because the "and"
+        needs both comparisons to be true at the same time.
+    </p>
 
-    <p>When your code times out, check these things:</p>
+    <p>So, when your code runs for too long, check these things:</p>
 
     <ol>
         <li>Does something <strong>change</strong> inside your <code>while</code> loop?</li>
         <li>Will that change <strong>eventually</strong> make the condition false?</li>
         <li>Are you trying to escape a color by turning? (Spoiler: that won't work)</li>
-        <li>Did you accidentally create a pig tornado?</li>
     </ol>
-
+	
+	<p>Happy coding!</p>
     <p style="margin-top: 2rem;">
         <a href="../">&larr; Back to Svinesti</a>
     </p>
 
-    <script>
-        function showTab(button, panelId) {
-            // Deactivate all tabs and panels in this example
-            const example = button.closest('.code-example');
-            example.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
-            example.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
-
-            // Activate clicked tab and its panel
-            button.classList.add('active');
-            document.getElementById(panelId).classList.add('active');
-        }
-    </script>
 </body>
 </html>
