@@ -101,7 +101,6 @@ for (let lvl of levels) {
 // Initialize game module
 Game.init({
     shortcutsContainer: ui.shortcutsContainer,
-    onWorkerReady: showHelp,
 });
 
 // Build level list

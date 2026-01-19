@@ -336,7 +336,11 @@ function execute(code) {
             level: JSON.stringify(state.level)
         });
         // Restart worker if hung (e.g., infinite loop)
-        state.workerTimeout = setTimeout(initWorker, WORKER_TIMEOUT_MS);
+        state.workerTimeout = setTimeout(() => {
+            ui.codeOutput.textContent = "Code took too long — stopped. (Infinite loop?)";
+            resolveExecution(null);
+            initWorker();
+        }, WORKER_TIMEOUT_MS);
     });
 }
 
