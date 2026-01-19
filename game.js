@@ -18,6 +18,7 @@ const state = {
 
     // Worker
     worker: null,
+    workerReady: false,
     workerTimeout: null,
     pendingResolve: null,
 };
@@ -311,14 +312,22 @@ function hideSplashScreen() {
     }, FADE_DURATION_MS);
 }
 
+function setWorkerReady(ready) {
+    state.workerReady = ready;
+    ui.btn1.disabled = !ready;
+    ui.btn2.disabled = !ready;
+}
+
 function initWorker() {
     enterIdle();
     if (state.worker) state.worker.terminate();
+    setWorkerReady(false);
 
     state.worker = new Worker("worker.js");
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
             case "ready":
+                setWorkerReady(true);
                 setTimeout(hideSplashScreen, SPLASH_DELAY_MS);
                 break;
             case "execution-trace":
