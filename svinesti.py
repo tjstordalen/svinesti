@@ -1,66 +1,51 @@
 import sys
 import json
-import js
 
-# Brief summary
-# Robuzzle is a small program designed to teach people who have never programmed
-# before the basics of programming. The student controls a  robot on a grid consisting
-# of colored squares. Some squares have stars on them. The goal is to write a program 
-# that walks the robot over each of the stars, collecting them. We provide the functions 
-# move, turnLeft, turnRight, isRed, isGreen, isBlue, and the student writes a simple
-# program using these functions to collect the stars. (turnLeft/Right turns 90 degrees)
+# Svinesti is an educational programming game where students control a pig on a
+# grid of colored squares. Some squares have stars. The goal is to write code
+# that walks the pig over all stars to collect them. Students use move(),
+# turnLeft(), turnRight(), isRed(), isGreen(), isBlue(). (turns are 90 degrees)
 #
-# The below JSON object describes the input format for the levels
+# Level format:
 # {
 #     "grid": [
-#         "....rgbB",       r,g,b means red, green, blue tiles
-#         ".....bb.",       R,G,B additionally have a star on them
-#         "....bb..",       . (dot) is an "empty" tile.
-#         "...bb...",       Stepping on an empty tile or leaving the
-#         "..bb....",       grid loses the game.
-#         ".bb.....",       Collecting all the stars wins the game.
+#         "....rgbB",       r,g,b = red, green, blue tiles
+#         ".....bb.",       R,G,B = tiles with a star on them
+#         "....bb..",       . (dot) = empty tile
+#         "...bb...",       Stepping on empty or leaving grid = lose
+#         "..bb....",       Collecting all stars = win
+#         ".bb.....",
 #         "bb......"
 #     ],
-#     "start": [6,0], starting position [row,col] for robot
-#     "dir": 0        the direction the bot is facing, 0,1,2,3 = right,down,left,up
+#     "start": [6,0],       starting [row, col]
+#     "dir": "right"        "right", "down", "left", or "up"
 # }
-# 
-# The game ends immediately on a loss or a win. The student does not have to write
-# code to exit an infinite loop, for instance, we take care of that ourselves.
-# The program works with arbitrary characters as colors, as long as the dot remains
-# an empty tile. The program writes a trace of everything relevant that happens and 
-# returns it to pyodide when it finishes executing.
+#
+# The game ends immediately on win or loss. Students don't need to handle
+# termination — we raise GracefulExit to interrupt their code cleanly.
+# The engine traces all events and returns them to JS for animated playback.
 
 
 class GracefulExit(Exception):
-    """ We do not require that the student's program quits when the game is over.
-    However, our code is passively being called by the submitted code. Therefore
-    when we detect that the game is over, we raise an exception to interrupt the
-    subitted code, catch that exception, and then exit 'gracefully'.... """
+    """Raised to interrupt student code when game ends (win or loss)."""
     pass
 
-# Direction names for external representation (levels and trace messages)
+
+# Direction constants
 DIR_NAMES = ["right", "down", "left", "up"]
+DIR_VECTORS = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # right, down, left, up
+TURN_LEFT = -1
+TURN_RIGHT = 1
+MAX_OPS = 10000  # prevent infinite loops
 
-class State():
-    # We assume the input has been checked and is valid
-    def __init__(self, level): 
 
-
+class State:
+    def __init__(self, level):
+        self.grid = [list(row) for row in level["grid"]]
+        self.pos = tuple(level["start"])
+        self.dir = DIR_NAMES.index(level["dir"])
         self.messages = []
-        # make each entry in the dict into a class member for convenience
-        for key,value in level.items():
-            setattr(self, key, value)
-
-        # Convert string direction to integer for internal use
-        self.dir = DIR_NAMES.index(self.dir)
-
-        self.grid = [list(s) for s in self.grid]
-        self.dirs = [(0,1),(1,0),(0,-1),(-1,0)]
-        self.pos  = tuple(self.start)  # current position, initialized from start
-        self.LEFT = -1
-        self.RIGHT = 1
-        self.nOps = 0 
+        self.op_count = 0
 
     def trace(self, msg):
         # Line tracing emits lineExecuted BEFORE the line runs, so the trace looks like:
@@ -81,110 +66,105 @@ class State():
             self.messages.append(msg)
             return
 
-        prev = self.messages[-1];
+        prev = self.messages[-1]
         if prev["type"] == "lineExecuted":
             self.messages.pop()
 
-        msg["lineno"] = prev["lineno"];
+        msg["lineno"] = prev["lineno"]
         self.messages.append(msg)
 
     def __getitem__(self, key):
-        r,c = key
-        out_of_bounds =  r < 0 or c < 0 or r >= len(self.grid) or c >= len(self.grid[0])
+        r, c = key
+        out_of_bounds = r < 0 or c < 0 or r >= len(self.grid) or c >= len(self.grid[0])
         return '.' if out_of_bounds else self.grid[r][c]
 
     def __setitem__(self, key, value):
-        r,c = key
+        r, c = key
         self.grid[r][c] = value
-    
+
     def count_op(self):
-        self.nOps += 1
-        if (self.nOps > 10000):
+        self.op_count += 1
+        if self.op_count > MAX_OPS:
             raise GracefulExit
 
-def move_aux(s):
-    s.count_op()
-    dr,dc = s.dirs[s.dir]
-    r,c = s.pos
-    s.pos = (r+dr, c+dc)
-    s.trace({"type": "move", "pos": s.pos, "dir": DIR_NAMES[s.dir]})
 
-    ch = s[s.pos]
-    if ch.isupper():
-        s[s.pos] = ch.lower()
-        s.trace({"type": "collected", "pos": s.pos, "dir": DIR_NAMES[s.dir]})
-        if not any(c.isupper() for lists in s.grid for c in lists):
-            s.game_won = True
-            s.trace({"type": "gameover", "win": True})
-            # Pyodide throws an exception on sys exit, so we throw an
-            # exception ourselves and catch it to exit "gracefully"
-            raise GracefulExit 
-    elif ch == '.':
-        s.trace({"type": "gameover", "win": False})
+def _has_stars_remaining(state):
+    return any(ch.isupper() for row in state.grid for ch in row)
+
+
+def _do_move(state):
+    state.count_op()
+    dr, dc = DIR_VECTORS[state.dir]
+    r, c = state.pos
+    state.pos = (r + dr, c + dc)
+    state.trace({"type": "move", "pos": state.pos, "dir": DIR_NAMES[state.dir]})
+
+    tile = state[state.pos]
+    if tile.isupper():
+        state[state.pos] = tile.lower()
+        state.trace({"type": "collected", "pos": state.pos, "dir": DIR_NAMES[state.dir]})
+        if not _has_stars_remaining(state):
+            state.trace({"type": "gameover", "win": True})
+            raise GracefulExit
+    elif tile == '.':
+        state.trace({"type": "gameover", "win": False})
         raise GracefulExit
 
-def turn_aux(s,direction):
-    s.count_op()
-    s.dir += direction
-    s.dir %= len(s.dirs)
-    s.trace({"type": "turn", "dir": DIR_NAMES[s.dir]})
 
-def is_color_aux(s, c):
-    s.count_op()
-    result = s[s.pos].lower() == c[0].lower()
-    s.trace({"type": "isColor", "color": c, "result": result});
+def _do_turn(state, direction):
+    state.count_op()
+    state.dir = (state.dir + direction) % len(DIR_VECTORS)
+    state.trace({"type": "turn", "dir": DIR_NAMES[state.dir]})
+
+
+def _do_is_color(state, color):
+    state.count_op()
+    result = state[state.pos].lower() == color[0].lower()
+    state.trace({"type": "isColor", "color": color, "result": result})
     return result
 
-# In the following functions, we refer to 'state'. When we call the user code,
-# we will do state = State(level) so these functions work correctly
+
+# Public API — these reference the global `state` set by the injected code
 def move():
-    move_aux(state)
+    _do_move(state)
 
 def turnRight():
-    turn_aux(state, state.RIGHT)
+    _do_turn(state, TURN_RIGHT)
 
 def turnLeft():
-    turn_aux(state, state.LEFT)
+    _do_turn(state, TURN_LEFT)
 
 def isRed():
-    return is_color_aux(state, "red")
+    return _do_is_color(state, "red")
 
 def isGreen():
-    return is_color_aux(state, "green")
+    return _do_is_color(state, "green")
 
 def isBlue():
-    return is_color_aux(state, "blue")
+    return _do_is_color(state, "blue")
 
 
-def traceLineToExecute(lineno):
-    state.trace({"type": "lineExecuted", "lineno": lineno})
-
-
-# line of python code that executes.
 def line_tracer(frame, event, arg):
-    # From pydocs: "co_name: name with which this code object was defined".  As far
-    # as I can tell, if the thing being executed is inside a function, 'co_name'
-    # is the function name. Otherwise, the thing being executed is a statement in the 
-    # 'global' (i.e., module)  scope, in which case it gets the module name.
-    current_function_or_module = frame.f_code.co_name 
+    """
+    Python trace function that records which lines of student code execute.
+    Only traces lines inside submitted_code(), converting global line numbers
+    to student-relative line numbers (line 1 = first line of their code).
+    """
+    if event == "line" and frame.f_code.co_name == "submitted_code":
+        global_line = frame.f_lineno
+        function_start = frame.f_code.co_firstlineno
+        user_line = global_line - function_start
 
-    # a line is being executed
-    if event == "line":
-        # name of the function we wrap the submitted code in
-        if current_function_or_module == "submitted_code":
-            current_global_line      = frame.f_lineno
-            first_line_of_function   = frame.f_code.co_firstlineno
-            user_line_being_executed = current_global_line - first_line_of_function
-            
-            # get the mapped line if it exists
-            new_line = globals().get("lineMapping", {}).get(user_line_being_executed, None)
-            if new_line != None:
-                user_line_being_executed = new_line
+        # lineMapping is set by PigJatin transpiler to map generated lines
+        # back to original source lines so that we highlight the correct
+        # lines when tracing the execution
+        mapped = globals().get("lineMapping", {}).get(user_line, None)
+        if mapped is not None:
+            user_line = mapped
 
+        state.trace({"type": "lineExecuted", "lineno": user_line})
 
-            state.trace({"type": "lineExecuted", "lineno": user_line_being_executed})
-   
-   # The trace function needs to return the next trace function to use
     return line_tracer
+
 
 sys.settrace(line_tracer)

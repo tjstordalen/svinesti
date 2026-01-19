@@ -6,17 +6,27 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.js");
 let pyodide = null;
 
 async function init() {
+	console.time("[worker] loadPyodide");
 	pyodide = await loadPyodide();
-	pyodide.setStdout({ batched: (text) => console.log(text) });
+	console.timeEnd("[worker] loadPyodide");
+
+	pyodide.setStdout({ batched: (text) => console.log("[py stdout]", text) });
+	pyodide.setStderr({ batched: (text) => console.error("[py stderr]", text) });
 
 	// no-store: avoid stale code during development
+	console.time("[worker] fetch svinesti.py");
 	const response = await fetch("./svinesti.py", { cache: 'no-store' });
 	if (!response.ok) {
 		throw new Error(`Failed to fetch svinesti.py: ${response.status}`);
 	}
 	const engineCode = await response.text();
-	await pyodide.runPython(engineCode);  // defines State, move(), turnLeft(), etc.
+	console.timeEnd("[worker] fetch svinesti.py");
 
+	console.time("[worker] run svinesti.py");
+	await pyodide.runPython(engineCode);
+	console.timeEnd("[worker] run svinesti.py");
+
+	console.log("[worker] ready");
 	self.postMessage({ type: 'ready' });
 	self.onmessage = handleMessage;
 }
@@ -34,6 +44,7 @@ async function handleMessage(event) {
 			trace: result.toJs({ dict_converter: Object.fromEntries })
 		});
 	} catch (e) {
+		console.error("[worker] Execution failed:", e);
 		self.postMessage({ type: "execution-failed", errorMessage: e.message });
 	} finally {
 		if (isolatedNamespace) {
@@ -44,9 +55,10 @@ async function handleMessage(event) {
 
 function injectUserCode(levelJSON, userCode) {
 	// we are injecting their code into a function, so we have to indent
+	// We're also being generous and replacing tabs with spaces 
 	const indentedUserCode = userCode
 		.split("\n")
-		.map(line => "    " + line.replace(/\t/g, "    "))
+		.map(line => "    " + line.replace(/\t/g, "    ")) 
 		.join("\n");               
 
 	return [
