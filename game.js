@@ -385,24 +385,44 @@ function attachEventHandlers() {
 
 // --- Shortcuts (internal) ---
 
+const unlessFocused = (fn) => () => {
+    if (ui.editor.hasFocus()) return;
+    fn();
+};
+
 function registerShortcuts() {
-    shortcuts.register("play-pause", "Play / Pause", () => ui.btn1.click(), "h", { ctrlNote: true });
-    shortcuts.register("step", "Step", () => ui.btn2.click(), "j", { ctrlNote: true });
-    shortcuts.register("reset", "Reset", () => ui.btn3.click(), "k");
-    shortcuts.register("focus-editor", "Focus editor", () => {
-        if (ui.editor.hasFocus()) return;
-        if (ui.editor.getOption("readOnly") && state.status === "playing") {
-            enterPaused();
-            animations.notify(ui.gameNotification, "Paused to edit code");
-        }
-        ui.editor.focus();
-        ui.editor.setCursor(ui.editor.getCursor());
-    }, "i");
-    shortcuts.register("unfocus-editor", "Unfocus editor", () => {
-        if (ui.editor.hasFocus()) {
-            ui.editor.getInputField().blur();
-        }
-    }, "escape");
+    shortcuts.register({
+        id:     "play-pause",
+        name:   "Play / Pause",
+        action: unlessFocused(() => ui.btn1.click()),
+        key:    "h",
+    });
+    shortcuts.register({
+        id:     "step",
+        name:   "Step",
+        action: unlessFocused(() => ui.btn2.click()),
+        key:    "j",
+    });
+    shortcuts.register({
+        id:     "reset",
+        name:   "Reset",
+        action: unlessFocused(() => ui.btn3.click()),
+        key:    "k",
+    });
+    shortcuts.register({
+        id:         "run-code",
+        name:       "Run code",
+        action:     () => { ui.editor.getInputField().blur(); submitAndEnter(enterPaused); },
+        key:        "ctrl+enter",
+        rebindable: false,
+    });
+    shortcuts.register({
+        id:         "help",
+        name:       "Help",
+        action:     () => ui.helpButton.click(),
+        key:        "?",
+        rebindable: false,
+    });
 }
 
 // --- Public API ---

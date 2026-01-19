@@ -12,35 +12,23 @@ export function createShortcuts(storageKey) {
 
     /**
      * Register a shortcut with an action and default hotkey
-     * @param {string} id - Unique identifier for this shortcut (e.g., "focus-editor")
-     * @param {string} name - Human-readable name for display (e.g., "Focus editor")
-     * @param {Function} action - The function to call
-     * @param {string} defaultKey - Default hotkey (e.g., "ctrl+enter", "?", "h")
-     * @param {Object} options - Optional settings (e.g., { ctrlNote: true })
+     * @param {Object} opts
+     * @param {string} opts.id - Unique identifier for this shortcut
+     * @param {string} opts.name - Human-readable name for display
+     * @param {Function} opts.action - The function to call
+     * @param {string} opts.key - Default hotkey (e.g., "ctrl+enter", "?", "h")
+     * @param {boolean} opts.rebindable - Whether the shortcut can be rebound (default: true)
      */
-    function register(id, name, action, defaultKey, options = {}) {
+    function register({ id, name, action, key, rebindable = true }) {
         shortcuts.push({
             id,
             name,
             action,
-            defaultKey,
-            key: defaultKey,
+            defaultKey: key,
+            key,
             enabled: true,
-            ctrlNote: options.ctrlNote || false,
+            rebindable,
         });
-
-        // Auto-register Ctrl+ version for single-character keys with ctrlNote
-        if (options.ctrlNote && defaultKey.length === 1) {
-            shortcuts.push({
-                id: id + '-ctrl',
-                name,
-                action,
-                defaultKey: 'ctrl+' + defaultKey,
-                key: 'ctrl+' + defaultKey,
-                enabled: true,
-                hidden: true,  // Don't show in UI
-            });
-        }
     }
 
     /**
@@ -125,10 +113,27 @@ export function createShortcuts(storageKey) {
     }
 
     /**
+     * Reset all shortcuts to their default keys
+     */
+    function resetToDefaults() {
+        for (const shortcut of shortcuts) {
+            shortcut.key = shortcut.defaultKey;
+            shortcut.enabled = true;
+            if (shortcut.keySpan) {
+                shortcut.keySpan.innerHTML = formatKeyDisplay(shortcut.key);
+            }
+            if (shortcut.li) {
+                shortcut.li.classList.remove('disabled');
+            }
+        }
+        saveSettings();
+    }
+
+    /**
      * Render the shortcuts UI
      */
     function renderUI(container) {
-        // Master toggle
+        // Master toggle row
         const masterToggle = document.createElement('div');
         masterToggle.className = 'shortcuts-master-toggle';
         masterToggle.innerHTML = `
@@ -137,9 +142,23 @@ export function createShortcuts(storageKey) {
                 <span class="toggle-slider"></span>
             </label>
             <span>Enable shortcuts</span>
-            <span class="hint">or click individual shortcuts below</span>
+            <span class="hint">Click to toggle, click key to change</span>
+            <button class="shortcuts-reset" title="Reset to defaults">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
+                </svg>
+            </button>
         `;
         container.appendChild(masterToggle);
+
+        // Reset button handler
+        const resetButton = masterToggle.querySelector('.shortcuts-reset');
+        resetButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetToDefaults();
+            masterToggle.querySelector('input').checked = true;
+        });
 
         const masterCheckbox = masterToggle.querySelector('input');
         masterCheckbox.checked = shortcuts.some(s => s.enabled);
@@ -159,6 +178,17 @@ export function createShortcuts(storageKey) {
             const li = document.createElement('li');
             if (!shortcut.enabled) li.classList.add('disabled');
 
+            // Add lock icon for non-rebindable shortcuts
+            let lockIcon = null;
+            if (!shortcut.rebindable) {
+                lockIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                lockIcon.setAttribute('viewBox', '0 0 16 16');
+                lockIcon.setAttribute('fill', 'currentColor');
+                lockIcon.className.baseVal = 'shortcut-lock';
+                lockIcon.innerHTML = '<path d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4m0 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>';
+                li.appendChild(lockIcon);
+            }
+
             const keySpan = document.createElement('span');
             keySpan.className = 'shortcut-key';
             keySpan.innerHTML = formatKeyDisplay(shortcut.key);
@@ -170,17 +200,6 @@ export function createShortcuts(storageKey) {
             const nameSpan = document.createElement('span');
             nameSpan.textContent = ` - ${shortcut.name}`;
 
-            // Add note for shortcuts that work with Ctrl from editor
-            let noteSpan = null;
-            if (shortcut.ctrlNote) {
-                noteSpan = document.createElement('span');
-                noteSpan.className = 'hint';
-                if (shortcut.key.length === 1) {
-                    noteSpan.innerHTML = ` (<kbd>Ctrl</kbd> + <kbd>${shortcut.key.toUpperCase()}</kbd> from editor)`;
-                }
-                nameSpan.appendChild(noteSpan);
-            }
-
             // Click li to toggle enabled/disabled
             li.addEventListener('click', () => {
                 shortcut.enabled = !shortcut.enabled;
@@ -191,7 +210,7 @@ export function createShortcuts(storageKey) {
 
             // Store references for updating later
             shortcut.keySpan = keySpan;
-            shortcut.noteSpan = noteSpan;
+            shortcut.lockIcon = lockIcon;
             shortcut.li = li;
 
             li.appendChild(keySpan);
@@ -218,6 +237,13 @@ export function createShortcuts(storageKey) {
      * Enter rebinding mode for a shortcut
      */
     function startRebinding(shortcut, keySpan) {
+        // Non-rebindable shortcuts show shake animation on lock icon
+        if (!shortcut.rebindable && shortcut.lockIcon) {
+            shortcut.lockIcon.classList.add('shake');
+            setTimeout(() => shortcut.lockIcon.classList.remove('shake'), 300);
+            return;
+        }
+
         // Cancel any existing rebinding
         if (rebindingShortcut) {
             rebindingShortcut.keySpan.innerHTML = formatKeyDisplay(rebindingShortcut.key);
@@ -244,17 +270,6 @@ export function createShortcuts(storageKey) {
             const newKey = getKeyString(event);
             rebindingShortcut.key = newKey;
             rebindingShortcut.keySpan.innerHTML = formatKeyDisplay(newKey);
-
-            // Update ctrlNote hint based on new key
-            if (rebindingShortcut.noteSpan) {
-                const isLetter = /^[a-z]$/i.test(newKey);
-                if (isLetter) {
-                    rebindingShortcut.noteSpan.innerHTML = ` (<kbd>Ctrl</kbd> + <kbd>${newKey.toUpperCase()}</kbd> from editor)`;
-                } else {
-                    rebindingShortcut.noteSpan.innerHTML = '';
-                }
-            }
-
             saveSettings();
             rebindingShortcut = null;
             return;
@@ -265,7 +280,6 @@ export function createShortcuts(storageKey) {
         for (const shortcut of shortcuts) {
             if (!shortcut.enabled) continue;
             if (shortcut.key === pressedKey) {
-                event.preventDefault();
                 shortcut.action();
                 return;
             }

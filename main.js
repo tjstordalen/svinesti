@@ -168,10 +168,10 @@ ui.modeEdit.onclick = () => {
     Editor.enter();
 };
 
-// Global shortcuts (work in both modes)
+// Global shortcuts (editor mode only - game mode uses shortcuts.js)
 document.addEventListener('keydown', (e) => {
-    // Help toggle - only when not typing in editor
-    if (e.key === '?' && !ui.editor.hasFocus()) {
+    // Help toggle - only in editor mode when not typing
+    if (e.key === '?' && document.body.classList.contains('editor-mode') && !ui.editor.hasFocus()) {
         e.preventDefault();
         toggleHelp();
     }
