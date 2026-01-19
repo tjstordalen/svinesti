@@ -1,16 +1,33 @@
-// --- Animation constants ---
+// animations.js - All game animations using Web Animations API
+//
+// How Web Animations API works:
+//   element.animate(keyframes, options) starts an animation and returns an Animation object.
+//   - keyframes: array of style snapshots, browser interpolates between them
+//   - options: { duration, easing, iterations, fill, delay }
+//   - fill: 'forwards' keeps final state, 'none' (default) reverts to original
+//   - The Animation object has .finished (Promise) and .cancel() method
+//
+// Pattern in this file:
+//   - KEYFRAMES object holds reusable keyframe arrays
+//   - Animation functions call element.animate() with appropriate keyframes/options
+//   - Async functions await animation.finished to sequence multi-part animations
+//   - handleAbortException wraps async functions to catch cancellation gracefully
 
-const MOVE_MULTIPLIER = 2;
-const TURN_MULTIPLIER = 1.5;
-const HUD_MULTIPLIER = 3;
-const WALK_CYCLES = 2;
+// --- Timing multipliers (relative to base animSpeed from UI slider) ---
 
-// Sprite URL helper
+const MOVE_MULTIPLIER = 2;    // movement takes 2x base speed
+const TURN_MULTIPLIER = 1.5;  // turn takes 1.5x base speed
+const HUD_MULTIPLIER = 3;     // HUD flash takes 3x base speed
+const WALK_CYCLES = 2;        // number of walk sprite cycles during movement
+
+// --- Sprite helpers ---
+
+/** Returns CSS url() for a pig sprite image */
 export function pigSpriteUrl(dir, num = 1) {
     return `url("pigs/${dir}-${num}.png")`;
 }
 
-// Generate walk keyframes for a direction
+/** Generates walk keyframes: cycles through 3 sprite frames (1→2→3→2→1) */
 function makeWalkKeyframes(dir) {
     return [
         { backgroundImage: pigSpriteUrl(dir, 1) },
@@ -21,7 +38,7 @@ function makeWalkKeyframes(dir) {
     ];
 }
 
-// Generate confetti fall keyframes with drift and rotation
+/** Generates confetti fall keyframes with given drift and rotation (randomized by caller) */
 function makeConfettiKeyframes(drift, rotation) {
     return [
         { opacity: 1, transform: 'translateY(-20px) translateX(0) rotate(0deg)' },
@@ -29,39 +46,54 @@ function makeConfettiKeyframes(drift, rotation) {
     ];
 }
 
-// Keyframe definitions for Web Animations API
+// --- Keyframe definitions ---
+
 const KEYFRAMES = {
+    // WALK: sprite animation for pig's legs moving while walking
+    // Each direction has its own set of 3 sprites
     WALK: {
         right: makeWalkKeyframes("right"),
         down: makeWalkKeyframes("down"),
         left: makeWalkKeyframes("left"),
         up: makeWalkKeyframes("up"),
     },
+
+    // HOP_UP: first phase of turn animation
+    // Pig squishes horizontally and hops up slightly
     HOP_UP: [
         { transform: 'translateY(0) scale(0.97, 1.03)', offset: 0 },
         { transform: 'translateY(-3%) scale(1.01, 0.99)', offset: 1 }
     ],
+
+    // HOP_DOWN: second phase of turn animation
+    // Pig lands with a slight squash, then returns to normal
     HOP_DOWN: [
         { transform: 'translateY(-3%) scale(1.01, 0.99)', offset: 0 },
-        { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.25 },
-        { transform: 'translateY(0) scale(1, 1)', offset: 0.30 },
+        { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.25 },  // squash on land
+        { transform: 'translateY(0) scale(1, 1)', offset: 0.30 },        // settle
         { transform: 'translateY(0) scale(1, 1)', offset: 1 }
     ],
+
+    // HUD_FLASH: color comparison popup fades in, holds, fades out
     HUD_FLASH: [
         { opacity: 0, offset: 0 },
-        { opacity: 1, offset: 0.15 },
-        { opacity: 1, offset: 0.85 },
-        { opacity: 0, offset: 1 }
+        { opacity: 1, offset: 0.15 },   // quick fade in
+        { opacity: 1, offset: 0.85 },   // hold visible
+        { opacity: 0, offset: 1 }       // fade out
     ],
+
+    // CELEBRATE: victory bounce - pig jumps with decreasing height
     CELEBRATE: [
         { transform: 'translateY(0) scale(1, 1)', offset: 0 },
-        { transform: 'translateY(-40px) scale(1.05, 0.95)', offset: 0.25 },
-        { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.4 },
-        { transform: 'translateY(-30px) scale(1.03, 0.97)', offset: 0.6 },
-        { transform: 'translateY(0) scale(0.97, 1.03)', offset: 0.75 },
-        { transform: 'translateY(-15px) scale(1.02, 0.98)', offset: 0.9 },
-        { transform: 'translateY(0) scale(1, 1)', offset: 1 },
+        { transform: 'translateY(-40px) scale(1.05, 0.95)', offset: 0.25 },  // big jump
+        { transform: 'translateY(0) scale(0.95, 1.05)', offset: 0.4 },       // land squash
+        { transform: 'translateY(-30px) scale(1.03, 0.97)', offset: 0.6 },   // medium jump
+        { transform: 'translateY(0) scale(0.97, 1.03)', offset: 0.75 },      // land
+        { transform: 'translateY(-15px) scale(1.02, 0.98)', offset: 0.9 },   // small jump
+        { transform: 'translateY(0) scale(1, 1)', offset: 1 },               // settle
     ],
+
+    // SHAKE: loss animation for grid - rapid back-and-forth movement
     SHAKE: [
         { transform: 'translate(0, 0)', offset: 0 },
         { transform: 'translate(-8px, 4px)', offset: 0.1 },
@@ -75,18 +107,50 @@ const KEYFRAMES = {
         { transform: 'translate(-4px, 2px)', offset: 0.9 },
         { transform: 'translate(0, 0)', offset: 1 },
     ],
+
+    // NOTIFICATION: toast message fades in quickly, holds, fades out
     NOTIFICATION: [
         { opacity: 0, offset: 0 },
-        { opacity: 1, offset: 0.05 },
-        { opacity: 1, offset: 0.95 },
-        { opacity: 0, offset: 1 },
+        { opacity: 1, offset: 0.05 },   // very quick fade in
+        { opacity: 1, offset: 0.95 },   // hold
+        { opacity: 0, offset: 1 },      // fade out
+    ],
+
+    // TIMEOUT_GRID: worker timeout (student code ran too long, likely infinite loop)
+    // Grid wobbles with pulsing red glow
+    TIMEOUT_GRID: [
+        { transform: 'rotate(0deg)', boxShadow: '0 0 40px rgba(255, 80, 80, 0.8)' },
+        { transform: 'rotate(2deg)', boxShadow: '0 0 60px rgba(255, 80, 80, 0.8)' },
+        { transform: 'rotate(-2deg)', boxShadow: '0 0 60px rgba(255, 80, 80, 0.8)' },
+        { transform: 'rotate(0deg)', boxShadow: '0 0 40px rgba(255, 80, 80, 0.8)' }
+    ],
+
+    // TIMEOUT_PIG: worker timeout - pig ragdolls around in cell
+    // Offset upward since pig sprite sits lower in cell than center
+    TIMEOUT_PIG: [
+        { transform: 'translate(-15%, -20%) rotate(-20deg)' },
+        { transform: 'translate(15%, -15%) rotate(25deg)' },
+        { transform: 'translate(10%, 5%) rotate(-15deg)' },
+        { transform: 'translate(-10%, 0%) rotate(20deg)' },
+        { transform: 'translate(0, -5%) rotate(0deg)' }
     ],
 };
 
 // --- Abort handling ---
 
+// Sentinel value returned when animation is cancelled
 const ABORT = "abort";
 
+/**
+ * Wraps an async animation function to catch AbortError gracefully.
+ *
+ * When the user clicks pause or reset, we call animation.cancel() to stop
+ * any running animations immediately. This causes the browser to reject
+ * the animation.finished promise with an AbortError.
+ *
+ * This wrapper catches that error and returns ABORT instead of throwing,
+ * so callers can check for ABORT and exit the playback loop cleanly.
+ */
 function handleAbortException(fn) {
     return async (...args) => {
         try {
@@ -98,14 +162,19 @@ function handleAbortException(fn) {
     };
 }
 
+// --- Helper to get pig's current direction from its CSS class ---
+
+function getDirection(pig) {
+    for (const dir of ['right', 'down', 'left', 'up']) {
+        if (pig.classList.contains('pig-' + dir)) return dir;
+    }
+}
+
 // --- Animation functions ---
 
 /**
- * Plays the walk sprite animation (legs moving)
- * @param {HTMLElement} pig - The pig element
- * @param {string} direction - Direction of movement
- * @param {number} animSpeed - Base animation speed in ms
- * @returns {Animation} - The animation object
+ * Walk sprite animation - pig's legs move while walking.
+ * Runs concurrently with move() - doesn't await, just starts and returns.
  */
 function walk(pig, direction, animSpeed) {
     const walkDuration = animSpeed * MOVE_MULTIPLIER / WALK_CYCLES;
@@ -116,12 +185,9 @@ function walk(pig, direction, animSpeed) {
 }
 
 /**
- * Plays the movement animation (translation across grid)
- * @param {HTMLElement} pig - The pig element
- * @param {number} dx - Horizontal distance in pixels
- * @param {number} dy - Vertical distance in pixels
- * @param {number} animSpeed - Base animation speed in ms
- * @returns {Promise<void>}
+ * Movement animation - pig slides from one cell to another.
+ * Uses fill:'forwards' to hold position, then cancel() to reset
+ * (caller moves pig to new cell in DOM after animation).
  */
 async function moveThrowsAbort(pig, dx, dy, animSpeed) {
     const anim = pig.animate([
@@ -134,18 +200,15 @@ async function moveThrowsAbort(pig, dx, dy, animSpeed) {
     });
 
     await anim.finished;
-    anim.cancel(); // Clear the animation so translate resets
+    anim.cancel();  // reset translate so DOM position takes over
 }
 
 /**
- * Plays the turn animation (hop up, swap sprite, hop down)
- * @param {HTMLElement} pig - The pig element
- * @param {string} direction - The new direction to face
- * @param {number} animSpeed - Base animation speed in ms
- * @returns {Promise<void>}
+ * Turn animation - pig hops up, swaps sprite at peak, lands with squash.
+ * Two-phase animation with sprite swap in between.
  */
 async function turnThrowsAbort(pig, direction, animSpeed) {
-    // Phase 1: hop up
+    // Phase 1: hop up with slight horizontal squish
     const hopUp = pig.animate(KEYFRAMES.HOP_UP, {
         duration: animSpeed * TURN_MULTIPLIER * 0.33,
         easing: 'ease-out',
@@ -153,11 +216,11 @@ async function turnThrowsAbort(pig, direction, animSpeed) {
     });
     await hopUp.finished;
 
-    // Swap sprite at peak
+    // Swap sprite at peak of hop
     pig.style.backgroundImage = pigSpriteUrl(direction);
     pig.className = 'pig pig-' + direction;
 
-    // Phase 2: hop down
+    // Phase 2: land with squash effect
     const hopDown = pig.animate(KEYFRAMES.HOP_DOWN, {
         duration: animSpeed * TURN_MULTIPLIER * 0.66,
         easing: 'ease-in',
@@ -165,15 +228,12 @@ async function turnThrowsAbort(pig, direction, animSpeed) {
     });
     await hopDown.finished;
 
-    // Reset transform
-    pig.style.transform = '';
+    pig.style.transform = '';  // reset any lingering transform
 }
 
 /**
- * Plays the HUD flash animation for color comparison
- * @param {HTMLElement} hud - The color comparison HUD element
- * @param {number} animSpeed - Base animation speed in ms
- * @returns {Promise<void>}
+ * HUD flash - shows color comparison result (isRed/isGreen/isBlue).
+ * Popup fades in, holds to show result, fades out.
  */
 async function hudFlashThrowsAbort(hud, animSpeed) {
     const anim = hud.animate(KEYFRAMES.HUD_FLASH, {
@@ -184,8 +244,7 @@ async function hudFlashThrowsAbort(hud, animSpeed) {
 }
 
 /**
- * Plays the celebrate animation on win
- * @param {HTMLElement} pig - The pig element
+ * Victory celebration - pig bounces with decreasing height + confetti.
  */
 function celebrate(pig) {
     confetti(document.getElementById('confetti-container'));
@@ -195,6 +254,7 @@ function celebrate(pig) {
     });
 }
 
+// Parameters for pig falling over on loss (direction-dependent)
 const DIE_PARAMS = {
     right: { rotation: 180, dx: '0', dy: '-50%' },
     left:  { rotation: 180, dx: '0', dy: '-50%' },
@@ -202,16 +262,9 @@ const DIE_PARAMS = {
     down:  { rotation: 90, dx: '30%', dy: '0' },
 };
 
-function getDirection(pig) {
-    for (const dir of ['right', 'down', 'left', 'up']) {
-        if (pig.classList.contains('pig-' + dir)) return dir;
-    }
-}
-
 /**
- * Plays the loss animation (shake grid + pig falls over)
- * @param {HTMLElement} pig - The pig element
- * @param {HTMLElement} gridWrapper - The grid wrapper element (optional)
+ * Loss animation - grid shakes, pig falls over.
+ * Pig rotates and translates based on facing direction.
  */
 function lose(pig, gridWrapper) {
     if (gridWrapper) {
@@ -222,33 +275,44 @@ function lose(pig, gridWrapper) {
     }
 
     const { rotation, dx, dy } = DIE_PARAMS[getDirection(pig)];
-
     pig.animate([
         { transform: 'rotate(0deg) translateX(0) translateY(0)' },
         { transform: `rotate(${rotation}deg) translateX(${dx}) translateY(${dy})` }
     ], {
         duration: 600,
         easing: 'ease-out',
-        fill: 'forwards'
+        fill: 'forwards'  // stay fallen
     });
 }
 
-// Notification colors
-const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';
-const NOTIFY_COLOR_ERROR = 'rgba(180, 80, 80, 0.95)';
+/**
+ * Timeout animation - played when worker times out.
+ * This happens when student code runs longer than 1 second (likely an infinite loop).
+ * Grid wobbles with pulsing red glow, pig ragdolls around in cell.
+ */
+function timeout(gridWrapper, pig) {
+    gridWrapper.animate(KEYFRAMES.TIMEOUT_GRID, {
+        duration: 150,
+        iterations: 6
+    });
+    pig.animate(KEYFRAMES.TIMEOUT_PIG, {
+        duration: 180,
+        iterations: 5,
+        easing: 'ease-in-out'
+    });
+}
+
+// --- Notification ---
+
+const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';   // green-ish
+const NOTIFY_COLOR_ERROR = 'rgba(180, 80, 80, 0.95)';  // red-ish
 
 /**
- * Shows a notification with fade-in, hold, fade-out animation
- * @param {HTMLElement} element - The notification element
- * @param {string} message - Text to display
- * @param {boolean} isError - Use error styling (red) vs info styling (green)
- * @param {number} duration - Total duration in ms (default 2500)
- * @returns {Animation} - The animation object (can be cancelled)
+ * Toast notification - fades in, holds, fades out.
+ * Cancels any existing animation on the element first.
  */
 function notify(element, message, isError = false, duration = 2500) {
-    // Cancel any existing animation on this element
     element.getAnimations().forEach(a => a.cancel());
-
     element.textContent = message;
     element.style.background = isError ? NOTIFY_COLOR_ERROR : NOTIFY_COLOR_INFO;
 
@@ -258,40 +322,36 @@ function notify(element, message, isError = false, duration = 2500) {
     });
 }
 
-// Confetti colors
+// --- Confetti ---
+
 const CONFETTI_COLORS = ['#FF8A8A', '#58E0B8', '#85D0FF', '#FFD700', '#FF6B6B', '#4ECDC4'];
 
 /**
- * Shows win confetti animation
- * @param {HTMLElement} container - The confetti container element
+ * Victory confetti - spawns 200 pieces that fall with random drift/rotation.
+ * Auto-cleans up after 5 seconds.
  */
 function confetti(container) {
     if (!container) return;
-
-    // Clear any existing confetti
     container.innerHTML = '';
 
-    // Create confetti pieces
     const numPieces = 200;
     for (let i = 0; i < numPieces; i++) {
         const piece = document.createElement('div');
         piece.className = 'confetti';
 
-        // Random shape
+        // Random shape: square, circle, or ribbon
         const shapes = ['square', 'circle', 'ribbon'];
         piece.classList.add(shapes[Math.floor(Math.random() * shapes.length)]);
 
-        // Random color
+        // Random color and position
         piece.style.backgroundColor = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-
-        // Random position
         piece.style.left = Math.random() * 100 + '%';
 
-        // Random animation properties
-        const duration = 2 + Math.random() * 2; // 2-4 seconds
-        const delay = Math.random() * 0.7; // 0-0.5 seconds
-        const drift = (Math.random() - 0.5) * 100; // -50 to 50px
-        const rotation = Math.random() * 720 - 360; // -360 to 360 degrees
+        // Random fall parameters
+        const duration = 2 + Math.random() * 2;         // 2-4 seconds
+        const delay = Math.random() * 0.7;              // 0-0.7 seconds
+        const drift = (Math.random() - 0.5) * 100;      // -50 to 50px horizontal
+        const rotation = Math.random() * 720 - 360;     // -360 to 360 degrees
 
         piece.animate(makeConfettiKeyframes(drift, rotation), {
             duration: duration * 1000,
@@ -303,10 +363,7 @@ function confetti(container) {
         container.appendChild(piece);
     }
 
-    // Clean up after animation
-    setTimeout(() => {
-        container.innerHTML = '';
-    }, 5000);
+    setTimeout(() => { container.innerHTML = ''; }, 5000);
 }
 
 // --- Exports ---
@@ -319,5 +376,6 @@ export const animations = {
     hudFlash: handleAbortException(hudFlashThrowsAbort),
     celebrate,
     lose,
+    timeout,
     notify,
 };
