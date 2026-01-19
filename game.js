@@ -23,9 +23,10 @@ const state = {
 };
 
 const playback = {
-    trace: null,
+    trace: null, 
 
     load(trace) {
+		// the trace is reversed, so we can take the next one by popping from the end 
         this.trace = trace.slice().reverse();
     },
 
@@ -271,67 +272,71 @@ async function processEvent(msg) {
 
 // --- Worker management ---
 
+const WORKER_TIMEOUT_MS = 1000;  // restart if hung
+const SPLASH_DELAY_MS = 1500;
+const FADE_DURATION_MS = 500;
+
+function resolveExecution(result) {
+    state.pendingResolve?.(result);
+    state.pendingResolve = null;
+    clearTimeout(state.workerTimeout);
+}
+
 function hideSplashScreen() {
     if (!ui.splashScreen) return;
-
     ui.splashScreen.classList.add("fade-out");
     setTimeout(() => {
         ui.splashScreen.style.display = "none";
         config.onWorkerReady?.();
-    }, 500);
+    }, FADE_DURATION_MS);
 }
 
 function initWorker() {
     enterIdle();
-
-    console.log("Initializing worker");
     if (state.worker) state.worker.terminate();
 
     state.worker = new Worker("worker.js");
-    state.worker.onmessage = (event) => {
-        if (event.data.type === "ready") {
-            setTimeout(() => {
-                hideSplashScreen();
-            }, 1500);
-        } else if (event.data.type === "execution-trace") {
-            state.pendingResolve?.(event.data.trace);
-            state.pendingResolve = null;
-        } else if (event.data.type === "execution-failed") {
-            ui.codeOutput.textContent = event.data.errorMessage;
-            ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
-            state.pendingResolve?.(null);
-            state.pendingResolve = null;
+    state.worker.onmessage = ({ data }) => {
+        switch (data.type) {
+            case "ready":
+                setTimeout(hideSplashScreen, SPLASH_DELAY_MS);
+                break;
+            case "execution-trace":
+                resolveExecution(data.trace);
+                break;
+            case "execution-failed":
+                ui.codeOutput.textContent = data.errorMessage;
+                ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
+                resolveExecution(null);
+                break;
         }
-        clearTimeout(state.workerTimeout);
     };
 }
 
 // --- Code submission ---
 
 function getCode() {
-    let program = ui.editor.getValue();
+    const program = ui.editor.getValue();
+    if (selectedLanguage() !== "java") return program;
 
-    if (selectedLanguage() === "java") {
-        const [success, error, code] = PigJatin.generatePythonCode(program);
-        if (!success) {
-            ui.codeOutput.textContent = error.msg;
-            ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
-            return null;
-        }
-        program = code;
+    const [success, error, code] = PigJatin.generatePythonCode(program);
+    if (!success) {
+        ui.codeOutput.textContent = error.msg;
+        ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
+        return null;
     }
-
-    return program;
+    return code;
 }
 
 function execute(code) {
     return new Promise((resolve) => {
         state.pendingResolve = resolve;
         state.worker.postMessage({
-            code: code,
+            code,
             level: JSON.stringify(state.level)
         });
-        state.workerTimeout = setTimeout(initWorker, 1000);
+        // Restart worker if hung (e.g., infinite loop)
+        state.workerTimeout = setTimeout(initWorker, WORKER_TIMEOUT_MS);
     });
 }
 
