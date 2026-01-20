@@ -81,12 +81,6 @@ function getAnimSpeed() {
     return ui.speedSlider.max - ui.speedSlider.value;
 }
 
-function highlightLine(lineno) {
-    for (let i = 0; i < ui.editor.lineCount(); i++) {
-        if (i === lineno - 1) ui.editor.addLineClass(i, "background", "highlighted-line");
-        else ui.editor.removeLineClass(i, "background", "highlighted-line");
-    }
-}
 
 function removeEditorHighlight() {
     for (let i = 0; i < ui.editor.lineCount(); i++) {
@@ -94,11 +88,20 @@ function removeEditorHighlight() {
     }
 }
 
+function highlightLine(lineno) {
+	removeEditorHighlight();
+	// line numbers are zero indexed
+	ui.editor.addLineClass(lineno - 1, "background", "highlighted-line");
+}
+
 // --- Grid rendering ---
 
 function loadLevel(level) {
     if (level === null) return;
     state.grid = createGrid(ui.grid, level.nRows, level.nCols, level);
+
+	// the color comparison hud only appears when playing the game. 
+	// not in the level editor or in the thumbnail viewer
     state.grid.pig.appendChild(ui.colorComparisonHud);
 }
 
@@ -134,6 +137,8 @@ function switchLanguage(newLang) {
 }
 
 // --- State machine ---
+// this constrols, among other things, the behavior of the buttons depending on
+// what the program is currently doing
 
 async function submitAndEnter(enterFn) {
     ui.codeOutput.textContent = "";
@@ -228,7 +233,7 @@ const DIRECTION_DELTAS = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -
 
 async function moveAnimated(dir, toRow, toCol) {
     const pig = state.grid.pig;
-    const p = pig.parentElement; // a tile
+    const p = pig.parentElement; // this is a tile
     const [mx, my] = DIRECTION_DELTAS[dir];
     const [dx, dy] = [mx * p.offsetWidth, my * p.offsetHeight];
 
@@ -246,12 +251,16 @@ async function processEvent(msg) {
 
     switch (msg.type) {
         case "lineExecuted":
-            // Standalone line (loops, assignments) - add brief pause
+            // Standalone line (loops, assignments) - add brief pause for to "animate". 
             await new Promise(r => setTimeout(r, getAnimSpeed() * LINE_PAUSE_MULTIPLIER));
             break;
 
         case "move":
+			// moves the legs
             animations.walk(pig, msg.dir, getAnimSpeed());
+			// CLAUDO: these checks against animations.ABORT don't matter. I think the only relevant one is 
+			// CLAUDO: the one in the moveAnimated function. 
+			// moves the pig
             if (await moveAnimated(msg.dir, msg.pos[0], msg.pos[1]) === animations.ABORT) return;
             break;
 
@@ -267,15 +276,18 @@ async function processEvent(msg) {
 
         case "collected":
             const [r, c] = msg.pos;
+			// CLAUDO: rename the class target to "apple" accross all files, perhaps? 
             state.grid.tiles[r * state.grid.nCols + c].classList.remove("target");
             break;
 
         case "gameover":
-            console.log("GAME OVER! YOU", msg.win ? "WIN" : "LOSE");
-            // timeout animation already played when detected in submitAndEnter
+            // We do not play the timeout animation here, as we start that 
+			// immediately when a timeout is noticed. See <CLAUDO INSTERT THE CORRECT FUNCTION NAME HERE> 
             if (msg.win) {
                 animations.celebrate(pig);
-            } else if (msg.reason !== "timeout") {
+            }
+			// CLAUDO why not check against loss explicitly? I don't renember the msg.reason string but you can find it
+			else if (msg.reason !== "timeout") {
                 const gridWrapper = document.getElementById('grid-wrapper');
                 animations.lose(pig, gridWrapper);
             }
@@ -303,7 +315,7 @@ function hideSplashScreen() {
 
 function initWorker() {
     enterIdle();
-
+// CLAUDO: scan all the files and determine if there are any magic strings we should rather use constants for. 
     state.worker = new Worker("worker.js");
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
@@ -357,7 +369,8 @@ function attachEventHandlers() {
         ui.editor.getWrapperElement().style.fontSize = e.target.value + "px";
     });
 
-    // Editor change - auto-reset when editing during pause
+    // Editor change - save updated code, and auto-reset if editing during pause
+	// (because the trace that we have in memory becomes invalidated when you modify the code)
     ui.editor.on("change", () => {
         storeCode();
         if (state.status === "paused") {
