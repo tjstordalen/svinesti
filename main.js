@@ -7,7 +7,7 @@ import { createGrid } from "./grid.js";
 import { levels } from "./levels.js";
 import { ui } from "./ui.js";
 
-const ENABLE_SPLASH_SCREEN = false;
+const ENABLE_SPLASH_SCREEN = true;
 
 // --- State ---
 

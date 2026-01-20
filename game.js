@@ -65,10 +65,6 @@ const playback = {
     },
 };
 
-let config = {
-    onWorkerReady: null,
-};
-
 // --- Shortcuts ---
 
 const shortcuts = createShortcuts('svinesti-game-shortcuts-v1');
@@ -290,7 +286,6 @@ async function processEvent(msg) {
 
 // --- Worker management ---
 
-const SPLASH_DELAY_MS = 1500;
 const FADE_DURATION_MS = 500;
 
 function resolveExecution(result) {
@@ -303,7 +298,6 @@ function hideSplashScreen() {
     ui.splashScreen.classList.add("fade-out");
     setTimeout(() => {
         ui.splashScreen.style.display = "none";
-        config.onWorkerReady?.();
     }, FADE_DURATION_MS);
 }
 
@@ -314,7 +308,7 @@ function initWorker() {
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
             case "ready":
-                setTimeout(hideSplashScreen, SPLASH_DELAY_MS);
+                hideSplashScreen();
                 break;
             case "execution-trace":
                 resolveExecution(data.trace);
@@ -435,9 +429,7 @@ function registerShortcuts() {
 
 // --- Public API ---
 
-export function init({ shortcutsContainer, onWorkerReady } = {}) {
-    config.onWorkerReady = onWorkerReady;
-
+export function init({ shortcutsContainer } = {}) {
     // Initialize font size from slider
     ui.editor.getWrapperElement().style.fontSize = ui.fontSizeSlider.value + "px";
 
