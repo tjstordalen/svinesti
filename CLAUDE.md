@@ -14,12 +14,12 @@ Svinesti is a browser-based educational programming game where students control 
 - **main.js** - App shell: help modal, sidebar, mode switching (see structure below)
 - **game.js** - Game mode: code editor, playback, worker (see structure below)
 - **grid.js** - Unified grid rendering module (see structure below)
-- **animations.js** - All animation logic (keyframes, walk/move/turn/hudFlash/celebrate/lose/notify/confetti), `pigSpriteUrl()` helper, `ABORT` constant and `handleAbortException` wrapper for cancelled animations
+- **animations.js** - All animation logic as direct exports (walk, move, turn, hudFlash, celebrate, lose, timeout, notify, flash, confetti), plus `pigSpriteUrl()` helper and `ABORT` constant
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
-- **shortcuts.js** - Keyboard shortcut factory function with enable/disable lifecycle
+- **shortcuts.js** - Keyboard shortcut factory with rebindable keys, persistence, and enable/disable lifecycle
 - **levels.js** - Level definitions and `DEFAULT_LEVEL` for editor
-- **worker.js** - Web Worker that loads Pyodide and executes student code with 1-second timeout. Uses `cache: 'no-store'` for svinesti.py fetch to avoid stale code issues
-- **svinesti.py** - Python game engine running in Pyodide. Defines `move()`, `turnLeft()`, `turnRight()`, `isRed()`, `isGreen()`, `isBlue()`. Execution tracing attaches line numbers to animated events (popping preceding `lineExecuted`) so JS can highlight during animation
+- **worker.js** - Web Worker that loads Pyodide and executes student code in isolated namespaces
+- **svinesti.py** - Python game engine with operation counting for infinite loop detection (MAX_OPS = 10,000)
 
 ### CSS Structure
 
@@ -27,14 +27,14 @@ Styles are organized in `css/` directory with modular files:
 
 | File | Contents |
 |------|----------|
-| `base.css` | CSS variables, reset, body, scrollbar, notification utility |
+| `base.css` | CSS variables, reset, body, scrollbar, notification utility (including `.light` variant) |
 | `layout.css` | App container, main content, play/editor panes, responsive breakpoints |
 | `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
 | `sidebar.css` | Sidebar, tabs, level list, mini-grid thumbnails |
 | `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
 | `game.css` | Grid, tiles, colors, pig sprites, ghost, pig element, color HUD, confetti |
-| `help.css` | Help modal, shortcuts list, toggle switch, fadeIn/slideUp keyframes |
-| `splash.css` | Splash screen overlay, animated pig, walk/shadow keyframes |
+| `help.css` | Help modal, shortcuts list, toggle switch, lock icon shake, fadeIn/slideUp keyframes |
+| `splash.css` | Splash screen overlay, animated pig, typewriter loading text, walk/shadow keyframes |
 
 **Design notes:**
 - Each file has a header comment listing its contents
@@ -42,6 +42,12 @@ Styles are organized in `css/` directory with modular files:
 - Pig sprites also use standalone classes (`.pig-right`, `.pig-down`, `.pig-left`, `.pig-up`)
 - Mini-grid uses `.mini-grid .tile` for container scoping rather than a separate `.mini-tile` class
 - All gameplay animations use Web Animations API; only splash screen uses CSS keyframes (intentionally, for pre-JS loading)
+
+### Help Pages
+
+Static help content in `help/` directory:
+- **infinite-loop.html** - Explains infinite loops with side-by-side good/bad code examples
+- **help.css** - Standalone styles for help pages (can be viewed outside the app)
 
 ### main.js Structure
 
@@ -69,7 +75,6 @@ const state = {
     grid: null,               // Grid object from createGrid()
     status: "idle",           // "idle" | "playing" | "paused"
     worker: null,             // Web Worker instance
-    workerTimeout: null,      // Timeout for worker restart
     pendingResolve: null,     // Promise resolver for worker response
 };
 
@@ -85,7 +90,7 @@ const playback = {
 ```
 
 **Exports:**
-- `init({ shortcutsContainer, onWorkerReady })` - Initialize module
+- `init({ shortcutsContainer })` - Initialize module
 - `enter()` - Activate game mode (enable shortcuts)
 - `exit()` - Deactivate game mode (disable shortcuts, reset playback)
 - `selectLevel(level)` - Store code, load level, reset playback
@@ -101,7 +106,7 @@ const playback = {
 - **State machine** - `enterState()`, `BUTTON_HANDLERS` table, `submitAndEnter()`
 - **Playback** - `processEvent()`, `moveAnimated()`, `highlightLine()`
 - **Worker** - `initWorker()`, `getCode()`, `execute()`, `hideSplashScreen()`
-- **Shortcuts** - Game-mode shortcuts (play/pause, step, reset, focus editor)
+- **Shortcuts** - Game-mode shortcuts (play/pause, step, reset, run-code, help)
 
 ### grid.js Structure
 
@@ -130,6 +135,29 @@ const grid = createGrid(container, nRows, nCols, level);
 **Exports:**
 - `createGrid(container, nRows, nCols, level?)` - Factory function
 - `TILE_CLASSES` - Character-to-class mapping (`.`, `r`, `g`, `b`, `R`, `G`, `B`)
+
+### Infinite Loop Detection
+
+Student code that runs too long is detected and handled gracefully. The key insight is that we trace **every line of student code**, not just calls to svinesti functions like `move()`. This catches all infinite loops, including `while True: x = 1` that never interacts with the game.
+
+**Python-side detection (svinesti.py):**
+- Uses `sys.settrace(line_tracer)` to intercept every line executed in `submitted_code()`
+- Each line increments `state.op_count`
+- When count exceeds `MAX_OPS` (10,000), traces gameover with `reason: "timeout"` and raises `GracefulExit`
+- No JS-side timeout needed — Python controls termination completely
+
+**JS-side handling (game.js `submitAndEnter()`):**
+- Detects `reason: "timeout"` in last trace event
+- Shows error in code output with pulsing red flash animation
+- Shows notification linking to `help/infinite-loop.html`
+- Truncates trace to last 100 events for replay
+- Plays timeout animation (grid wobble + pig ragdoll) immediately
+
+**Why this design (vs. JS timeout):**
+- Catches ALL infinite loops, not just ones calling game functions
+- Python controls termination, so trace is complete up to the cutoff
+- We can replay the last N operations to show WHERE the loop is stuck
+- No race conditions between timeout and normal completion
 
 ### Promise-Based Playback (Web Animations API)
 
@@ -183,6 +211,9 @@ All keyframes are defined in `animations.js`:
 - `KEYFRAMES.CELEBRATE` - Win bounce animation
 - `KEYFRAMES.SHAKE` - Loss grid shake
 - `KEYFRAMES.NOTIFICATION` - Toast fade in/out
+- `KEYFRAMES.TIMEOUT_GRID` - Wobble with pulsing red glow
+- `KEYFRAMES.TIMEOUT_PIG` - Ragdoll motion in cell
+- `KEYFRAMES.FLASH` - Pulsing red inset glow (3 pulses)
 - `makeConfettiKeyframes(drift, rotation)` - Dynamic confetti fall (per-piece drift/rotation)
 
 **Pause behavior:**
@@ -199,6 +230,29 @@ All keyframes are defined in `animations.js`:
 - **Clean control flow**: Adding animations is just defining keyframes and calling `.animate()`
 - **Step mutex**: Prevents animation overlap when spam-clicking step button
 
+### Worker Architecture
+
+The web worker (`worker.js`) runs student code in Pyodide:
+
+```javascript
+// Initialization
+loadPyodide() → fetch svinesti.py → postMessage({ type: 'ready' })
+
+// Execution (each submission)
+handleMessage() {
+    isolatedNamespace = pyodide.globals.copy()  // Fresh namespace
+    runPython(engineCode, { globals: isolatedNamespace })
+    runPython(injectUserCode(level, code), { globals: isolatedNamespace })
+    postMessage({ type: 'execution-trace', trace })
+    isolatedNamespace.destroy()  // Cleanup
+}
+```
+
+**Key design decisions:**
+- **Isolated namespaces:** Each execution gets a fresh copy of globals, preventing student code from polluting subsequent runs
+- **No JS timeout:** Python's `MAX_OPS` handles infinite loops, giving us a complete trace up to the cutoff
+- **`cache: 'no-store'`:** Fetch svinesti.py without caching to avoid stale code during development
+
 ### PigJatin Language (Java-like alternative)
 
 Located in `PigJatin/`:
@@ -214,7 +268,8 @@ Located in `PigJatin/`:
 3. Python code sent to web worker running Pyodide
 4. svinesti.py wraps user code in `submitted_code()` and executes with line tracing
 5. Execution generates trace of events (moves, turns, collections, game over)
-6. Trace sent back to main thread for animated playback
+6. If operation count exceeds MAX_OPS, gameover with `reason: "timeout"` is traced
+7. Trace sent back to main thread for animated playback
 
 ## Development
 
@@ -316,18 +371,26 @@ All grids (game, editor, thumbnails) use `createGrid()` with shared `.tile` and 
 
 ## Keyboard Shortcuts
 
-Game mode shortcuts (managed by game.js):
-- `H` - Play / Pause (also `Ctrl+H` from editor)
-- `J` - Step (also `Ctrl+J` from editor)
+Shortcuts are managed by `shortcuts.js`, which exports a `createShortcuts(storageKey)` factory function. Each mode creates its own shortcuts instance and calls `enable()`/`disable()` on enter/exit.
+
+**Shortcut features:**
+- Rebindable keys (click the key display to rebind)
+- Per-shortcut enable/disable (click the row to toggle)
+- Master toggle to enable/disable all
+- Reset to defaults button
+- Persistence via localStorage
+- `rebindable: false` option for shortcuts that shouldn't be changed (shows lock icon)
+
+**Game mode shortcuts (managed by game.js):**
+- `H` - Play / Pause
+- `J` - Step
 - `K` - Reset
-- `I` - Focus editor
-- `Escape` - Unfocus editor
+- `Ctrl+Enter` - Run code (non-rebindable)
+- `?` - Help (non-rebindable)
 
-Global shortcuts (always active):
-- `?` - Toggle help modal
+**Global shortcuts (always active):**
+- `?` - Toggle help modal (in editor mode)
 - `Escape` - Close help modal
-
-Shortcuts are managed by `shortcuts.js`, which exports a `createShortcuts(storageKey)` factory function. Each mode creates its own shortcuts instance and calls `enable()`/`disable()` on enter/exit. This allows modal shortcuts that don't conflict between game and editor modes.
 
 ## Browser Quirks
 
