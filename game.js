@@ -1,7 +1,7 @@
 // game.js - Game mode (grid, code editor, playback)
 
 import * as PigJatin from "./PigJatin/PigJatin.js";
-import { animations } from "./animations.js";
+import * as animations from "./animations.js";
 import { createShortcuts } from "./shortcuts.js";
 import { createGrid } from "./grid.js";
 import { ui } from "./ui.js";

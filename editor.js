@@ -9,7 +9,7 @@
 import { DEFAULT_LEVEL } from "./levels.js";
 import { createGrid, TILE_CLASSES } from "./grid.js";
 import { ui } from "./ui.js";
-import { animations } from "./animations.js";
+import * as animations from "./animations.js";
 
 // --- Constants ---
 

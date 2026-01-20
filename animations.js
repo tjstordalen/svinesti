@@ -150,7 +150,7 @@ const KEYFRAMES = {
 // --- Abort handling ---
 
 // Sentinel value returned when animation is cancelled
-const ABORT = "abort";
+export const ABORT = "abort";
 
 /**
  * Wraps an async animation function to catch AbortError gracefully.
@@ -187,7 +187,7 @@ function getDirection(pig) {
  * Walk sprite animation - pig's legs move while walking.
  * Runs concurrently with move() - doesn't await, just starts and returns.
  */
-function walk(pig, direction, animSpeed) {
+export function walk(pig, direction, animSpeed) {
     const walkDuration = animSpeed * MOVE_MULTIPLIER / WALK_CYCLES;
     return pig.animate(
         KEYFRAMES.WALK[direction],
@@ -257,7 +257,7 @@ async function hudFlashThrowsAbort(hud, animSpeed) {
 /**
  * Victory celebration - pig bounces with decreasing height + confetti.
  */
-function celebrate(pig) {
+export function celebrate(pig) {
     confetti(document.getElementById('confetti-container'));
     pig.animate(KEYFRAMES.CELEBRATE, {
         duration: 1500,
@@ -277,7 +277,7 @@ const DIE_PARAMS = {
  * Loss animation - grid shakes, pig falls over.
  * Pig rotates and translates based on facing direction.
  */
-function lose(pig, gridWrapper) {
+export function lose(pig, gridWrapper) {
     if (gridWrapper) {
         gridWrapper.animate(KEYFRAMES.SHAKE, {
             duration: 600,
@@ -301,7 +301,7 @@ function lose(pig, gridWrapper) {
  * This happens when student code runs longer than 1 second (likely an infinite loop).
  * Grid wobbles with pulsing red glow, pig ragdolls around in cell.
  */
-function timeout(gridWrapper, pig) {
+export function timeout(gridWrapper, pig) {
     gridWrapper.animate(KEYFRAMES.TIMEOUT_GRID, {
         duration: 150,
         iterations: 6
@@ -323,7 +323,7 @@ const NOTIFY_COLOR_ERROR = 'rgba(60, 60, 70, 0.95)';   // dark slate
  * Cancels any existing animation on the element first.
  * @param {string} className - Optional CSS class for styling (e.g., "light")
  */
-function notify(element, message, isError = false, duration = 2500, className = null) {
+export function notify(element, message, isError = false, duration = 2500, className = null) {
     element.getAnimations().forEach(a => a.cancel());
     if (message !== null) {
         element.textContent = message;
@@ -344,7 +344,7 @@ function notify(element, message, isError = false, duration = 2500, className = 
 /**
  * Flash - red glow that eases in and out.
  */
-function flash(element, duration = 3000) {
+export function flash(element, duration = 3000) {
     return element.animate(KEYFRAMES.FLASH, {
         duration,
         easing: 'ease-in-out',
@@ -359,7 +359,7 @@ const CONFETTI_COLORS = ['#FF8A8A', '#58E0B8', '#85D0FF', '#FFD700', '#FF6B6B', 
  * Victory confetti - spawns 200 pieces that fall with random drift/rotation.
  * Auto-cleans up after 5 seconds.
  */
-function confetti(container) {
+export function confetti(container) {
     if (!container) return;
     container.innerHTML = '';
 
@@ -395,17 +395,8 @@ function confetti(container) {
     setTimeout(() => { container.innerHTML = ''; }, 5000);
 }
 
-// --- Exports ---
+// --- Wrapped exports (catch AbortError gracefully) ---
 
-export const animations = {
-    ABORT,
-    walk,
-    move: handleAbortException(moveThrowsAbort),
-    turn: handleAbortException(turnThrowsAbort),
-    hudFlash: handleAbortException(hudFlashThrowsAbort),
-    celebrate,
-    lose,
-    timeout,
-    notify,
-    flash,
-};
+export const move = handleAbortException(moveThrowsAbort);
+export const turn = handleAbortException(turnThrowsAbort);
+export const hudFlash = handleAbortException(hudFlashThrowsAbort);
