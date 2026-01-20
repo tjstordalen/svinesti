@@ -1,4 +1,4 @@
-// main.js - App shell (help modal, sidebar, mode switching)
+// main.js - App shell (help pane, sidebar, mode switching)
 
 import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
@@ -9,37 +9,25 @@ import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = true;
 
-// --- State ---
+// --- Help pane ---
 
-const state = {
-    focusedElementBeforeHelp: null,
+const help = {
+    previousFocus: null,
+
+    enter() {
+        this.previousFocus = ui.editor.hasFocus()
+            ? ui.editor.getInputField()
+            : document.activeElement;
+        ui.helpPane.classList.add("show");
+        ui.helpPane.focus();
+    },
+
+    exit() {
+        ui.helpPane.classList.remove("show");
+        this.previousFocus?.focus();
+        this.previousFocus = null;
+    },
 };
-
-// --- Help modal ---
-
-function showHelp() {
-    state.focusedElementBeforeHelp = document.activeElement;
-    if (ui.editor.hasFocus()) {
-        ui.editor.getInputField().blur();
-    }
-    ui.helpModal.classList.add("show");
-}
-
-function hideHelp() {
-    ui.helpModal.classList.remove("show");
-    if (state.focusedElementBeforeHelp?.focus) {
-        state.focusedElementBeforeHelp.focus();
-        state.focusedElementBeforeHelp = null;
-    }
-}
-
-function toggleHelp() {
-    if (ui.helpModal.classList.contains("show")) {
-        hideHelp();
-    } else {
-        showHelp();
-    }
-}
 
 // --- Level list ---
 
@@ -139,10 +127,10 @@ ui.sidebarToggle.onclick = () => {
     ui.sidebar.classList.toggle("collapsed");
 };
 
-// Help modal
-ui.helpButton.onclick = showHelp;
-ui.helpClose.onclick = hideHelp;
-ui.helpOverlay.onclick = hideHelp;
+// Help pane
+ui.helpButton.onclick = () => help.enter();
+ui.helpClose.onclick = () => help.exit();
+ui.helpOverlay.onclick = () => help.exit();
 
 // Mode toggle
 ui.modePlay.onclick = () => {
@@ -173,12 +161,12 @@ document.addEventListener('keydown', (e) => {
     // Help toggle - only in editor mode when not typing
     if (e.key === '?' && document.body.classList.contains('editor-mode') && !ui.editor.hasFocus()) {
         e.preventDefault();
-        toggleHelp();
+        ui.helpPane.classList.contains("show") ? help.exit() : help.enter();
     }
-    // Escape closes help modal
-    if (e.key === 'Escape' && ui.helpModal.classList.contains('show')) {
+    // Escape closes help pane
+    if (e.key === 'Escape' && ui.helpPane.classList.contains('show')) {
         e.preventDefault();
-        hideHelp();
+        help.exit();
     }
 });
 

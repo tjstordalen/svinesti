@@ -17,7 +17,7 @@ export const ui = {
     sidebarTabs:    document.querySelectorAll(".sidebar-tab"),
     splashScreen:   gid("splash-screen"),
     helpButton:     gid("help-button"),
-    helpModal:      gid("help-modal"),
+    helpPane:       gid("help-modal"),
     helpClose:      gid("help-close"),
     helpOverlay:    document.querySelector(".help-overlay"),
     modePlay:       gid("mode-play"),
