@@ -3,9 +3,9 @@
 /**
  * Create a shortcuts manager instance
  * @param {string} storageKey - localStorage key for persisting settings
- * @returns {{ register, initialize, enable, disable }}
+ * @returns {{ register, init, enable, disable }}
  */
-export function createShortcuts(storageKey) {
+function createShortcuts(storageKey) {
     const shortcuts = [];
     let rebindingShortcut = null;  // Track which shortcut is being rebound
     let keydownHandler = null;     // Track listener for enable/disable
@@ -307,5 +307,7 @@ export function createShortcuts(storageKey) {
         return parts.join('+');
     }
 
-    return { register, initialize, enable, disable };
+    return { register, init: initialize, enable, disable };
 }
+
+export { createShortcuts as new };

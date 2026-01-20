@@ -2,7 +2,7 @@
 
 import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as animations from "./animations.js";
-import { createShortcuts } from "./shortcuts.js";
+import * as Shortcuts from "./shortcuts.js";
 import { createGrid } from "./grid.js";
 import { ui } from "./ui.js";
 
@@ -59,7 +59,7 @@ const playback = {
             if (msg !== undefined) {
                 await processEvent(msg);
             }
-        } finally {
+        } finally { // don't brick the stepping button if something unexpected happens
             this.stepping = false;
         }
     },
@@ -67,7 +67,7 @@ const playback = {
 
 // --- Shortcuts ---
 
-const shortcuts = createShortcuts('svinesti-game-shortcuts-v1');
+const shortcuts = Shortcuts.new('svinesti-game-shortcuts-v1');
 
 // --- Utilities ---
 
@@ -439,7 +439,7 @@ export function init({ shortcutsContainer } = {}) {
     // Register and initialize shortcuts
     registerShortcuts();
     if (shortcutsContainer) {
-        shortcuts.initialize(shortcutsContainer);
+        shortcuts.init(shortcutsContainer);
     }
 
     // Initialize worker
