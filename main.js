@@ -14,6 +14,10 @@ const ENABLE_SPLASH_SCREEN = true;
 const help = {
     previousFocus: null,
 
+    helpIsOpen() {
+        return ui.helpPane.classList.contains("show");
+    },
+
     enter() {
         this.previousFocus = ui.editor.hasFocus()
             ? ui.editor.getInputField()
@@ -26,6 +30,11 @@ const help = {
         ui.helpPane.classList.remove("show");
         this.previousFocus?.focus();
         this.previousFocus = null;
+    },
+
+    toggle() {
+        if (this.helpIsOpen()) this.exit();
+        else this.enter();
     },
 };
 
