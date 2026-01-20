@@ -54,16 +54,18 @@ Static help content in `help/` directory:
 App shell. Orchestrates modes and global UI:
 
 ```javascript
-const state = {
-    focusedElementBeforeHelp: null,  // Track focus for help modal
+const help = {
+    previousFocus: null,
+    enter(),   // Show help, focus pane, capture previous focus
+    exit(),    // Hide help, restore focus
 };
 ```
 
 Sections:
-- **Help modal** - `showHelp()`, `hideHelp()`, `toggleHelp()`
+- **Help pane** - `help.enter()`, `help.exit()`
 - **Level list** - `populateLevelList()`, `shuffled()`
 - **Initialize** - Game.init(), level list setup, URL import, Game.enter()
-- **Event handlers** - Sidebar toggle, help modal, mode toggle, global shortcuts
+- **Event handlers** - Sidebar toggle, help pane, mode toggle, global shortcuts
 
 ### game.js Structure
 
