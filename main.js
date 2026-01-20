@@ -46,17 +46,18 @@ function populateLevelList(levelArray) {
         const item = document.createElement('div');
         item.className = 'sidebar-level-item';
 
-        const miniGrid = document.createElement('div');
-        createGrid(miniGrid, lvl.nRows, lvl.nCols, lvl);
+        const grid = document.createElement('div');
+        createGrid(grid, lvl.nRows, lvl.nCols, lvl);
 
         const name = document.createElement('div');
         name.className = 'sidebar-level-name';
         name.textContent = lvl.name || 'Untitled';
 
-        item.appendChild(miniGrid);
+        item.appendChild(grid);
         item.appendChild(name);
         ui.levelList.appendChild(item);
-
+		
+		// TODO: I don't know if this is the reight behavior. Revisit
         item.addEventListener('click', () => {
             if (document.body.classList.contains('editor-mode')) {
                 Editor.load(lvl);
@@ -70,15 +71,6 @@ function populateLevelList(levelArray) {
     }
 }
 
-function shuffled(arr) {
-    const copy = [...arr];
-    for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-}
-
 // --- Initialize ---
 
 // Hide splash screen if disabled
@@ -86,6 +78,8 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     ui.splashScreen.style.display = "none";
 }
 
+// TODO: move this to validate? I guess it is not even possible to generate a level like this 
+// at the moment. Maybe just remove from the standard levels and we're good 
 // Prepare levels (convert uppercase start tiles to lowercase)
 for (let lvl of levels) {
     const [r, c] = lvl.start;
@@ -99,6 +93,7 @@ Game.init({
     shortcutsContainer: ui.shortcutsContainer,
 });
 
+// TODO FOR CLAUDE. Fix this. Just populate the default levels 
 // Build level list
 ui.sidebarTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -136,7 +131,7 @@ ui.sidebarToggle.onclick = () => {
 };
 
 // Help pane
-ui.helpButton.onclick = () => ui.helpPane.classList.contains("show") ? help.exit() : help.enter();
+ui.helpButton.onclick = () => help.toggle();
 ui.helpClose.onclick = () => help.exit();
 ui.helpOverlay.onclick = () => help.exit();
 
@@ -169,7 +164,7 @@ document.addEventListener('keydown', (e) => {
     // Help toggle - only in editor mode when not typing
     if (e.key === '?' && document.body.classList.contains('editor-mode') && !ui.editor.hasFocus()) {
         e.preventDefault();
-        ui.helpPane.classList.contains("show") ? help.exit() : help.enter();
+		help.toggle();
     }
     // Escape closes help pane
     if (e.key === 'Escape' && ui.helpPane.classList.contains('show')) {
