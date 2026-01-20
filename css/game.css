@@ -95,8 +95,8 @@ body.editor-mode .pig:active {
 }
 
 #grid {
-    width: min(100cqw - 48px, (100cqh - 80px) * (var(--cols) / var(--rows)));
-    height: min((100cqw - 48px) * (var(--rows) / var(--cols)), 100cqh - 80px);
+    width: min(100cqw, 100cqh * (var(--cols) / var(--rows)));
+    height: min(100cqw * (var(--rows) / var(--cols)), 100cqh);
     border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: var(--shadow-lg);

@@ -47,7 +47,6 @@ function populateLevelList(levelArray) {
         item.className = 'sidebar-level-item';
 
         const miniGrid = document.createElement('div');
-        miniGrid.className = 'mini-grid';
         createGrid(miniGrid, lvl.nRows, lvl.nCols, lvl);
 
         const name = document.createElement('div');

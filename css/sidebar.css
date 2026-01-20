@@ -115,17 +115,3 @@
     white-space: nowrap;
 }
 
-/* Mini grid in list items */
-.mini-grid {
-    gap: 1px;
-    width: 100%;
-    aspect-ratio: var(--cols) / var(--rows);
-    border-radius: 4px;
-    overflow: hidden;
-    background: rgba(0,0,0,0.1);
-}
-
-.mini-grid .tile {
-    min-width: 0;
-    min-height: 0;
-}

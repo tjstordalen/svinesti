@@ -30,7 +30,7 @@ Styles are organized in `css/` directory with modular files:
 | `base.css` | CSS variables, reset, body, scrollbar, notification utility (including `.light` variant) |
 | `layout.css` | App container, main content, play/editor panes, responsive breakpoints |
 | `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
-| `sidebar.css` | Sidebar, tabs, level list, mini-grid thumbnails |
+| `sidebar.css` | Sidebar, tabs, level list, thumbnails |
 | `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
 | `game.css` | Grid, tiles, colors, pig sprites, ghost, pig element, color HUD, confetti |
 | `help.css` | Help modal, shortcuts list, toggle switch, lock icon shake, fadeIn/slideUp keyframes |
@@ -38,9 +38,8 @@ Styles are organized in `css/` directory with modular files:
 
 **Design notes:**
 - Each file has a header comment listing its contents
-- Tile colors use standalone classes (`.red`, `.green`, `.blue`, `.empty`) shared across grid, mini-grid, and ghost
+- Tile colors use standalone classes (`.red`, `.green`, `.blue`, `.empty`) shared across grid and ghost
 - Pig sprites also use standalone classes (`.pig-right`, `.pig-down`, `.pig-left`, `.pig-up`)
-- Mini-grid uses `.mini-grid .tile` for container scoping rather than a separate `.mini-tile` class
 - All gameplay animations use Web Animations API; only splash screen uses CSS keyframes (intentionally, for pre-JS loading)
 
 ### Help Pages
@@ -364,12 +363,12 @@ The level editor (`editor.js`) uses DOM classes as the source of truth during ed
 
 ## Sidebar Level List
 
-The sidebar displays levels as visual mini-grid thumbnails rather than text buttons. Each thumbnail shows:
+The sidebar displays levels as visual thumbnails rather than text buttons. Each thumbnail shows:
 - Tile colors using the same `TILE_CLASSES` mapping
 - Pig element (same as game grid, created by `createGrid()`)
 - Apple icon for target tiles
 
-All grids (game, editor, thumbnails) use `createGrid()` with shared `.tile` and `.pig` classes. Mini-grid specifics are scoped via `.mini-grid`.
+All grids (game, editor, thumbnails) use `createGrid()` with shared `.tile` and `.pig` classes.
 
 ## Keyboard Shortcuts
 
