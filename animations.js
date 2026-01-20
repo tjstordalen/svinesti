@@ -135,10 +135,15 @@ const KEYFRAMES = {
         { transform: 'translate(0, -5%) rotate(0deg)' }
     ],
 
-    // FLASH: brief background color pulse to draw attention
+    // FLASH: red glow pulses 3 times (1s each, inset to avoid z-index issues)
     FLASH: [
-        { backgroundColor: 'rgba(126, 176, 155, 0.4)' },  // light sage green
-        { backgroundColor: 'transparent' }
+        { offset: 0,      boxShadow: 'inset 0 0 0 0 transparent' },
+        { offset: 0.167,  boxShadow: 'inset 0 0 15px 5px rgba(255, 80, 80, 0.7)' },
+        { offset: 0.333,  boxShadow: 'inset 0 0 0 0 transparent' },
+        { offset: 0.5,    boxShadow: 'inset 0 0 15px 5px rgba(255, 80, 80, 0.7)' },
+        { offset: 0.667,  boxShadow: 'inset 0 0 0 0 transparent' },
+        { offset: 0.833,  boxShadow: 'inset 0 0 15px 5px rgba(255, 80, 80, 0.7)' },
+        { offset: 1,      boxShadow: 'inset 0 0 0 0 transparent' },
     ],
 };
 
@@ -337,12 +342,12 @@ function notify(element, message, isError = false, duration = 2500, className = 
 }
 
 /**
- * Flash background - brief color pulse to draw attention to an element.
+ * Flash - red glow that eases in and out.
  */
-function flash(element, duration = 400) {
+function flash(element, duration = 3000) {
     return element.animate(KEYFRAMES.FLASH, {
         duration,
-        easing: 'ease-out',
+        easing: 'ease-in-out',
     });
 }
 
