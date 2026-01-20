@@ -128,7 +128,7 @@ ui.sidebarToggle.onclick = () => {
 };
 
 // Help pane
-ui.helpButton.onclick = () => help.enter();
+ui.helpButton.onclick = () => ui.helpPane.classList.contains("show") ? help.exit() : help.enter();
 ui.helpClose.onclick = () => help.exit();
 ui.helpOverlay.onclick = () => help.exit();
 
