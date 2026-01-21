@@ -48,16 +48,6 @@
     right: 16px;
 }
 
-#editor-grid {
-    display: grid;
-    grid-template-columns: repeat(var(--grid-n-cols), 1fr);
-    grid-template-rows: repeat(var(--grid-n-rows), 1fr);
-    width: min(100cqw - 48px, (100cqh - 48px) * (var(--grid-n-cols) / var(--grid-n-rows)));
-    height: min((100cqw - 48px) * (var(--grid-n-rows) / var(--grid-n-cols)), 100cqh - 48px);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-}
 
 /* Responsive adjustments */
 @media (max-width: 900px) {

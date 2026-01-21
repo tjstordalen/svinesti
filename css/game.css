@@ -8,7 +8,13 @@
     display: grid;
     grid-template-columns: repeat(var(--cols), 1fr);
     grid-template-rows: repeat(var(--rows), 1fr);
+    width: min(100cqw, 100cqh * (var(--cols) / var(--rows)));
+    height: min(100cqw * (var(--rows) / var(--cols)), 100cqh);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
 }
+
 
 .grid .pig {
     box-sizing: border-box;
@@ -89,18 +95,8 @@ body.editor-mode .pig:active {
 
 #grid-wrapper {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
 }
 
-#grid {
-    width: min(100cqw, 100cqh * (var(--cols) / var(--rows)));
-    height: min(100cqw * (var(--rows) / var(--cols)), 100cqh);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-}
 
 .tile {
     aspect-ratio: 1 / 1;

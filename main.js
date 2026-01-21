@@ -46,14 +46,17 @@ function populateLevelList(levelArray) {
         const item = document.createElement('div');
         item.className = 'sidebar-level-item';
 
+        const wrapper = document.createElement('div');
+        wrapper.className = 'thumbnail-wrapper';
         const grid = document.createElement('div');
         createGrid(grid, lvl.nRows, lvl.nCols, lvl);
+        wrapper.appendChild(grid);
 
         const name = document.createElement('div');
         name.className = 'sidebar-level-name';
         name.textContent = lvl.name || 'Untitled';
 
-        item.appendChild(grid);
+        item.appendChild(wrapper);
         item.appendChild(name);
         ui.levelList.appendChild(item);
 		
