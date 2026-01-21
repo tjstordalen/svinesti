@@ -1,7 +1,5 @@
 // grid.js - Unified grid rendering
 
-import { pigSpriteUrl } from "./animations.js";
-
 // Map grid characters to CSS classes
 export const TILE_CLASSES = {
     ".": "empty",
@@ -51,7 +49,6 @@ export function createGrid(container, nRows, nCols, level = null) {
 
         placePig(row, col, dir) {
             this.getCell(row, col).appendChild(pig);
-            pig.style.backgroundImage = pigSpriteUrl(dir);
             pig.className = 'pig pig-' + dir;
             pig.style.transform = '';
             pig.classList.toggle('near-right-edge', col >= nCols - 2);

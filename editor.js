@@ -18,7 +18,8 @@ const EMPTY = 'empty';
 const TARGET = 'target';
 const COLORS = ['red', 'green', 'blue'];
 const [RED, GREEN, BLUE] = COLORS;
-const PIG_DIRS = ['editor-data-right', 'editor-data-down', 'editor-data-left', 'editor-data-up'];
+const DIR_PREFIX = 'editor-data-';
+const PIG_DIRS = [DIR_PREFIX + 'right', DIR_PREFIX + 'down', DIR_PREFIX + 'left', DIR_PREFIX + 'up'];
 const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
 
 // --- Validation ---
@@ -108,11 +109,12 @@ function load(level) {
     state.level = level;
     state.grid = createGrid(ui.editorGrid, level.nRows, level.nCols, level);
 
-    // Add pig-* class to tile for editor click cycling logic
-    const [row, col] = level.start;
+    // Remove pig element - editor uses tile classes for pig visuals
+    state.grid.pig.remove();
 
-	// TODO editor-data is hardcoded 
-    state.grid.getCell(row, col).classList.add('editor-data-' + level.dir);
+    // Add editor-data-* class to tile for pig position/direction
+    const [row, col] = level.start;
+    state.grid.getCell(row, col).classList.add(DIR_PREFIX + level.dir);
 }
 
 

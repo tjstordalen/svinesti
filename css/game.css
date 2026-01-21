@@ -118,11 +118,15 @@ body.editor-mode .pig:active {
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
-/* Pig direction classes (editor tiles and ghost) */
+/* Pig direction classes (pig element and ghost) */
 .pig-right,
 .pig-down,
 .pig-left,
-.pig-up {
+.pig-up,
+.editor-data-right,
+.editor-data-down,
+.editor-data-left,
+.editor-data-up {
     background-size: 90%;
     background-repeat: no-repeat;
     background-position: center;

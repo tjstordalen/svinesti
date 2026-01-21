@@ -23,7 +23,7 @@ const WALK_CYCLES = 2;        // number of walk sprite cycles during movement
 // --- Sprite helpers ---
 
 /** Returns CSS url() for a pig sprite image */
-export function pigSpriteUrl(dir, num = 1) {
+function pigSpriteUrl(dir, num = 1) {
     return `url("pigs/${dir}-${num}.png")`;
 }
 
@@ -228,7 +228,6 @@ async function turnThrowsAbort(pig, direction, animSpeed) {
     await hopUp.finished;
 
     // Swap sprite at peak of hop
-    pig.style.backgroundImage = pigSpriteUrl(direction);
     pig.className = 'pig pig-' + direction;
 
     // Phase 2: land with squash effect
