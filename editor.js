@@ -63,8 +63,6 @@ const state = {
         source: null,
         isPig: false,
         active: false,
-        carrying: false,
-        justStartedCarrying: false,
     },
 };
 
@@ -161,7 +159,6 @@ function handleLeftClick(e) {
 
 function handlePointerDown(e) {
     if (!e.isPrimary || e.button !== 0) return;
-    if (state.drag.carrying) return;  // Placement handled by click
     e.preventDefault();
     e.target.setPointerCapture(e.pointerId);
 
@@ -174,7 +171,7 @@ function handlePointerDown(e) {
 }
 
 function handlePointerMove(e) {
-    if (state.drag.source === null) return;  // No active drag
+    if (state.drag.source === null) return;
     const targetTile = tileAt(e);
 
     // Detect drag: pointer moved to a different tile
@@ -187,95 +184,47 @@ function handlePointerMove(e) {
 
     ui.ghost.style.left = e.clientX + 'px';
     ui.ghost.style.top = e.clientY + 'px';
+
+    // Paint tiles while dragging (not pig)
+    if (!state.drag.isPig && targetTile && targetTile !== state.drag.source) {
+        const pigClass = isPig(targetTile);
+        if (!(pigClass && state.drag.source.classList.contains(EMPTY))) {
+            targetTile.className = state.drag.source.className + (pigClass ? ' ' + pigClass : '');
+        }
+    }
 }
 
 function handlePointerUp(e) {
-    if (state.drag.source === null) return;  // No active drag
-    if (state.drag.carrying) return;  // Placement handled by click
+    if (state.drag.source === null) return;
 
     if (!state.drag.active) {
         // Click: cycle the tile
         handleLeftClick({ target: state.drag.source });
-        state.drag.source = null;
-    } else {
-        // Drag detected: enter carrying mode
-        state.drag.carrying = true;
-        state.drag.justStartedCarrying = true;
-    }
-}
-
-function handleMouseMove(e) {
-    if (!state.drag.carrying) return;
-    ui.ghost.style.left = e.clientX + 'px';
-    ui.ghost.style.top = e.clientY + 'px';
-
-    // Paint tiles while carrying a non-pig (if mouse button held)
-    if (!state.drag.isPig && e.buttons === 1) {
+    } else if (state.drag.isPig) {
+        // Pig drag: move pig to target tile
         const targetTile = tileAt(e);
-        if (targetTile) {
-            const pigClass = isPig(targetTile);
-            if (!(pigClass && state.drag.source.classList.contains('empty'))) {
-                targetTile.className = state.drag.source.className + (pigClass ? ' ' + pigClass : '');
-            }
-        }
-    }
-}
-
-function handleGridClick(e) {
-    if (!state.drag.carrying) return;
-
-    // Skip the click that fired immediately after entering carrying mode
-    if (state.drag.justStartedCarrying) {
-        state.drag.justStartedCarrying = false;
-        return;
-    }
-
-    const targetTile = tileAt(e);
-    if (targetTile) {
-        if (state.drag.isPig) {
-            // Move pig to target tile, then exit carrying mode
+        if (targetTile && targetTile !== state.drag.source) {
             const pigClass = isPig(state.drag.source);
             const targetColor = isColor(targetTile);
             const sourceColor = isColor(state.drag.source);
-            const color = targetColor || sourceColor;
-            targetTile.className = 'tile ' + color + ' ' + pigClass;
+            targetTile.className = 'tile ' + (targetColor || sourceColor) + ' ' + pigClass;
             state.drag.source.classList.remove(pigClass);
-
-            // Reset carrying state
-            ui.ghost.style.visibility = 'hidden';
-            state.drag.source = null;
-            state.drag.active = false;
-            state.drag.carrying = false;
-            state.drag.justStartedCarrying = false;
-
             syncPigToClass();
-        } else {
-            // Stamp source color to target tile, stay in carrying mode
-            const pigClass = isPig(targetTile);
-            if (!(pigClass && state.drag.source.classList.contains('empty'))) {
-                targetTile.className = state.drag.source.className + (pigClass ? ' ' + pigClass : '');
-            }
         }
     }
+    // Paint drag: already handled in handlePointerMove
+
+    ui.ghost.style.visibility = 'hidden';
+    state.drag.source = null;
+    state.drag.active = false;
 }
 
 function handleRightClick(e) {
     e.preventDefault();
-
-    // Cancel carrying mode
-    if (state.drag.carrying) {
-        ui.ghost.style.visibility = 'hidden';
-        state.drag.source = null;
-        state.drag.active = false;
-        state.drag.carrying = false;
-        state.drag.justStartedCarrying = false;
-        return;
-    }
-
     if (state.drag.source) return; // Ignore during drag
     const tile = e.target.closest('.tile');
     if (!tile) return;
-    if (isColor(tile) && !isPig(tile)) tile.classList.toggle('target');
+    if (isColor(tile) && !isPig(tile)) tile.classList.toggle(TARGET);
 }
 
 // --- Share ---
@@ -379,8 +328,6 @@ function enter() {
     ui.editorGrid.addEventListener('pointermove', handlePointerMove);
     ui.editorGrid.addEventListener('pointerup', handlePointerUp);
     ui.editorGrid.addEventListener('pointercancel', handlePointerUp);
-    ui.editorGrid.addEventListener('click', handleGridClick);
-    document.addEventListener('mousemove', handleMouseMove);
     ui.editorSave.addEventListener('click', handleSaveClick);
     ui.editorShare.addEventListener('click', handleShareClick);
 }
@@ -391,8 +338,6 @@ function exit() {
     ui.editorGrid.removeEventListener('pointermove', handlePointerMove);
     ui.editorGrid.removeEventListener('pointerup', handlePointerUp);
     ui.editorGrid.removeEventListener('pointercancel', handlePointerUp);
-    ui.editorGrid.removeEventListener('click', handleGridClick);
-    document.removeEventListener('mousemove', handleMouseMove);
     ui.editorSave.removeEventListener('click', handleSaveClick);
     ui.editorShare.removeEventListener('click', handleShareClick);
 }
