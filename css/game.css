@@ -30,14 +30,6 @@
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
-/* Editor: suppress class-based pig background (class is data-only) */
-#editor-grid .pig-right,
-#editor-grid .pig-down,
-#editor-grid .pig-left,
-#editor-grid .pig-up {
-    background-image: none;
-}
-
 /* Game Section */
 #game-section {
     position: relative;
@@ -136,10 +128,10 @@ body.editor-mode .pig:active {
     background-position: center;
 }
 
-.pig-right { background-image: url('../pigs/right-1.png'); }
-.pig-down { background-image: url('../pigs/down-1.png'); }
-.pig-left { background-image: url('../pigs/left-1.png'); }
-.pig-up { background-image: url('../pigs/up-1.png'); }
+.pig-right , .editor-data-right { background-image: url('../pigs/right-1.png'); }
+.pig-down  , .editor-data-down  { background-image: url('../pigs/down-1.png'); }
+.pig-left  , .editor-data-left  { background-image: url('../pigs/left-1.png'); }
+.pig-up    , .editor-data-up    { background-image: url('../pigs/up-1.png'); }
 
 /* Ghost (for dragging in editor) */
 .ghost {

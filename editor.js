@@ -18,7 +18,7 @@ const EMPTY = 'empty';
 const TARGET = 'target';
 const COLORS = ['red', 'green', 'blue'];
 const [RED, GREEN, BLUE] = COLORS;
-const PIG_DIRS = ['pig-right', 'pig-down', 'pig-left', 'pig-up'];
+const PIG_DIRS = ['editor-data-right', 'editor-data-down', 'editor-data-left', 'editor-data-up'];
 const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
 
 // --- Validation ---
@@ -41,10 +41,13 @@ function validate(level) {
 
     if (cells[pigIndex] === '.') return 'Pig must be on a colored tile';
 
+	// Flood-fill to determine if all colored tiles are reachable from the pig. 
     function dfs(i) {
-        const c = cells[i] || '.'; // because we can index out of bounds
+        const c = cells[i] || '.'; // the || is in case we index out of bounds
         if (c === '.') return;
         cells[i] = '.';
+
+		// the i+1,i-1 only works because we padded each row
         [i+1, i-1, i+stride, i-stride].forEach(dfs);
     }
     dfs(pigIndex);
@@ -96,7 +99,7 @@ function serialize() {
 	const pigCol = pigIndex % nCols;
 	const start = [pigRow, pigCol];
 	const pigClass = firstMatch(tiles[pigIndex], PIG_DIRS);
-	const dir = pigClass.slice('pig-'.length);
+	const dir = pigClass.split("-").at(-1);
 
 	return { nRows, nCols, grid, start, dir };
 }
@@ -107,21 +110,11 @@ function load(level) {
 
     // Add pig-* class to tile for editor click cycling logic
     const [row, col] = level.start;
-    state.grid.getCell(row, col).classList.add('pig-' + level.dir);
+
+	// TODO editor-data is hardcoded 
+    state.grid.getCell(row, col).classList.add('editor-data-' + level.dir);
 }
 
-function syncPigToClass() {
-    const { tiles, nCols } = state.grid;
-    const pigTile = tiles.find(t => PIG_DIRS.some(d => t.classList.contains(d)));
-    if (!pigTile) return;
-
-    const index = tiles.indexOf(pigTile);
-    const row = Math.floor(index / nCols);
-    const col = index % nCols;
-    const dir = PIG_DIRS.find(d => pigTile.classList.contains(d)).slice(4);
-
-    state.grid.placePig(row, col, dir);
-}
 
 // --- Click Cycling Maps ---
 
@@ -149,7 +142,6 @@ function handleLeftClick(e) {
     for (const [from, to] of leftClickReplacements) {
         if (tile.classList.replace(from, to)) {
             if (to === EMPTY) tile.classList.remove(TARGET);
-            syncPigToClass();
             return;
         }
     }
@@ -166,7 +158,7 @@ function handlePointerDown(e) {
     state.drag.active = false;
 
     const pigClass = isPig(state.drag.source);
-    state.drag.isPig = pigClass !== undefined;
+    state.drag.isPig = pigClass !== undefined; // TODO: yuck 
     ui.ghost.className = pigClass ? 'ghost ' + pigClass : 'ghost ' + state.drag.source?.className;
 }
 
@@ -185,7 +177,7 @@ function handlePointerMove(e) {
     ui.ghost.style.left = e.clientX + 'px';
     ui.ghost.style.top = e.clientY + 'px';
 
-    // Paint tiles while dragging (not pig)
+    // Paint tiles while dragging (not pig).
     if (!state.drag.isPig && targetTile && targetTile !== state.drag.source) {
         const pigClass = isPig(targetTile);
         if (!(pigClass && state.drag.source.classList.contains(EMPTY))) {
@@ -205,11 +197,10 @@ function handlePointerUp(e) {
         const targetTile = tileAt(e);
         if (targetTile && targetTile !== state.drag.source) {
             const pigClass = isPig(state.drag.source);
-            const targetColor = isColor(targetTile);
-            const sourceColor = isColor(state.drag.source);
+            const targetColor = isColor(targetTile); // TODO YUCK 
+            const sourceColor = isColor(state.drag.source); // TODO YUCK
             targetTile.className = 'tile ' + (targetColor || sourceColor) + ' ' + pigClass;
             state.drag.source.classList.remove(pigClass);
-            syncPigToClass();
         }
     }
     // Paint drag: already handled in handlePointerMove
@@ -233,15 +224,24 @@ function compact(level) {
     const { grid, start, dir } = level;
 
 	const rows = grid;
+
+	// transpose. col(i) gives it'h column, the second map iterates over the 
+	// number indicecs of a single row in the grid, and maps it to column. 
+	// TODO: it would probably be clearer to use Array.from(range) or something like that to be explicit. 
 	const col = i => grid.map(row => row[i]).join('');
 	const columns = [...grid[0]].map((_,i) => col(i));
 
-    const hasColor = s => /[^.]/.test(s);
+    const hasColor = s => /[^.]/.test(s); // regex matching anything but a period.
+
+	// Determine first and last row that has a non-empty tile 
     const minR = rows.findIndex(hasColor);
     const maxR = rows.findLastIndex(hasColor);
+
+	// Determine first and last column that has a non-empty tile 
     const minC = columns.findIndex(hasColor);
     const maxC = columns.findLastIndex(hasColor);
 
+	// TODO: use functional programming for consistency here? 
     const newGrid = [];
     for (let r = minR; r <= maxR; r++) {
         newGrid.push(grid[r].slice(minC, maxC + 1));
