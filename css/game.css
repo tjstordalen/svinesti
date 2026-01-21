@@ -5,6 +5,7 @@
 
 /* Base grid styling - all contexts */
 .grid {
+    /* The variables --cols and --rows are set dynamically by javascrpit to control the grid size */
     display: grid;
     grid-template-columns: repeat(var(--cols), 1fr);
     grid-template-rows: repeat(var(--rows), 1fr);
