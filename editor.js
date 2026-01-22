@@ -14,6 +14,7 @@ import * as animations from "./animations.js";
 // --- Constants ---
 
 const STORAGE_KEY = 'svinesti-custom-levels';
+const DRAG_ENABLED = false;
 const EMPTY = 'empty';
 const TARGET = 'target';
 const COLORS = ['red', 'green', 'blue'];
@@ -35,8 +36,10 @@ function validate(level) {
 
     // Add sentinel columns on left and right edges so that two elements from two
 	// different rows are not adjacent when we linearize the grid below
-    const paddedRows = grid.map(row => '.' + row + '.');
-    const cells = paddedRows.join('').split('');
+    const cells = grid
+		.map(row => '.' + row + '.') // pad rows
+		.join('')                    // join rows
+		.split('');                  // split into character array 
     const stride = nCols + 2; // each row is now two characters wider
     const pigIndex = start[0] * stride + start[1] + 1;
 
@@ -48,7 +51,7 @@ function validate(level) {
         if (c === '.') return;
         cells[i] = '.';
 
-		// the i+1,i-1 only works because we padded each row
+		// the i+1,i-1 only works because we padded each row above
         [i+1, i-1, i+stride, i-stride].forEach(dfs);
     }
     dfs(pigIndex);
@@ -68,13 +71,57 @@ const state = {
         isPig: false,
         active: false,
     },
+	cursor: null,
+	clipboard: null,
 };
+
 
 
 const tileAt = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
 const firstMatch = (tile, classes) => classes.find(c => tile.classList.contains(c));
 const isColor = (tile) => firstMatch(tile, COLORS);
 const isPig = (tile) => firstMatch(tile, PIG_DIRS);
+
+// --- Cursor and Navigation ---
+
+function moveCursor(tile) {
+    if (!tile || tile === state.cursor) return;
+    state.cursor?.classList.remove('cursor');
+    tile.classList.add('cursor');
+    state.cursor = tile;
+
+    if (state.clipboard) {
+        tile.appendChild(ui.ghost);
+    }
+}
+
+function getTileInDirection(dir) {
+    const { nCols, tiles } = state.grid;
+    let i = state.cursor?.index ?? 0;
+
+    switch (dir) {
+        case 'up':    if (i >= nCols)               i -= nCols; break;
+        case 'down':  if (i + nCols < tiles.length) i += nCols; break;
+        case 'left':  if (i % nCols !== 0)          i -= 1;     break;
+        case 'right': if ((i + 1) % nCols !== 0)    i += 1;     break;
+    }
+
+    return tiles[i];
+}
+
+function copyTile(tile) {
+    if (state.clipboard) {
+        // Toggle off
+        state.clipboard = null;
+        ui.ghost.style.visibility = 'hidden';
+        return;
+    }
+
+    state.clipboard = tile.className;
+    ui.ghost.className = 'ghost ' + tile.className;
+    ui.ghost.style.visibility = 'visible';
+    tile.appendChild(ui.ghost);
+}
 
 function serialize() {
 	const { nRows, nCols, tiles } = state.grid;
@@ -108,6 +155,11 @@ function serialize() {
 function load(level) {
     state.level = level;
     state.grid = createGrid(ui.editorGrid, level.nRows, level.nCols, level);
+
+    // Assign index to each tile for keyboard navigation
+    state.grid.tiles.forEach((tile, i) => {
+        tile.index = i;
+    });
 
     // Remove pig element - editor uses tile classes for pig visuals
     state.grid.pig.remove();
@@ -149,9 +201,24 @@ function handleLeftClick(e) {
     }
 }
 
+function handleKeyDown(e) {
+    const dir = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[e.key];
+
+    if (dir) {
+        moveCursor(getTileInDirection(dir));
+        e.preventDefault();
+        return;
+    }
+
+    if (e.key === 'c' && state.cursor) {
+        copyTile(state.cursor);
+    }
+}
+
 // --- Pig Drag Handlers ---
 
 function handlePointerDown(e) {
+    if (!DRAG_ENABLED) return;
     if (!e.isPrimary || e.button !== 0) return;
     e.preventDefault();
     e.target.setPointerCapture(e.pointerId);
@@ -165,6 +232,11 @@ function handlePointerDown(e) {
 }
 
 function handlePointerMove(e) {
+    const tile = e.target.closest('.tile');
+    moveCursor(tile);
+
+    if (!DRAG_ENABLED) return;
+
     if (state.drag.source === null) return;
     const targetTile = tileAt(e);
 
@@ -189,6 +261,7 @@ function handlePointerMove(e) {
 }
 
 function handlePointerUp(e) {
+    if (!DRAG_ENABLED) return;
     if (state.drag.source === null) return;
 
     if (!state.drag.active) {
@@ -322,8 +395,13 @@ function handleSaveClick() {
     animations.notify(ui.editorNotification, 'Level saved!');
 }
 
+
+
 function enter() {
     load(DEFAULT_LEVEL);
+
+	document.addEventListener('keydown', handleKeyDown); //TODO
+	
 
     ui.editorGrid.addEventListener('contextmenu', handleRightClick);
     ui.editorGrid.addEventListener('pointerdown', handlePointerDown);
@@ -335,6 +413,8 @@ function enter() {
 }
 
 function exit() {
+
+	document.removeEventListener('keydown', handleKeyDown); //TODO
     ui.editorGrid.removeEventListener('contextmenu', handleRightClick);
     ui.editorGrid.removeEventListener('pointerdown', handlePointerDown);
     ui.editorGrid.removeEventListener('pointermove', handlePointerMove);

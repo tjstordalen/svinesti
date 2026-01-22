@@ -77,6 +77,20 @@ body.editor-mode .tile:hover {
     filter: brightness(1.1);
 }
 
+body.editor-mode .tile.cursor {
+    outline: 3px solid white;
+    outline-offset: -3px;
+}
+
+/* Ghost inside cursor tile */
+.tile .ghost {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    transform: none;
+}
+
 /* Pig draggable in editor mode */
 body.editor-mode .pig {
     cursor: grab;
@@ -116,6 +130,10 @@ body.editor-mode .pig:active {
     background-repeat: no-repeat;
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.cursor {
+    box-shadow: inset 0 0 0 3px rgba(0xff,0xff,0xff,0.3);
 }
 
 /* Pig direction classes (pig element and ghost) */
