@@ -14,8 +14,8 @@ async function init() {
 	pyodide.setStdout({ batched: (text) => console.log("[py stdout]", text) });
 	pyodide.setStderr({ batched: (text) => console.error("[py stderr]", text) });
 
-	// no-store: avoid stale code during development
 	console.time("[worker] fetch svinesti.py");
+	// no-store: avoid stale code during development
 	const response = await fetch("./svinesti.py", { cache: 'no-store' });
 	if (!response.ok) {
 		throw new Error(`Failed to fetch svinesti.py: ${response.status}`);
@@ -35,7 +35,17 @@ async function handleMessage(event) {
 	try {
 		isolatedNamespace = pyodide.globals.copy();
 		pyodide.runPython(engineCode, { globals: isolatedNamespace });
+
+	    const codeIsEmpty = event.data.code.replace(/\s+/g, '').length === 0; 
+		if (codeIsEmpty) {
+			self.postMessage({ type: "execution-failed", errorMessage: "No program was provided" });
+			return
+		}
+
 		const userCode = injectUserCode(event.data.level, event.data.code);
+
+
+
 		const result = pyodide.runPython(userCode, { globals: isolatedNamespace });
 		self.postMessage({
 			type: "execution-trace",
