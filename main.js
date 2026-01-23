@@ -91,10 +91,9 @@ for (let lvl of levels) {
     lvl.grid[r] = row.join("");
 }
 
-// Initialize game module
-Game.init({
-    shortcutsContainer: ui.shortcutsContainer,
-});
+// Initialize game and editor modules
+Game.init();
+Editor.init();
 
 // TODO FOR CLAUDE. Fix this. Just populate the default levels 
 // Build level list

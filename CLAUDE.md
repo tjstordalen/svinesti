@@ -32,13 +32,13 @@ Styles are organized in `css/` directory with modular files:
 | `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
 | `sidebar.css` | Sidebar, tabs, level list, thumbnails |
 | `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
-| `game.css` | Grid, tiles, colors, pig sprites, ghost, pig element, color HUD, confetti |
+| `game.css` | Grid, tiles, colors, pig sprites, pig element, color HUD, confetti |
 | `help.css` | Help modal, shortcuts list, toggle switch, lock icon shake, fadeIn/slideUp keyframes |
 | `splash.css` | Splash screen overlay, animated pig, typewriter loading text, walk/shadow keyframes |
 
 **Design notes:**
 - Each file has a header comment listing its contents
-- Tile colors use standalone classes (`.red`, `.green`, `.blue`, `.empty`) shared across grid and ghost
+- Tile colors use standalone classes (`.red`, `.green`, `.blue`, `.empty`)
 - Pig sprites also use standalone classes (`.pig-right`, `.pig-down`, `.pig-left`, `.pig-up`)
 - All gameplay animations use Web Animations API; only splash screen uses CSS keyframes (intentionally, for pre-JS loading)
 

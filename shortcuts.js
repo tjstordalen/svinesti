@@ -1,5 +1,9 @@
 // shortcuts.js - Keyboard shortcut management system
 
+// Module-level flag: true if ANY shortcuts instance is currently rebinding
+// All instances check this before executing shortcuts
+let globalRebinding = false;
+
 /**
  * Create a shortcuts manager instance
  * @param {string} storageKey - localStorage key for persisting settings
@@ -8,7 +12,7 @@
 function createShortcuts(storageKey) {
     const shortcuts = [];
     let rebindingShortcut = null;  // Track which shortcut is being rebound
-    let keydownHandler = null;     // Track listener for enable/disable
+    let enabled = false;           // Whether shortcuts are active
 
     /**
      * Register a shortcut with an action and default hotkey
@@ -38,28 +42,28 @@ function createShortcuts(storageKey) {
     function initialize(container) {
         loadSettings();
         renderUI(container);
+        // Always listen for keydown (for rebinding), but only execute when enabled
+        // Use capture phase to run before other listeners
+        document.addEventListener('keydown', handleKeydown, true);
     }
 
     /**
-     * Enable keyboard shortcuts (attach listener)
+     * Enable keyboard shortcuts
      */
     function enable() {
-        if (keydownHandler) return;  // Already enabled
-        keydownHandler = handleKeydown;
-        document.addEventListener('keydown', keydownHandler);
+        enabled = true;
     }
 
     /**
-     * Disable keyboard shortcuts (detach listener)
+     * Disable keyboard shortcuts
      */
     function disable() {
-        if (!keydownHandler) return;  // Already disabled
-        document.removeEventListener('keydown', keydownHandler);
-        keydownHandler = null;
+        enabled = false;
         // Cancel any active rebinding
         if (rebindingShortcut) {
             rebindingShortcut.keySpan.innerHTML = formatKeyDisplay(rebindingShortcut.key);
             rebindingShortcut = null;
+            globalRebinding = false;
         }
     }
 
@@ -101,13 +105,23 @@ function createShortcuts(storageKey) {
     /**
      * Format a key string into kbd elements (e.g., "ctrl+enter" → "<kbd>Ctrl</kbd> + <kbd>Enter</kbd>")
      */
+    const KEY_DISPLAY = {
+        ' ': 'Space',
+        'arrowup': '↑',
+        'arrowdown': '↓',
+        'arrowleft': '←',
+        'arrowright': '→',
+    };
+
+    const ARROW_KEYS = new Set(['arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
+
     function formatKeyDisplay(keyString) {
         return keyString
             .split('+')
             .map(part => {
-                // Capitalize first letter
-                const label = part.charAt(0).toUpperCase() + part.slice(1);
-                return `<kbd>${label}</kbd>`;
+                const label = KEY_DISPLAY[part] ?? part.charAt(0).toUpperCase() + part.slice(1);
+                const cls = ARROW_KEYS.has(part) ? 'arrow' : '';
+                return `<kbd class="${cls}">${label}</kbd>`;
             })
             .join(' + ');
     }
@@ -172,49 +186,60 @@ function createShortcuts(storageKey) {
             masterCheckbox.checked = shortcuts.some(s => s.enabled);
         }
 
+        // Group shortcuts by name (preserving order of first occurrence)
+        const groups = [];
+        const groupMap = new Map();
         for (const shortcut of shortcuts) {
-            // Skip hidden shortcuts (e.g., auto-registered Ctrl+ versions)
             if (shortcut.hidden) continue;
-
-            const li = document.createElement('li');
-            if (!shortcut.enabled) li.classList.add('disabled');
-
-            // Add lock icon for non-rebindable shortcuts
-            let lockIcon = null;
-            if (!shortcut.rebindable) {
-                lockIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                lockIcon.setAttribute('viewBox', '0 0 16 16');
-                lockIcon.setAttribute('fill', 'currentColor');
-                lockIcon.className.baseVal = 'shortcut-lock';
-                lockIcon.innerHTML = '<path d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4m0 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>';
-                li.appendChild(lockIcon);
+            if (groupMap.has(shortcut.name)) {
+                groupMap.get(shortcut.name).push(shortcut);
+            } else {
+                const group = [shortcut];
+                groups.push(group);
+                groupMap.set(shortcut.name, group);
             }
+        }
 
-            const keySpan = document.createElement('span');
-            keySpan.className = 'shortcut-key';
-            keySpan.innerHTML = formatKeyDisplay(shortcut.key);
-            keySpan.addEventListener('click', (e) => {
-                e.stopPropagation();  // Don't toggle enabled state
-                startRebinding(shortcut, keySpan);
+        for (const group of groups) {
+            const li = document.createElement('li');
+            const allDisabled = group.every(s => !s.enabled);
+            if (allDisabled) li.classList.add('disabled');
+
+            // Create key spans for each shortcut in group
+            const keysContainer = document.createElement('span');
+            keysContainer.className = 'shortcut-keys';
+
+            group.forEach((shortcut, i) => {
+                if (i > 0) keysContainer.appendChild(document.createTextNode(' '));
+
+                const keySpan = document.createElement('span');
+                keySpan.className = 'shortcut-key';
+                keySpan.innerHTML = formatKeyDisplay(shortcut.key);
+                keySpan.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    startRebinding(shortcut, keySpan);
+                });
+
+                shortcut.keySpan = keySpan;
+                shortcut.li = li;
+                keysContainer.appendChild(keySpan);
             });
 
             const nameSpan = document.createElement('span');
-            nameSpan.textContent = ` - ${shortcut.name}`;
+            nameSpan.textContent = ` - ${group[0].name}`;
 
-            // Click li to toggle enabled/disabled
+            // Click li to toggle all shortcuts in group
             li.addEventListener('click', () => {
-                shortcut.enabled = !shortcut.enabled;
-                li.classList.toggle('disabled', !shortcut.enabled);
+                const newEnabled = !group.every(s => s.enabled);
+                for (const shortcut of group) {
+                    shortcut.enabled = newEnabled;
+                }
+                li.classList.toggle('disabled', !newEnabled);
                 saveSettings();
                 updateMasterCheckbox();
             });
 
-            // Store references for updating later
-            shortcut.keySpan = keySpan;
-            shortcut.lockIcon = lockIcon;
-            shortcut.li = li;
-
-            li.appendChild(keySpan);
+            li.appendChild(keysContainer);
             li.appendChild(nameSpan);
             ul.appendChild(li);
         }
@@ -251,6 +276,7 @@ function createShortcuts(storageKey) {
         }
 
         rebindingShortcut = shortcut;
+        globalRebinding = true;
         keySpan.innerHTML = '<kbd>...</kbd>';
     }
 
@@ -268,19 +294,25 @@ function createShortcuts(storageKey) {
                 return;
             }
             event.preventDefault();
+            event.stopImmediatePropagation();
             const newKey = getKeyString(event);
             rebindingShortcut.key = newKey;
             rebindingShortcut.keySpan.innerHTML = formatKeyDisplay(newKey);
             saveSettings();
             rebindingShortcut = null;
+            globalRebinding = false;
             return;
         }
+
+        // Only execute shortcuts when enabled and no instance is rebinding
+        if (!enabled || globalRebinding) return;
 
         const pressedKey = getKeyString(event);
 
         for (const shortcut of shortcuts) {
             if (!shortcut.enabled) continue;
             if (shortcut.key === pressedKey) {
+                event.preventDefault();
                 shortcut.action();
                 return;
             }

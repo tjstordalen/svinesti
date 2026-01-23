@@ -7,6 +7,12 @@ import { DEFAULT_LEVEL } from "./levels.js";
 import { createGrid, TILE_CLASSES } from "./grid.js";
 import { ui } from "./ui.js";
 import * as animations from "./animations.js";
+import * as Shortcuts from "./shortcuts.js";
+
+// --- Shortcuts ---
+
+const editShortcuts = Shortcuts.new('svinesti-editor-edit-v1');
+const paintShortcuts = Shortcuts.new('svinesti-editor-paint-v1');
 
 // --- Constants ---
 
@@ -97,6 +103,8 @@ function cycleTarget(i) {
 function movePigTo(i) {
     if (state.cells[i] === '.') {
         state.cells[i] = state.cells[state.pigIndex].toLowerCase();
+    } else {
+        state.cells[i] = state.cells[i].toLowerCase();
     }
     state.pigIndex = i;
     render();
@@ -230,56 +238,113 @@ function validate(level) {
     return null;
 }
 
-// --- Keyboard Events ---
+// --- Shortcuts ---
 
-function handleKeyDown(e) {
-    switch (e.key) {
-        case ' ':
-            e.preventDefault();
-            state.paintHeld = true;
-            if (inPaintMode()) pasteCell(state.cursor);
-            else cycleColor(state.cursor);
-            break;
-
-        case 'ArrowUp':
-            e.preventDefault();
-            ui.editorGrid.classList.add('keyboard-nav');
-            moveCursor('up');
-            break;
-
-        case 'ArrowDown':
-            e.preventDefault();
-            ui.editorGrid.classList.add('keyboard-nav');
-            moveCursor('down');
-            break;
-
-        case 'ArrowLeft':
-            e.preventDefault();
-            ui.editorGrid.classList.add('keyboard-nav');
-            moveCursor('left');
-            break;
-
-        case 'ArrowRight':
-            e.preventDefault();
-            ui.editorGrid.classList.add('keyboard-nav');
-            moveCursor('right');
-            break;
-
-        case 's':
-            cycleTarget(state.cursor);
-            break;
-
-        case 'p':
-            movePigTo(state.cursor);
-            break;
-
-        case 'c':
-            state.clipboard = inPaintMode() ? null : state.cells[state.cursor];
-            render();
-            break;
-    }
+function enterPaintMode() {
+    state.clipboard = state.cells[state.cursor];
+    editShortcuts.disable();
+    paintShortcuts.enable();
+    render();
 }
 
+function exitPaintMode() {
+    state.clipboard = null;
+    paintShortcuts.disable();
+    editShortcuts.enable();
+    render();
+}
+
+function registerShortcuts() {
+    // --- Edit mode shortcuts ---
+    editShortcuts.register({
+        id:     "cycle-color",
+        name:   "Change color / Rotate pig",
+        action: () => cycleColor(state.cursor),
+        key:    " ",
+    });
+    editShortcuts.register({
+        id:     "toggle-target",
+        name:   "Add/remove apple",
+        action: () => cycleTarget(state.cursor),
+        key:    "s",
+    });
+    editShortcuts.register({
+        id:     "move-up",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
+        key:    "arrowup",
+    });
+    editShortcuts.register({
+        id:     "move-down",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
+        key:    "arrowdown",
+    });
+    editShortcuts.register({
+        id:     "move-left",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
+        key:    "arrowleft",
+    });
+    editShortcuts.register({
+        id:     "move-right",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
+        key:    "arrowright",
+    });
+    editShortcuts.register({
+        id:     "move-pig",
+        name:   "Place pig at cursor",
+        action: () => movePigTo(state.cursor),
+        key:    "p",
+    });
+    editShortcuts.register({
+        id:     "enter-paint",
+        name:   "Copy tile (enter paint mode)",
+        action: enterPaintMode,
+        key:    "c",
+    });
+
+    // --- Paint mode shortcuts ---
+    paintShortcuts.register({
+        id:     "paste",
+        name:   "Paste tile",
+        action: () => { state.paintHeld = true; pasteCell(state.cursor); },
+        key:    " ",
+    });
+    paintShortcuts.register({
+        id:     "move-up",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
+        key:    "arrowup",
+    });
+    paintShortcuts.register({
+        id:     "move-down",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
+        key:    "arrowdown",
+    });
+    paintShortcuts.register({
+        id:     "move-left",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
+        key:    "arrowleft",
+    });
+    paintShortcuts.register({
+        id:     "move-right",
+        name:   "Move cursor",
+        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
+        key:    "arrowright",
+    });
+    paintShortcuts.register({
+        id:     "exit-paint",
+        name:   "Exit paint mode",
+        action: exitPaintMode,
+        key:    "c",
+    });
+}
+
+// Keyup handler for paint-hold behavior (space release)
 function handleKeyUp(e) {
     if (e.key === ' ') {
         state.paintHeld = false;
@@ -304,8 +369,7 @@ function handleMouseDown(e) {
     if (e.button === 2) {
         // Right-click
         if (inPaintMode()) {
-            state.clipboard = null;
-            render();
+            exitPaintMode();
         } else {
             cycleTarget(i);
         }
@@ -314,8 +378,7 @@ function handleMouseDown(e) {
 
     // Left-click
     if (e.shiftKey) {
-        state.clipboard = state.cells[i];
-        render();
+        enterPaintMode();
     } else if (inPaintMode()) {
         state.isMouseDown = true;
         pasteCell(i);
@@ -459,12 +522,18 @@ function handleSaveClick() {
     animations.notify(ui.editorNotification, 'Level saved!');
 }
 
-// --- Enter / Exit ---
+// --- Init / Enter / Exit ---
+
+function init() {
+    registerShortcuts();
+    editShortcuts.init(ui.editorEditShortcuts);
+    paintShortcuts.init(ui.editorPaintShortcuts);
+}
 
 function enter() {
     load(DEFAULT_LEVEL);
 
-    document.addEventListener('keydown', handleKeyDown);
+    editShortcuts.enable();
     document.addEventListener('keyup', handleKeyUp);
     document.addEventListener('mouseup', handleMouseUp);
     ui.editorGrid.addEventListener('mousedown', handleMouseDown);
@@ -475,7 +544,8 @@ function enter() {
 }
 
 function exit() {
-    document.removeEventListener('keydown', handleKeyDown);
+    editShortcuts.disable();
+    paintShortcuts.disable();
     document.removeEventListener('keyup', handleKeyUp);
     document.removeEventListener('mouseup', handleMouseUp);
     ui.editorGrid.removeEventListener('mousedown', handleMouseDown);
@@ -485,4 +555,4 @@ function exit() {
     ui.editorShare.removeEventListener('click', handleShareClick);
 }
 
-export { enter, exit, load, serialize, validate, importFromURL, getCustomLevels };
+export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels };

@@ -122,8 +122,6 @@ export const CODE_OUTPUT_MIN_HEIGHT = 60;   // pixels
 
 // Game elements
 export const PIG_SPRITE_SIZE = 90;          // percent of tile
-export const GHOST_DRAG_SIZE = 60;          // pixels
-export const GHOST_OPACITY = 0.7;
 export const TARGET_APPLE_SIZE = 40;        // percent of tile
 export const TARGET_APPLE_POSITION = 30;    // percent from top-left
 export const COMPARISON_TILE_SIZE = 32;     // pixels

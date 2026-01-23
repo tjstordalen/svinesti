@@ -137,6 +137,12 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+.help-column kbd.arrow {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 0 6px;
+}
+
 .help-column pre {
     margin: 12px 0;
     padding: 16px;

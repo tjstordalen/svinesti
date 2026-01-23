@@ -33,20 +33,96 @@
 #editor-pane:not([hidden]) {
     flex: 1;
     display: flex;
+    gap: 24px;
+}
+
+.editor-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     padding: 24px;
-    container-type: size;
     position: relative;
+    min-height: 0;
 }
 
-#editor-share {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
+.editor-grid-container {
+    flex: 1;
+    width: 100%;
+    container-type: size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+.editor-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.editor-sidebar {
+    width: 340px;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.editor-sidebar h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+    border-bottom: 2px solid var(--color-interactive);
+    padding-bottom: 8px;
+}
+
+.editor-sidebar kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.editor-sidebar kbd.arrow {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 0 6px;
+}
+
+.mouse-controls {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 14px;
+}
+
+.mouse-controls li {
+    padding: 4px 0;
+    color: var(--color-text);
+}
+
+.mouse-controls .substeps {
+    list-style: none;
+    padding: 4px 0 0 16px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.mouse-controls .substeps li {
+    padding: 2px 0;
 }
 
 

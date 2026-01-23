@@ -445,7 +445,7 @@ function registerShortcuts() {
 
 // --- Public API ---
 
-export function init({ shortcutsContainer } = {}) {
+export function init() {
     // Initialize font size from slider
     ui.editor.getWrapperElement().style.fontSize = ui.fontSizeSlider.value + "px";
 
@@ -454,9 +454,7 @@ export function init({ shortcutsContainer } = {}) {
 
     // Register and initialize shortcuts
     registerShortcuts();
-    if (shortcutsContainer) {
-        shortcuts.init(shortcutsContainer);
-    }
+    shortcuts.init(ui.gameShortcutsContainer);
 
     // Initialize worker
     initWorker();

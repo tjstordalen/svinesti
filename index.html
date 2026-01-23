@@ -159,11 +159,36 @@
             </div>
 
             <div id="editor-pane" hidden>
-				<div id="ghost"></div>
-                <div id="editor-grid"></div>
-                <button id="editor-save" class="btn btn-primary">Save</button>
-                <button id="editor-share" class="btn btn-secondary">Share</button>
-                <div id="editor-notification" class="notification"></div>
+                <div class="editor-main">
+                    <div class="editor-grid-container">
+                        <div id="editor-grid"></div>
+                    </div>
+                    <div class="editor-buttons">
+                        <button id="editor-save" class="btn btn-primary">Save</button>
+                        <button id="editor-share" class="btn btn-secondary">Share</button>
+                    </div>
+                    <div id="editor-notification" class="notification"></div>
+                </div>
+                <div class="editor-sidebar">
+                    <h3>Mouse</h3>
+                    <ul class="mouse-controls">
+                        <li><strong>Click tile</strong> - Change tile color</li>
+                        <li><strong>Click pig</strong> - Rotate direction</li>
+                        <li><strong>Right-click</strong> - Add/remove apple</li>
+                        <li><strong>Drag pig</strong> - Move starting position</li>
+                        <li><strong>Shift+click</strong> - Copy tile
+                            <ul class="substeps">
+                                <li>then:</li>
+                                <li><strong>Click</strong> - Paste</li>
+                                <li><strong>Right-click</strong> - Exit copy/paste mode</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <h3>Keyboard — Edit Mode</h3>
+                    <div id="editor-edit-shortcuts"></div>
+                    <h3>Keyboard — Paint Mode</h3>
+                    <div id="editor-paint-shortcuts"></div>
+                </div>
             </div>
 
         </main>
@@ -240,17 +265,8 @@ isBlue()</code></pre>
                         <span class="mini-tile blue"></span><span>Blue</span>
                     </div>
 
-                    <div id="shortcuts-container"></div>
+                    <div id="game-shortcuts-container"></div>
 
-                    <h3>Level Editor</h3>
-                    <p>Click <strong>Edit</strong> in the header to create custom levels.</p>
-                    <ul>
-                        <li><strong>Click</strong> tile: cycle colors</li>
-                        <li><strong>Click + drag</strong>: paint tiles</li>
-                        <li><strong>Right-click</strong> tile: toggle apple</li>
-                        <li><strong>Drag pig</strong>: move starting position</li>
-                        <li><strong>Click pig</strong>: rotate direction</li>
-                    </ul>
                 </div>
 
                 <div class="help-licenses">

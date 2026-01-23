@@ -41,7 +41,8 @@ export const ui = {
     comparisonAnswer: gid("comparison-answer"),
     playbackToolbar: document.querySelector(".playback-toolbar"),
     gameNotification: gid("game-notification"),
-    ghost: gid("ghost"),
-    shortcutsContainer: gid("shortcuts-container"),
+    gameShortcutsContainer: gid("game-shortcuts-container"),
+    editorEditShortcuts: gid("editor-edit-shortcuts"),
+    editorPaintShortcuts: gid("editor-paint-shortcuts"),
     colorblindToggle: gid("colorblind-toggle"),
 };
