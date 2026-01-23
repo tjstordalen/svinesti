@@ -38,6 +38,7 @@
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
+    padding: 24px;
     container-type: size;
     position: relative;
 }
