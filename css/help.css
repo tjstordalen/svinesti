@@ -1,6 +1,6 @@
 /*
  * help.css - Help modal dialog
- * Modal overlay, card, columns, shortcuts list, toggle switch, fadeIn/slideUp keyframes
+ * Modal overlay, card, columns, settings row, shortcuts list, toggle switch, fadeIn/slideUp keyframes
  */
 
 /* Help Modal */
@@ -177,6 +177,59 @@
     font-size: 13px;
     color: var(--color-text-muted);
     font-style: italic;
+}
+
+/* Settings row */
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.pattern-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 16px;
+}
+
+.pattern-legend span:not(.mini-tile) {
+    margin-right: 0.5em;
+}
+
+.mini-tile {
+    display: inline-block;
+    width: 3em;
+    height: 3em;
+    border-radius: 0.25em;
+    position: relative;
+}
+
+/* Denser patterns for mini-tiles */
+body.colorblind-mode .mini-tile.red {
+    background:
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 0.15em,
+            rgba(0, 0, 0, 0.25) 0.15em,
+            rgba(0, 0, 0, 0.25) 0.3em
+        ),
+        var(--tile-red);
+}
+
+body.colorblind-mode .mini-tile.green {
+    background:
+        radial-gradient(
+            circle,
+            rgba(0, 0, 0, 0.25) 0.1em,
+            transparent 0.1em
+        ),
+        var(--tile-green);
+    background-size: 0.45em 0.45em, auto;
 }
 
 /* Shortcut toggle controls */

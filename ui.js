@@ -43,4 +43,5 @@ export const ui = {
     gameNotification: gid("game-notification"),
     ghost: gid("ghost"),
     shortcutsContainer: gid("shortcuts-container"),
+    colorblindToggle: gid("colorblind-toggle"),
 };

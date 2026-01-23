@@ -138,6 +138,16 @@ ui.helpButton.onclick = () => help.toggle();
 ui.helpClose.onclick = () => help.exit();
 ui.helpOverlay.onclick = () => help.exit();
 
+// Colorblind mode toggle
+const colorblindEnabled = localStorage.getItem('colorblind-mode') === 'true';
+document.body.classList.toggle('colorblind-mode', colorblindEnabled);
+ui.colorblindToggle.checked = colorblindEnabled;
+ui.colorblindToggle.onchange = () => {
+    const enabled = ui.colorblindToggle.checked;
+    document.body.classList.toggle('colorblind-mode', enabled);
+    localStorage.setItem('colorblind-mode', enabled);
+};
+
 // Mode toggle
 ui.modePlay.onclick = () => {
     Editor.exit();
