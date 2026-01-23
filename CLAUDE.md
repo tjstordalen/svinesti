@@ -331,18 +331,11 @@ for (const char of level.grid.join('')) {
 }
 ```
 
-**editor.js** uses the same pattern for serialization (reverse mapping) and click cycling:
+**editor.js** uses the same pattern for color cycling and target toggling:
 
 ```javascript
-const classToChar = { empty: '.', red: 'r', green: 'g', blue: 'b' };
-const leftClickReplacements = [
-    ["pig-right", "pig-down"],
-    ["pig-down", "pig-left"],
-    // ...
-    ["empty", "blue"],
-    ["blue", "green"],
-    // ...
-];
+const COLOR_CYCLE = { '.': 'b', 'b': 'g', 'g': 'r', 'r': '.', 'B': 'G', 'G': 'R', 'R': '.' };
+const TARGET_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r' };
 ```
 
 ## Level Editor
@@ -352,28 +345,46 @@ The level editor (`editor.js`) uses explicit state with the level format's chara
 **State:**
 ```javascript
 const state = {
-    cells: [],      // 1D array of chars: '.rgbRGB'
+    cells: [],           // 1D array of chars: '.rgbRGB'
     nRows, nCols,
-    pigIndex: 0,    // index into cells
+    pigIndex: 0,         // index into cells
     pigDir: 'right',
-    cursor: null,   // index
-    clipboard: null // char when in paint mode
+    cursor: 0,           // index (follows mouse or keyboard)
+    clipboard: null,     // char when in paint mode, null otherwise
+    paintHeld: false,    // spacebar held for continuous keyboard painting
+    isMouseDown: false,  // mouse button held for continuous mouse painting
+    isDraggingPig: false,
+    grid: null,          // grid object for DOM refs
 };
 ```
 
 **Data-driven cycles:**
 ```javascript
-const LEFT_CYCLE = { '.': 'b', 'b': 'g', 'g': 'r', 'r': '.', 'B': 'G', 'G': 'R', 'R': '.' };
-const RIGHT_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r' };
+const COLOR_CYCLE = { '.': 'b', 'b': 'g', 'g': 'r', 'r': '.', 'B': 'G', 'G': 'R', 'R': '.' };
+const TARGET_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r' };
 const DIR_CYCLE = { right: 'down', down: 'left', left: 'up', up: 'right' };
 ```
 
-**Controls:**
-- **Left-click / Space** — Cycle tile color or rotate pig
-- **Right-click / S** — Toggle target (star) on colored tiles
+**Keyboard controls:**
+- **Space** — Cycle tile color or rotate pig (hold for continuous paint in paint mode)
+- **S** — Toggle target (star) on colored tiles
 - **Arrow keys** — Move cursor
 - **P** — Move pig to cursor
 - **C** — Enter/exit paint mode (copies current tile)
+
+**Mouse controls:**
+- **Left-click** — Cycle tile color or rotate pig
+- **Right-click** — Toggle target (or exit paint mode)
+- **Shift+click** — Copy tile to clipboard, enter paint mode
+- **Drag pig** — Move pig to new tile (ghost preview shows destination)
+- **Click-drag in paint mode** — Continuous painting
+
+**Paint mode constraints:**
+- Cannot paint empty (`.`) onto the pig's tile (pig must stay on colored tile)
+
+**Ghost preview:** When dragging pig or in paint mode, a ghost preview appears on the cursor tile via `::after` pseudo-element. CSS custom properties (`--ghost-pig`, `--ghost-color`, `--ghost-star`) control what's shown.
+
+**Colorblind mode:** Pig remains visible on patterned tiles via `--pig-bg` CSS variable layered on top of colorblind patterns.
 
 **Design:** State-driven with full re-render. The level format's character representation IS the internal state — no conversion needed. Mutations are trivial: update state, call `render()`. No pig element in editor; pig shown via `pig-{dir}` class on tile.
 

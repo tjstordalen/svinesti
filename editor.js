@@ -103,7 +103,7 @@ function movePigTo(i) {
 }
 
 function pasteCell(i) {
-    if (state.clipboard) {
+    if (state.clipboard && !(i === state.pigIndex && state.clipboard === '.')) {
         state.cells[i] = state.clipboard;
         render();
     }
