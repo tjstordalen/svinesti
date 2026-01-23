@@ -89,8 +89,9 @@ body.editor-mode .tile.cursor::after {
     right: 12%;
     width: 45%;
     height: 45%;
+    font-size: 24px; /* Base for em-based patterns */
     background-color: var(--ghost-color);
-    background-image: var(--ghost-star);
+    background-image: var(--ghost-pig, var(--ghost-star));
     background-size: 60%;
     background-position: center;
     background-repeat: no-repeat;
@@ -99,6 +100,32 @@ body.editor-mode .tile.cursor::after {
     border-radius: 4px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     opacity: 0.9;
+}
+
+/* Colorblind patterns for ghost preview */
+body.colorblind-mode .ghost-red .tile.cursor::after {
+    background:
+        var(--ghost-star) center / 60% no-repeat,
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 0.15em,
+            rgba(0, 0, 0, 0.25) 0.15em,
+            rgba(0, 0, 0, 0.25) 0.3em
+        ),
+        var(--tile-red);
+}
+
+body.colorblind-mode .ghost-green .tile.cursor::after {
+    background:
+        var(--ghost-star) center / 60% no-repeat,
+        radial-gradient(
+            circle,
+            rgba(0, 0, 0, 0.25) 0.1em,
+            transparent 0.1em
+        ),
+        var(--tile-green);
+    background-size: 60%, 0.4em 0.4em, auto;
 }
 
 body.editor-mode .keyboard-nav {
@@ -167,6 +194,32 @@ body.colorblind-mode .green {
     background-size: 10px 10px, auto;
 }
 
+/* Colorblind patterns with pig layered on top (editor mode) */
+body.colorblind-mode .red[class*="pig-"] {
+    background:
+        var(--pig-bg) center / 90% no-repeat,
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 4px,
+            rgba(0, 0, 0, 0.25) 4px,
+            rgba(0, 0, 0, 0.25) 8px
+        ),
+        var(--tile-red);
+}
+
+body.colorblind-mode .green[class*="pig-"] {
+    background:
+        var(--pig-bg) center / 90% no-repeat,
+        radial-gradient(
+            circle,
+            rgba(0, 0, 0, 0.25) 2px,
+            transparent 2px
+        ),
+        var(--tile-green);
+    background-size: 90%, 10px 10px, auto;
+}
+
 /* Denser patterns for small tiles (HUD and legend) - uses em with shared font-size */
 body.colorblind-mode :is(.mini-tile, #comparison-tile).red {
     background:
@@ -223,10 +276,10 @@ body.colorblind-mode :is(.mini-tile, #comparison-tile).green {
     background-position: center;
 }
 
-.pig-right , .editor-data-right { background-image: url('../pigs/right-1.png'); }
-.pig-down  , .editor-data-down  { background-image: url('../pigs/down-1.png'); }
-.pig-left  , .editor-data-left  { background-image: url('../pigs/left-1.png'); }
-.pig-up    , .editor-data-up    { background-image: url('../pigs/up-1.png'); }
+.pig-right , .editor-data-right { --pig-bg: url('../pigs/right-1.png'); background-image: var(--pig-bg); }
+.pig-down  , .editor-data-down  { --pig-bg: url('../pigs/down-1.png'); background-image: var(--pig-bg); }
+.pig-left  , .editor-data-left  { --pig-bg: url('../pigs/left-1.png'); background-image: var(--pig-bg); }
+.pig-up    , .editor-data-up    { --pig-bg: url('../pigs/up-1.png'); background-image: var(--pig-bg); }
 
 /* Ghost (for dragging in editor) */
 .ghost {

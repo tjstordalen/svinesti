@@ -40,6 +40,8 @@ const state = {
     cursor: 0,
     clipboard: null, // char when in paint mode, null otherwise
     paintHeld: false,
+    isMouseDown: false,
+    isDraggingPig: false,
     grid: null,      // grid object for DOM refs
 };
 
@@ -57,12 +59,20 @@ function render() {
     });
 
     const g = ui.editorGrid.style;
-    if (state.clipboard) {
+    ui.editorGrid.classList.remove('ghost-red', 'ghost-green', 'ghost-blue');
+    if (state.isDraggingPig && state.cursor !== state.pigIndex) {
+        g.setProperty('--ghost-pig', `url(/pigs/${state.pigDir}-1.png)`);
+        g.setProperty('--ghost-color', 'transparent');
+        g.setProperty('--ghost-visible', 'visible');
+    } else if (state.clipboard) {
+        g.removeProperty('--ghost-pig');
         const color = CHAR_TO_COLOR[state.clipboard.toLowerCase()];
+        if (color !== 'empty') ui.editorGrid.classList.add('ghost-' + color);
         g.setProperty('--ghost-color', `var(--tile-${color})`);
         g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(/img/golden-apple.png)' : 'none');
         g.setProperty('--ghost-visible', 'visible');
     } else {
+        g.removeProperty('--ghost-pig');
         g.setProperty('--ghost-visible', 'hidden');
     }
 }
@@ -276,6 +286,77 @@ function handleKeyUp(e) {
     }
 }
 
+// --- Mouse Events ---
+
+function tileIndexFromEvent(e) {
+    const tile = e.target.closest('.tile');
+    return tile ? tile.index : null;
+}
+
+function handleMouseDown(e) {
+    const i = tileIndexFromEvent(e);
+    if (i === null) return;
+
+    e.preventDefault();
+    ui.editorGrid.classList.remove('keyboard-nav');
+    state.cursor = i;
+
+    if (e.button === 2) {
+        // Right-click
+        if (inPaintMode()) {
+            state.clipboard = null;
+            render();
+        } else {
+            cycleTarget(i);
+        }
+        return;
+    }
+
+    // Left-click
+    if (e.shiftKey) {
+        state.clipboard = state.cells[i];
+        render();
+    } else if (inPaintMode()) {
+        state.isMouseDown = true;
+        pasteCell(i);
+    } else if (i === state.pigIndex) {
+        state.isDraggingPig = true;
+        render();
+    } else {
+        cycleColor(i);
+    }
+}
+
+function handleMouseMove(e) {
+    const i = tileIndexFromEvent(e);
+    if (i === null || i === state.cursor) return;
+
+    state.cursor = i;
+
+    if (inPaintMode() && state.isMouseDown) {
+        pasteCell(i);
+    } else {
+        render();
+    }
+}
+
+function handleMouseUp(e) {
+    if (state.isDraggingPig) {
+        if (state.cursor === state.pigIndex) {
+            state.pigDir = DIR_CYCLE[state.pigDir];
+            render();
+        } else {
+            movePigTo(state.cursor);
+        }
+        state.isDraggingPig = false;
+    }
+    state.isMouseDown = false;
+}
+
+function handleContextMenu(e) {
+    e.preventDefault();
+}
+
 // --- Share ---
 
 // Trims empty rows/columns from edges of level
@@ -385,6 +466,10 @@ function enter() {
 
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('mouseup', handleMouseUp);
+    ui.editorGrid.addEventListener('mousedown', handleMouseDown);
+    ui.editorGrid.addEventListener('mousemove', handleMouseMove);
+    ui.editorGrid.addEventListener('contextmenu', handleContextMenu);
     ui.editorSave.addEventListener('click', handleSaveClick);
     ui.editorShare.addEventListener('click', handleShareClick);
 }
@@ -392,6 +477,10 @@ function enter() {
 function exit() {
     document.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('keyup', handleKeyUp);
+    document.removeEventListener('mouseup', handleMouseUp);
+    ui.editorGrid.removeEventListener('mousedown', handleMouseDown);
+    ui.editorGrid.removeEventListener('mousemove', handleMouseMove);
+    ui.editorGrid.removeEventListener('contextmenu', handleContextMenu);
     ui.editorSave.removeEventListener('click', handleSaveClick);
     ui.editorShare.removeEventListener('click', handleShareClick);
 }
