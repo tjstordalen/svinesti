@@ -167,6 +167,30 @@ body.colorblind-mode .green {
     background-size: 10px 10px, auto;
 }
 
+/* Denser patterns for small tiles (HUD and legend) - uses em with shared font-size */
+body.colorblind-mode :is(.mini-tile, #comparison-tile).red {
+    background:
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 0.15em,
+            rgba(0, 0, 0, 0.25) 0.15em,
+            rgba(0, 0, 0, 0.25) 0.3em
+        ),
+        var(--tile-red);
+}
+
+body.colorblind-mode :is(.mini-tile, #comparison-tile).green {
+    background:
+        radial-gradient(
+            circle,
+            rgba(0, 0, 0, 0.25) 0.1em,
+            transparent 0.1em
+        ),
+        var(--tile-green);
+    background-size: 0.45em 0.45em, auto;
+}
+
 .tile.target::before {
     content: "";
     position: absolute;
@@ -257,6 +281,7 @@ body.colorblind-mode .green {
     height: 32px;
     border-radius: 6px;
     flex-shrink: 0;
+    font-size: 13px;
 }
 
 #comparison-question,
