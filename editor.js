@@ -15,7 +15,7 @@ const STORAGE_KEY = 'svinesti-custom-levels';
 // Left-click cycles tile colors (preserves target status)
 const COLOR_CYCLE = {
     '.': 'b', 'b': 'g', 'g': 'r', 'r': '.',
-         'B': 'G', 'G': 'R', 'R': '.'
+              'B': 'G', 'G': 'R', 'R': '.'
 };
 
 // Right-click toggles target (star) on/off
@@ -60,7 +60,7 @@ function render() {
     if (state.clipboard) {
         const color = CHAR_TO_COLOR[state.clipboard.toLowerCase()];
         g.setProperty('--ghost-color', `var(--tile-${color})`);
-        g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(icons/apple.svg)' : 'none');
+        g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(/img/golden-apple.png)' : 'none');
         g.setProperty('--ghost-visible', 'visible');
     } else {
         g.setProperty('--ghost-visible', 'hidden');

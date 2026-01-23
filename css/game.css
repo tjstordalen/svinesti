@@ -85,12 +85,20 @@ body.editor-mode .tile.cursor {
 body.editor-mode .tile.cursor::after {
     content: '';
     position: absolute;
-    inset: 0;
+    bottom: 12%;
+    right: 12%;
+    width: 45%;
+    height: 45%;
     background-color: var(--ghost-color);
     background-image: var(--ghost-star);
+    background-size: 60%;
+    background-position: center;
+    background-repeat: no-repeat;
     visibility: var(--ghost-visible, hidden);
     pointer-events: none;
-    opacity: 0.7;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    opacity: 0.9;
 }
 
 body.editor-mode .keyboard-nav {
