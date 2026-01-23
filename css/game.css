@@ -82,6 +82,21 @@ body.editor-mode .tile.cursor {
     outline-offset: -3px;
 }
 
+body.editor-mode .tile.cursor::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--ghost-color);
+    background-image: var(--ghost-star);
+    visibility: var(--ghost-visible, hidden);
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+body.editor-mode .keyboard-nav {
+    cursor: none;
+}
+
 /* Ghost inside cursor tile */
 .tile .ghost {
     position: absolute;
@@ -93,6 +108,7 @@ body.editor-mode .tile.cursor {
 
 /* Pig draggable in editor mode */
 body.editor-mode .pig {
+    pointer-events: auto;
     cursor: grab;
 }
 
@@ -158,20 +174,18 @@ body.editor-mode .pig:active {
 /* Ghost (for dragging in editor) */
 .ghost {
     position: fixed;
-    width: 60px;
-    height: 60px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    opacity: 0.7;
+	background-color: black;
+    opacity: 0.8;
     pointer-events: none;
     transform: translate(-50%, -50%);
     z-index: 1000;
-    visibility: hidden;
+   /* visibility: hidden;*/
 }
 
 .ghost.tile {
-    opacity: 0.95;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 

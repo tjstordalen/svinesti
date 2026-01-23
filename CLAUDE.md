@@ -347,19 +347,35 @@ const leftClickReplacements = [
 
 ## Level Editor
 
-The level editor (`editor.js`) uses DOM classes as the source of truth during editing, then serializes to the level format for saving/sharing.
+The level editor (`editor.js`) uses explicit state with the level format's character representation (`.rgbRGB`). A single `render()` function syncs state to DOM on every change.
+
+**State:**
+```javascript
+const state = {
+    cells: [],      // 1D array of chars: '.rgbRGB'
+    nRows, nCols,
+    pigIndex: 0,    // index into cells
+    pigDir: 'right',
+    cursor: null,   // index
+    clipboard: null // char when in paint mode
+};
+```
+
+**Data-driven cycles:**
+```javascript
+const LEFT_CYCLE = { '.': 'b', 'b': 'g', 'g': 'r', 'r': '.', 'B': 'G', 'G': 'R', 'R': '.' };
+const RIGHT_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r' };
+const DIR_CYCLE = { right: 'down', down: 'left', left: 'up', up: 'right' };
+```
 
 **Controls:**
-- **Left-click** — Cycle tile color (empty → blue → green → red → empty) or rotate pig (right → down → left → up)
-- **Left-drag** — Paint mode: copies source tile's color to tiles dragged over (preserves pig if present)
-- **Pig drag** — Move pig to a new tile; target keeps its color if colored, otherwise inherits source color
-- **Right-click** — Toggle target (star) on colored tiles
+- **Left-click / Space** — Cycle tile color or rotate pig
+- **Right-click / S** — Toggle target (star) on colored tiles
+- **Arrow keys** — Move cursor
+- **P** — Move pig to cursor
+- **C** — Enter/exit paint mode (copies current tile)
 
-**Key functions:**
-- `enter()` / `exit()` — Mode switching, attaches/detaches event listeners
-- `serialize()` — Converts current DOM state to level format
-
-**Design:** DOM-as-truth is simpler for editing (no sync between model and view). Serialization walks the grid once on save.
+**Design:** State-driven with full re-render. The level format's character representation IS the internal state — no conversion needed. Mutations are trivial: update state, call `render()`. No pig element in editor; pig shown via `pig-{dir}` class on tile.
 
 ## Sidebar Level List
 

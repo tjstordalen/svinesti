@@ -1,10 +1,7 @@
 // editor.js - Level Editor
 //
-// TODO: Remaining features from editor.js.old:
-// - Custom levels storage (localStorage persistence)
-// - Save/New button handlers
-// - Level name input handling
-// - onLevelSaved callback to refresh level list in main.js
+// State-driven editor using the level format's character representation.
+// A single render() function syncs state to DOM on every change.
 
 import { DEFAULT_LEVEL } from "./levels.js";
 import { createGrid, TILE_CLASSES } from "./grid.js";
@@ -14,17 +11,171 @@ import * as animations from "./animations.js";
 // --- Constants ---
 
 const STORAGE_KEY = 'svinesti-custom-levels';
-const DRAG_ENABLED = false;
-const EMPTY = 'empty';
-const TARGET = 'target';
-const COLORS = ['red', 'green', 'blue'];
-const [RED, GREEN, BLUE] = COLORS;
-const DIR_PREFIX = 'editor-data-';
-const PIG_DIRS = [DIR_PREFIX + 'right', DIR_PREFIX + 'down', DIR_PREFIX + 'left', DIR_PREFIX + 'up'];
-const [PIG_RIGHT, PIG_DOWN, PIG_LEFT, PIG_UP] = PIG_DIRS;
+
+// Left-click cycles tile colors (preserves target status)
+const COLOR_CYCLE = {
+    '.': 'b', 'b': 'g', 'g': 'r', 'r': '.',
+         'B': 'G', 'G': 'R', 'R': '.'
+};
+
+// Right-click toggles target (star) on/off
+const TARGET_CYCLE = {
+    '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r'
+};
+
+// Pig rotation (clockwise)
+const DIR_CYCLE = { right: 'down', down: 'left', left: 'up', up: 'right' };
+
+// For ghost rendering
+const CHAR_TO_COLOR = { '.': 'empty', 'r': 'red', 'g': 'green', 'b': 'blue' };
+
+// --- State ---
+
+const state = {
+    cells: [],       // 1D array of chars: '.rgbRGB'
+    nRows: 0,
+    nCols: 0,
+    pigIndex: 0,
+    pigDir: 'right',
+    cursor: 0,
+    clipboard: null, // char when in paint mode, null otherwise
+    paintHeld: false,
+    grid: null,      // grid object for DOM refs
+};
+
+const inPaintMode = () => state.clipboard !== null;
+const isTarget = (c) => c !== '.' && c === c.toUpperCase();
+
+// --- Rendering ---
+
+function render() {
+    state.cells.forEach((char, i) => {
+        const tile = state.grid.tiles[i];
+        tile.className = 'tile ' + TILE_CLASSES[char];
+        if (i === state.cursor) tile.classList.add('cursor');
+        if (i === state.pigIndex) tile.classList.add('pig-' + state.pigDir);
+    });
+
+    const g = ui.editorGrid.style;
+    if (state.clipboard) {
+        const color = CHAR_TO_COLOR[state.clipboard.toLowerCase()];
+        g.setProperty('--ghost-color', `var(--tile-${color})`);
+        g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(icons/apple.svg)' : 'none');
+        g.setProperty('--ghost-visible', 'visible');
+    } else {
+        g.setProperty('--ghost-visible', 'hidden');
+    }
+}
+
+// --- State Mutations ---
+
+function cycleColor(i) {
+    if (i === state.pigIndex) {
+        state.pigDir = DIR_CYCLE[state.pigDir];
+    } else {
+        state.cells[i] = COLOR_CYCLE[state.cells[i]];
+    }
+    render();
+}
+
+function cycleTarget(i) {
+    if (i === state.pigIndex) return;
+    state.cells[i] = TARGET_CYCLE[state.cells[i]];
+    render();
+}
+
+function movePigTo(i) {
+    if (state.cells[i] === '.') {
+        state.cells[i] = state.cells[state.pigIndex].toLowerCase();
+    }
+    state.pigIndex = i;
+    render();
+}
+
+function pasteCell(i) {
+    if (state.clipboard) {
+        state.cells[i] = state.clipboard;
+        render();
+    }
+}
+
+function moveCursor(direction) {
+    const i = state.cursor;
+    let next;
+
+    switch (direction) {
+        case 'up':
+            next = i - state.nCols;
+            if (next < 0) return;
+            break;
+        case 'down':
+            next = i + state.nCols;
+            if (next >= state.cells.length) return;
+            break;
+        case 'left':
+            if (i % state.nCols === 0) return;
+            next = i - 1;
+            break;
+        case 'right':
+            if ((i + 1) % state.nCols === 0) return;
+            next = i + 1;
+            break;
+        default:
+            return;
+    }
+
+    state.cursor = next;
+    if (inPaintMode() && state.paintHeld) {
+        pasteCell(next);
+    } else {
+        render();
+    }
+}
+
+// --- Load / Serialize ---
+
+function load(level) {
+    state.nRows = level.nRows;
+    state.nCols = level.nCols;
+    state.cells = level.grid.join('').split('');
+    state.pigIndex = level.start[0] * level.nCols + level.start[1];
+    state.pigDir = level.dir;
+    state.cursor = state.pigIndex;
+    state.clipboard = null;
+
+    state.grid = createGrid(ui.editorGrid, level.nRows, level.nCols, level);
+    state.grid.tiles.forEach((tile, i) => tile.index = i);
+    state.grid.pig.remove();
+    render();
+}
+
+function serialize() {
+    const rows = [];
+    for (let r = 0; r < state.nRows; r++) {
+        const start = r * state.nCols;
+        const end = start + state.nCols;
+        const row = state.cells.slice(start, end).join('');
+        rows.push(row);
+    }
+
+    const pigRow = Math.floor(state.pigIndex / state.nCols);
+    const pigCol = state.pigIndex % state.nCols;
+
+    return {
+        nRows: state.nRows,
+        nCols: state.nCols,
+        grid: rows,
+        start: [pigRow, pigCol],
+        dir: state.pigDir
+    };
+}
 
 // --- Validation ---
 
+// Checks that a level is playable:
+// 1. Has at least one target (star)
+// 2. Pig is on a colored tile
+// 3. All colored tiles are reachable from the pig
 function validate(level) {
     if (!level.grid || !level.start || !level.nRows || !level.nCols) {
         return 'Invalid level data';
@@ -32,301 +183,133 @@ function validate(level) {
 
     const { nCols, grid, start } = level;
 
-    if (!/[RGB]/.test(grid.join(''))) return 'Level must have at least one target';
+    if (!/[RGB]/.test(grid.join(''))) {
+        return 'Level must have at least one target';
+    }
 
-    // Add sentinel columns on left and right edges so that two elements from two
-	// different rows are not adjacent when we linearize the grid below
-    const cells = grid
-		.map(row => '.' + row + '.') // pad rows
-		.join('')                    // join rows
-		.split('');                  // split into character array 
-    const stride = nCols + 2; // each row is now two characters wider
-    const pigIndex = start[0] * stride + start[1] + 1;
+    // Pad each row with '.' sentinels on left and right.
+    // This lets us use i+1/i-1 for horizontal neighbors without
+    // accidentally wrapping to the adjacent row.
+    const cells = grid.map(row => '.' + row + '.').join('').split('');
+    const stride = nCols + 2; // padded row width
+    const pigIndex = start[0] * stride + start[1] + 1; // +1 for left padding
 
-    if (cells[pigIndex] === '.') return 'Pig must be on a colored tile';
+    if (cells[pigIndex] === '.') {
+        return 'Pig must be on a colored tile';
+    }
 
-	// Flood-fill to determine if all colored tiles are reachable from the pig. 
+    // Flood-fill from pig position, marking visited cells as '.'
     function dfs(i) {
-        const c = cells[i] || '.'; // the || is in case we index out of bounds
+        const c = cells[i] || '.';
         if (c === '.') return;
         cells[i] = '.';
-
-		// the i+1,i-1 only works because we padded each row above
-        [i+1, i-1, i+stride, i-stride].forEach(dfs);
+        // Horizontal neighbors are safe due to sentinels
+        // Vertical neighbors use stride to skip padding
+        dfs(i + 1);
+        dfs(i - 1);
+        dfs(i + stride);
+        dfs(i - stride);
     }
     dfs(pigIndex);
 
-    if (cells.some(c => c !== '.')) return 'All colored tiles must be reachable from the pig';
+    // If any colored tiles remain, they weren't reachable
+    if (cells.some(c => c !== '.')) {
+        return 'All colored tiles must be reachable from the pig';
+    }
 
     return null;
 }
 
-// --- State ---
-
-const state = {
-    level: null,
-    grid: null,
-    drag: {
-        source: null,
-        isPig: false,
-        active: false,
-    },
-	cursor: null,
-	clipboard: null,
-};
-
-
-
-const tileAt = (e) => document.elementFromPoint(e.clientX, e.clientY)?.closest('.tile');
-const firstMatch = (tile, classes) => classes.find(c => tile.classList.contains(c));
-const isColor = (tile) => firstMatch(tile, COLORS);
-const isPig = (tile) => firstMatch(tile, PIG_DIRS);
-
-// --- Cursor and Navigation ---
-
-function moveCursor(tile) {
-    if (!tile || tile === state.cursor) return;
-    state.cursor?.classList.remove('cursor');
-    tile.classList.add('cursor');
-    state.cursor = tile;
-
-    if (state.clipboard) {
-        tile.appendChild(ui.ghost);
-    }
-}
-
-function getTileInDirection(dir) {
-    const { nCols, tiles } = state.grid;
-    let i = state.cursor?.index ?? 0;
-
-    switch (dir) {
-        case 'up':    if (i >= nCols)               i -= nCols; break;
-        case 'down':  if (i + nCols < tiles.length) i += nCols; break;
-        case 'left':  if (i % nCols !== 0)          i -= 1;     break;
-        case 'right': if ((i + 1) % nCols !== 0)    i += 1;     break;
-    }
-
-    return tiles[i];
-}
-
-function copyTile(tile) {
-    if (state.clipboard) {
-        // Toggle off
-        state.clipboard = null;
-        ui.ghost.style.visibility = 'hidden';
-        return;
-    }
-
-    state.clipboard = tile.className;
-    ui.ghost.className = 'ghost ' + tile.className;
-    ui.ghost.style.visibility = 'visible';
-    tile.appendChild(ui.ghost);
-}
-
-function serialize() {
-	const { nRows, nCols, tiles } = state.grid;
-
-	const tileToChar = (tile) => {
-		const color = firstMatch(tile, [RED, GREEN, BLUE, EMPTY]);
-		const hasTarget = tile.classList.contains(TARGET);
-		const ch = color === EMPTY ? '.' : color[0];
-		return hasTarget ? ch.toUpperCase() : ch.toLowerCase();
-	};
-
-	const chars = tiles.map(tileToChar);
-	const grid = [];
-	while (chars.length > 0) {
-		const row = chars.splice(0, nCols);
-		grid.push(row.join(''));
-	}
-
-	// Find pig position and direction
-	const pigIndex = tiles.findIndex(isPig);
-	if (pigIndex < 0) throw new Error('No pig found in grid');
-	const pigRow = Math.floor(pigIndex / nCols);
-	const pigCol = pigIndex % nCols;
-	const start = [pigRow, pigCol];
-	const pigClass = firstMatch(tiles[pigIndex], PIG_DIRS);
-	const dir = pigClass.split("-").at(-1);
-
-	return { nRows, nCols, grid, start, dir };
-}
-
-function load(level) {
-    state.level = level;
-    state.grid = createGrid(ui.editorGrid, level.nRows, level.nCols, level);
-
-    // Assign index to each tile for keyboard navigation
-    state.grid.tiles.forEach((tile, i) => {
-        tile.index = i;
-    });
-
-    // Remove pig element - editor uses tile classes for pig visuals
-    state.grid.pig.remove();
-
-    // Add editor-data-* class to tile for pig position/direction
-    const [row, col] = level.start;
-    state.grid.getCell(row, col).classList.add(DIR_PREFIX + level.dir);
-}
-
-
-// --- Click Cycling Maps ---
-
-// Left-click cycles through these replacements, applying the first match.
-// Order matters: pig directions are checked before colors, so clicking a
-// tile with "tile blue pig-right" matches "pig-right" first and rotates
-// the pig, rather than changing the tile color.
-const leftClickReplacements = [
-    // Pig directions (clockwise) - checked first
-    [PIG_RIGHT, PIG_DOWN],
-    [PIG_DOWN, PIG_LEFT],
-    [PIG_LEFT, PIG_UP],
-    [PIG_UP, PIG_RIGHT],
-
-    // Tile colors - checked if no pig class present
-    [EMPTY, BLUE],
-    [BLUE, GREEN],
-    [GREEN, RED],
-    [RED, EMPTY],
-]
-
-function handleLeftClick(e) {
-    const tile = e.target.closest('.tile');
-    if (!tile) return;
-    for (const [from, to] of leftClickReplacements) {
-        if (tile.classList.replace(from, to)) {
-            if (to === EMPTY) tile.classList.remove(TARGET);
-            return;
-        }
-    }
-}
+// --- Keyboard Events ---
 
 function handleKeyDown(e) {
-    const dir = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[e.key];
+    switch (e.key) {
+        case ' ':
+            e.preventDefault();
+            state.paintHeld = true;
+            if (inPaintMode()) pasteCell(state.cursor);
+            else cycleColor(state.cursor);
+            break;
 
-    if (dir) {
-        moveCursor(getTileInDirection(dir));
-        e.preventDefault();
-        return;
-    }
+        case 'ArrowUp':
+            e.preventDefault();
+            ui.editorGrid.classList.add('keyboard-nav');
+            moveCursor('up');
+            break;
 
-    if (e.key === 'c' && state.cursor) {
-        copyTile(state.cursor);
-    }
-}
+        case 'ArrowDown':
+            e.preventDefault();
+            ui.editorGrid.classList.add('keyboard-nav');
+            moveCursor('down');
+            break;
 
-// --- Pig Drag Handlers ---
+        case 'ArrowLeft':
+            e.preventDefault();
+            ui.editorGrid.classList.add('keyboard-nav');
+            moveCursor('left');
+            break;
 
-function handlePointerDown(e) {
-    if (!DRAG_ENABLED) return;
-    if (!e.isPrimary || e.button !== 0) return;
-    e.preventDefault();
-    e.target.setPointerCapture(e.pointerId);
+        case 'ArrowRight':
+            e.preventDefault();
+            ui.editorGrid.classList.add('keyboard-nav');
+            moveCursor('right');
+            break;
 
-    state.drag.source = e.target.closest('.tile');
-    state.drag.active = false;
+        case 's':
+            cycleTarget(state.cursor);
+            break;
 
-    const pigClass = isPig(state.drag.source);
-    state.drag.isPig = pigClass !== undefined; // TODO: yuck 
-    ui.ghost.className = pigClass ? 'ghost ' + pigClass : 'ghost ' + state.drag.source?.className;
-}
+        case 'p':
+            movePigTo(state.cursor);
+            break;
 
-function handlePointerMove(e) {
-    const tile = e.target.closest('.tile');
-    moveCursor(tile);
-
-    if (!DRAG_ENABLED) return;
-
-    if (state.drag.source === null) return;
-    const targetTile = tileAt(e);
-
-    // Detect drag: pointer moved to a different tile
-    if (!state.drag.active && targetTile && targetTile !== state.drag.source) {
-        state.drag.active = true;
-        ui.ghost.style.visibility = 'visible';
-    }
-
-    if (!state.drag.active) return;
-
-    ui.ghost.style.left = e.clientX + 'px';
-    ui.ghost.style.top = e.clientY + 'px';
-
-    // Paint tiles while dragging (not pig).
-    if (!state.drag.isPig && targetTile && targetTile !== state.drag.source) {
-        const pigClass = isPig(targetTile);
-        if (!(pigClass && state.drag.source.classList.contains(EMPTY))) {
-            targetTile.className = state.drag.source.className + (pigClass ? ' ' + pigClass : '');
-        }
+        case 'c':
+            state.clipboard = inPaintMode() ? null : state.cells[state.cursor];
+            render();
+            break;
     }
 }
 
-function handlePointerUp(e) {
-    if (!DRAG_ENABLED) return;
-    if (state.drag.source === null) return;
-
-    if (!state.drag.active) {
-        // Click: cycle the tile
-        handleLeftClick({ target: state.drag.source });
-    } else if (state.drag.isPig) {
-        // Pig drag: move pig to target tile
-        const targetTile = tileAt(e);
-        if (targetTile && targetTile !== state.drag.source) {
-            const pigClass = isPig(state.drag.source);
-            const targetColor = isColor(targetTile); // TODO YUCK 
-            const sourceColor = isColor(state.drag.source); // TODO YUCK
-            targetTile.className = 'tile ' + (targetColor || sourceColor) + ' ' + pigClass;
-            state.drag.source.classList.remove(pigClass);
-        }
+function handleKeyUp(e) {
+    if (e.key === ' ') {
+        state.paintHeld = false;
     }
-    // Paint drag: already handled in handlePointerMove
-
-    ui.ghost.style.visibility = 'hidden';
-    state.drag.source = null;
-    state.drag.active = false;
-}
-
-function handleRightClick(e) {
-    e.preventDefault();
-    if (state.drag.source) return; // Ignore during drag
-    const tile = e.target.closest('.tile');
-    if (!tile) return;
-    if (isColor(tile) && !isPig(tile)) tile.classList.toggle(TARGET);
 }
 
 // --- Share ---
 
+// Trims empty rows/columns from edges of level
 function compact(level) {
     const { grid, start, dir } = level;
+    const nRows = grid.length;
+    const nCols = grid[0].length;
 
-	const rows = grid;
+    // Find bounds of non-empty content
+    let minRow = nRows, maxRow = -1;
+    let minCol = nCols, maxCol = -1;
 
-	// transpose. col(i) gives it'h column, the second map iterates over the 
-	// number indicecs of a single row in the grid, and maps it to column. 
-	// TODO: it would probably be clearer to use Array.from(range) or something like that to be explicit. 
-	const col = i => grid.map(row => row[i]).join('');
-	const columns = [...grid[0]].map((_,i) => col(i));
+    for (let r = 0; r < nRows; r++) {
+        for (let c = 0; c < nCols; c++) {
+            if (grid[r][c] !== '.') {
+                if (r < minRow) minRow = r;
+                if (r > maxRow) maxRow = r;
+                if (c < minCol) minCol = c;
+                if (c > maxCol) maxCol = c;
+            }
+        }
+    }
 
-    const hasColor = s => /[^.]/.test(s); // regex matching anything but a period.
-
-	// Determine first and last row that has a non-empty tile 
-    const minR = rows.findIndex(hasColor);
-    const maxR = rows.findLastIndex(hasColor);
-
-	// Determine first and last column that has a non-empty tile 
-    const minC = columns.findIndex(hasColor);
-    const maxC = columns.findLastIndex(hasColor);
-
-	// TODO: use functional programming for consistency here? 
+    // Extract the bounded region
     const newGrid = [];
-    for (let r = minR; r <= maxR; r++) {
-        newGrid.push(grid[r].slice(minC, maxC + 1));
+    for (let r = minRow; r <= maxRow; r++) {
+        newGrid.push(grid[r].slice(minCol, maxCol + 1));
     }
 
     return {
-        nRows: maxR - minR + 1,
-        nCols: maxC - minC + 1,
+        nRows: maxRow - minRow + 1,
+        nCols: maxCol - minCol + 1,
         grid: newGrid,
-        start: [start[0] - minR, start[1] - minC],
+        start: [start[0] - minRow, start[1] - minCol],
         dir,
     };
 }
@@ -395,31 +378,20 @@ function handleSaveClick() {
     animations.notify(ui.editorNotification, 'Level saved!');
 }
 
-
+// --- Enter / Exit ---
 
 function enter() {
     load(DEFAULT_LEVEL);
 
-	document.addEventListener('keydown', handleKeyDown); //TODO
-	
-
-    ui.editorGrid.addEventListener('contextmenu', handleRightClick);
-    ui.editorGrid.addEventListener('pointerdown', handlePointerDown);
-    ui.editorGrid.addEventListener('pointermove', handlePointerMove);
-    ui.editorGrid.addEventListener('pointerup', handlePointerUp);
-    ui.editorGrid.addEventListener('pointercancel', handlePointerUp);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
     ui.editorSave.addEventListener('click', handleSaveClick);
     ui.editorShare.addEventListener('click', handleShareClick);
 }
 
 function exit() {
-
-	document.removeEventListener('keydown', handleKeyDown); //TODO
-    ui.editorGrid.removeEventListener('contextmenu', handleRightClick);
-    ui.editorGrid.removeEventListener('pointerdown', handlePointerDown);
-    ui.editorGrid.removeEventListener('pointermove', handlePointerMove);
-    ui.editorGrid.removeEventListener('pointerup', handlePointerUp);
-    ui.editorGrid.removeEventListener('pointercancel', handlePointerUp);
+    document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('keyup', handleKeyUp);
     ui.editorSave.removeEventListener('click', handleSaveClick);
     ui.editorShare.removeEventListener('click', handleShareClick);
 }
