@@ -73,13 +73,62 @@ body.editor-mode .tile {
     transition: filter var(--transition-fast);
 }
 
-body.editor-mode .tile:hover {
-    filter: brightness(1.1);
-}
 
 body.editor-mode .tile.cursor {
-    outline: 3px solid white;
-    outline-offset: -3px;
+    box-shadow: inset 0 0 8px 2px rgba(0, 0, 0, 0.2);
+}
+
+body.editor-mode .tile.cursor { --bracket-color: black; }
+
+body.editor-mode .tile.cursor::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    width: auto;
+    height: auto;
+    pointer-events: none;
+    background:
+        linear-gradient(var(--bracket-color), var(--bracket-color)) top left,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) top left,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) top right,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) top right,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) bottom left,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) bottom left,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) bottom right,
+        linear-gradient(var(--bracket-color), var(--bracket-color)) bottom right;
+    background-size:
+        28% 2px, 2px 28%,
+        28% 2px, 2px 28%,
+        28% 2px, 2px 28%,
+        28% 2px, 2px 28%;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+/* Cursor + target: show both brackets and star */
+body.editor-mode .tile.cursor.target::before {
+    background-image:
+        url("../img/golden-apple.png"),
+        linear-gradient(var(--bracket-color), var(--bracket-color)),
+        linear-gradient(var(--bracket-color), var(--bracket-color)),
+        linear-gradient(var(--bracket-color), var(--bracket-color)),
+        linear-gradient(var(--bracket-color), var(--bracket-color)),
+        linear-gradient(var(--bracket-color), var(--bracket-color)),
+        linear-gradient(var(--bracket-color), var(--bracket-color)),
+        linear-gradient(var(--bracket-color), var(--bracket-color)),
+        linear-gradient(var(--bracket-color), var(--bracket-color));
+    background-position:
+        center,
+        top left, top left,
+        top right, top right,
+        bottom left, bottom left,
+        bottom right, bottom right;
+    background-size:
+        40%,
+        28% 2px, 2px 28%,
+        28% 2px, 2px 28%,
+        28% 2px, 2px 28%,
+        28% 2px, 2px 28%;
 }
 
 body.editor-mode .tile.cursor::after {
@@ -128,7 +177,7 @@ body.colorblind-mode .ghost-green .tile.cursor::after {
     background-size: 60%, 0.4em 0.4em, auto;
 }
 
-body.editor-mode .keyboard-nav {
+body.editor-mode .keyboard-nav .tile {
     cursor: none;
 }
 
@@ -258,9 +307,6 @@ body.colorblind-mode :is(.mini-tile, #comparison-tile).green {
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
-.cursor {
-    box-shadow: inset 0 0 0 3px rgba(0xff,0xff,0xff,0.3);
-}
 
 /* Pig direction classes (pig element and ghost) */
 .pig-right,
