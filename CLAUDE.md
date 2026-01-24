@@ -28,9 +28,9 @@ Styles are organized in `css/` directory with modular files:
 | File | Contents |
 |------|----------|
 | `base.css` | CSS variables, reset, body, scrollbar, notification utility (including `.light` variant) |
-| `layout.css` | App container, main content, play/editor panes, responsive breakpoints |
+| `layout.css` | App container, main content, play/editor panes, editor name input, responsive breakpoints |
 | `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
-| `sidebar.css` | Sidebar, tabs, level list, thumbnails |
+| `sidebar.css` | Sidebar, tabs (with editor-mode hiding), level list, thumbnails, delete button |
 | `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
 | `game.css` | Grid, tiles, colors, pig sprites, pig element, color HUD, confetti |
 | `help.css` | Help modal, shortcuts list, toggle switch, lock icon shake, fadeIn/slideUp keyframes |
@@ -62,9 +62,9 @@ const help = {
 
 Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
-- **Level list** - `populateLevelList()`, `shuffled()`
+- **Level list** - `populateLevelList(levelArray, { deletable? })` with optional delete buttons
 - **Initialize** - Game.init(), level list setup, URL import, Game.enter()
-- **Event handlers** - Sidebar toggle, help pane, mode toggle, global shortcuts
+- **Event handlers** - Sidebar toggle, help pane, mode toggle, global shortcuts, `'levels-updated'` listener
 
 ### game.js Structure
 
@@ -305,6 +305,15 @@ Tests run automatically on page load. Check browser console for results.
 }
 ```
 
+**Additional fields for saved levels:**
+```javascript
+{
+    id: "uuid",       // unique identifier for updates/deletes
+    originRow: 0,     // row offset from compacting (for re-expansion)
+    originCol: 0,     // col offset from compacting (for re-expansion)
+}
+```
+
 ## Data-Driven Mappings
 
 Prefer lookup tables over conditionals. A mapping with a loop is cleaner than a chain of if-statements.
@@ -355,6 +364,7 @@ const state = {
     isMouseDown: false,  // mouse button held for continuous mouse painting
     isDraggingPig: false,
     grid: null,          // grid object for DOM refs
+    editingLevelId: null, // ID of saved level being edited, null = new level
 };
 ```
 
@@ -387,6 +397,45 @@ const DIR_CYCLE = { right: 'down', down: 'left', left: 'up', up: 'right' };
 **Colorblind mode:** Pig remains visible on patterned tiles via `--pig-bg` CSS variable layered on top of colorblind patterns.
 
 **Design:** State-driven with full re-render. The level format's character representation IS the internal state — no conversion needed. Mutations are trivial: update state, call `render()`. No pig element in editor; pig shown via `pig-{dir}` class on tile.
+
+### My Levels (Local Storage)
+
+User-created levels are saved to localStorage under key `'svinesti-custom-levels'`. The sidebar's "My Levels" tab displays these with delete buttons.
+
+**Saved level format:**
+```javascript
+{
+    id: "uuid",           // crypto.randomUUID()
+    name: "My Level 42",  // from name input field
+    nRows, nCols, grid, start, dir,  // standard level fields
+    originRow: 2,         // row offset for re-expansion
+    originCol: 3,         // col offset for re-expansion
+}
+```
+
+**Compact/Expand cycle:**
+- `compact(level)` — Trims empty rows/cols, stores `originRow`/`originCol` to preserve original position
+- `expand(level)` — Restores to 9×16 canvas, placing content at stored origin
+
+This allows levels to be stored efficiently while maintaining their original canvas position when reloaded for editing.
+
+**Storage functions:**
+- `getCustomLevels()` — Returns array from localStorage
+- `saveCustomLevel(level)` — Appends new level (with generated ID)
+- `updateCustomLevel(id, levelData)` — Updates existing level by ID
+- `deleteCustomLevel(id)` — Removes level by ID
+
+**Save flow:**
+1. User edits level, types name in input field (defaults to "My Level {random}")
+2. Click Save → validates level, compacts grid
+3. If `editingLevelId` is null: creates new level with UUID
+4. If `editingLevelId` exists: updates existing level
+5. Dispatches `'levels-updated'` custom event to refresh sidebar
+
+**Sidebar behavior:**
+- In editor mode, only "My Levels" tab is visible (others hidden via CSS)
+- Delete button appears on hover (trash icon)
+- List auto-refreshes when `'levels-updated'` event fires
 
 ## Sidebar Level List
 
