@@ -75,13 +75,24 @@
     overflow-y: auto;
 }
 
+.editor-intro {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
 .editor-sidebar h3 {
-    margin: 0 0 16px 0;
+    margin: 24px 0 12px 0;
     font-size: 16px;
     font-weight: 600;
     color: var(--color-text);
     border-bottom: 2px solid var(--color-interactive);
     padding-bottom: 8px;
+}
+
+.editor-sidebar h3:first-of-type {
+    margin-top: 0;
 }
 
 .editor-sidebar kbd {

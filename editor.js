@@ -26,7 +26,7 @@ const COLOR_CYCLE = {
 
 // Right-click toggles target (star) on/off
 const TARGET_CYCLE = {
-    '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r'
+    '.': 'B', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r'
 };
 
 // Pig rotation (clockwise)
@@ -391,16 +391,16 @@ function handleMouseDown(e) {
 }
 
 function handleMouseMove(e) {
-    const i = tileIndexFromEvent(e);
-    if (i === null || i === state.cursor) return;
-
-    state.cursor = i;
-
-    if (inPaintMode() && state.isMouseDown) {
-        pasteCell(i);
-    } else {
-        render();
+    const events = e.getCoalescedEvents?.() || [e];
+    for (const ce of events) {
+        const i = tileIndexFromEvent(ce);
+        if (i === null || i === state.cursor) continue;
+        state.cursor = i;
+        if (inPaintMode() && state.isMouseDown) {
+            pasteCell(i);
+        }
     }
+    render();
 }
 
 function handleMouseUp(e) {
