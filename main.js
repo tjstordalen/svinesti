@@ -150,10 +150,15 @@ Game.enter();
 
 // --- Event handlers ---
 
-// Sidebar toggle
-ui.sidebarToggle.onclick = () => {
-    ui.sidebar.classList.toggle("collapsed");
-};
+// Sidebar pull-tab and click-outside-to-close
+ui.sidebarPullTab.onclick = () => ui.sidebar.classList.toggle("collapsed");
+document.addEventListener('click', (e) => {
+    const isOutside = !ui.sidebar.contains(e.target);
+    const isModeToggle = e.target.closest('.mode-toggle');
+    if (isOutside && !isModeToggle) {
+        ui.sidebar.classList.add("collapsed");
+    }
+});
 
 // Help pane
 ui.helpButton.onclick = () => help.toggle();
@@ -178,7 +183,6 @@ ui.modePlay.onclick = () => {
     ui.editorPane.hidden = true;
     ui.modePlay.classList.add("active");
     ui.modeEdit.classList.remove("active");
-    ui.sidebarToggle.disabled = false;
     Game.enter();
 };
 

@@ -13,7 +13,7 @@ export const ui = {
     speedSlider:	gid("playback-speed"),
     fontSizeSlider: gid("editor-font-size-slider"),
     sidebar:        gid("sidebar"),
-    sidebarToggle:  gid("sidebar-toggle"),
+    sidebarPullTab: document.querySelector(".sidebar-pull-tab"),
     sidebarTabs:    document.querySelectorAll(".sidebar-tab"),
     splashScreen:   gid("splash-screen"),
     helpButton:     gid("help-button"),
