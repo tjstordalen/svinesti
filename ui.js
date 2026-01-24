@@ -34,7 +34,9 @@ export const ui = {
         lineNumbers: true,
         lineWrapping: true,
         mode: "python",
-        theme: "default"
+        theme: "default",
+        indentUnit: 4,
+        tabSize: 4,
     }),
     colorComparisonHud: gid("color-comparison-hud"),
     comparisonTile: gid("comparison-tile"),
