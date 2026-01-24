@@ -28,6 +28,7 @@ export const ui = {
     editorLevelName: gid("editor-level-name"),
     editorSave:     gid("editor-save"),
     editorShare:    gid("editor-share"),
+    editorShareCommunity: gid("editor-share-community"),
     editorNotification: gid("editor-notification"),
     langPython:     gid("select-lang-python"),
     langJava:       gid("select-lang-java"),

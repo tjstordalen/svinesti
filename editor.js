@@ -18,6 +18,36 @@ const paintShortcuts = Shortcuts.new('svinesti-editor-paint-v1');
 
 const STORAGE_KEY = 'svinesti-custom-levels';
 
+// Community sharing - Apps Script endpoint that writes directly to the sheet
+const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbw1al5x8ZVUDZgMAMnML1ObHimeJwOJhE-X8YLgWo4gJDCd2qQCHeDvpH8hzsBR6kNsXA/exec';
+
+// Analytics endpoint (Apps Script web app)
+const ANALYTICS_URL = 'https://script.google.com/macros/s/PLACEHOLDER/exec';
+
+// Fire-and-forget analytics ping with geo data
+async function pingAnalytics(levelName) {
+    try {
+        // Fetch geo data from free API (no API key needed, allows CORS)
+        const geoResponse = await fetch('http://ip-api.com/json/?fields=country,city');
+        const geo = await geoResponse.json();
+
+        // Send to analytics endpoint
+        fetch(ANALYTICS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                country: geo.country || '',
+                city: geo.city || '',
+                levelName: levelName,
+                event: 'share',
+            }),
+        });
+    } catch (e) {
+        // Silently fail - analytics shouldn't break the app
+    }
+}
+
 // Left-click cycles tile colors (preserves target status)
 const COLOR_CYCLE = {
     '.': 'b', 'b': 'g', 'g': 'r', 'r': '.',
@@ -542,6 +572,40 @@ async function handleShareClick() {
     }
 }
 
+async function handleShareCommunityClick() {
+    const level = serialize();
+    const error = validate(level);
+    if (error) {
+        animations.notify(ui.editorNotification, error, true);
+        return;
+    }
+
+    const name = ui.editorLevelName.value.trim() || 'Untitled';
+    const compacted = compact(level);
+    const url = exportToURL(compacted);
+
+    try {
+        // Submit to Apps Script endpoint
+        await fetch(COMMUNITY_SUBMIT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, url }),
+        });
+
+        animations.notify(ui.editorNotification, 'Shared to community!');
+
+        // Dispatch event so community tab refreshes on next view
+        window.dispatchEvent(new CustomEvent('community-levels-updated'));
+
+        // Fire-and-forget analytics ping with geo data
+        pingAnalytics(name);
+    } catch (e) {
+        console.error('Failed to share to community:', e);
+        animations.notify(ui.editorNotification, 'Failed to share. Try again.', true);
+    }
+}
+
 // --- Local Storage ---
 
 function getCustomLevels() {
@@ -609,6 +673,7 @@ function enter() {
     ui.editorGrid.addEventListener('contextmenu', handleContextMenu);
     ui.editorSave.addEventListener('click', handleSaveClick);
     ui.editorShare.addEventListener('click', handleShareClick);
+    ui.editorShareCommunity.addEventListener('click', handleShareCommunityClick);
 }
 
 function exit() {
@@ -621,6 +686,7 @@ function exit() {
     ui.editorGrid.removeEventListener('contextmenu', handleContextMenu);
     ui.editorSave.removeEventListener('click', handleSaveClick);
     ui.editorShare.removeEventListener('click', handleShareClick);
+    ui.editorShareCommunity.removeEventListener('click', handleShareCommunityClick);
 }
 
 export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels, deleteCustomLevel };

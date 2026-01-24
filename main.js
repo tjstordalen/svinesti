@@ -9,6 +9,24 @@ import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = true;
 
+// Published Google Sheet CSV for community levels (Google Form responses)
+const COMMUNITY_LEVELS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSO0QMVljUDTfJ3GiLc1mkteJhXKRdLg0FrokGhVS4O1jx7IE74f3saAtoms9ANGwWp2HcK2yWT7Jt3/pub?output=csv';
+
+// Google Apps Script proxy for fetching Google Sheets CSV data.
+//
+// Why this exists: Browsers block direct requests to Google Sheets due to CORS
+// (Cross-Origin Resource Sharing) restrictions.
+//
+// How it works: The proxy runs on Google's servers (Apps Script), which can fetch
+// any URL. It receives a Google Docs URL, fetches the content, and returns it with
+// permissive CORS headers that browsers accept.
+//
+// The proxy only accepts URLs starting with "https://docs.google.com/" to prevent
+// misuse as a general-purpose proxy.
+//
+// To deploy your own proxy, see: scratch/proxy.gs
+const LEVELS_PROXY_URL = "https://script.google.com/macros/s/AKfycbzencsltNIwXXFy1bTl_ELzFcAXrNkL0EbtZw1v8r9ZdLylJqbg2CUYH1xs7k3umHCw/exec";
+
 // --- Help pane ---
 
 const help = {
@@ -35,6 +53,152 @@ const help = {
     toggle() {
         if (this.helpIsOpen()) this.exit();
         else this.enter();
+    },
+};
+
+// --- Community levels ---
+
+const community = {
+    levels: null,       // Cached levels after successful fetch
+    loading: false,     // Prevent concurrent fetches
+
+    // Fetch levels from the community Google Sheet CSV via the proxy
+    async fetchLevels() {
+        const proxyUrl = `${LEVELS_PROXY_URL}?url=${encodeURIComponent(COMMUNITY_LEVELS_URL)}`;
+        const response = await fetch(proxyUrl);
+        const csv = await response.text();
+
+        if (csv.startsWith('Invalid URL') || csv.startsWith('Fetch failed')) {
+            throw new Error(csv);
+        }
+
+        return this.parseCsv(csv);
+    },
+
+    // Parse CSV from Google Form responses
+    // Format: Timestamp (A), Name (B), Level URL (C)
+    parseCsv(csv) {
+        const levels = [];
+        const lines = csv.trim().split('\n');
+
+        // Skip header row
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            // Parse CSV carefully (handle quoted fields with commas)
+            const fields = this.parseCSVLine(line);
+            if (fields.length < 3) continue;
+
+            const name = fields[1];  // Column B: Name
+            const url = fields[2];   // Column C: Level URL
+
+            // Extract level from URL fragment
+            const match = url.match(/#level=([A-Za-z0-9+/=]+)/);
+            if (match) {
+                try {
+                    const json = atob(match[1]);
+                    const level = JSON.parse(json);
+                    level.name = name || level.name || 'Untitled';
+                    levels.push(level);
+                } catch (e) {
+                    console.warn('Failed to parse level:', e);
+                }
+            }
+        }
+        return levels;
+    },
+
+    // Parse a single CSV line, handling quoted fields
+    parseCSVLine(line) {
+        const fields = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    current += '"';
+                    i++;  // Skip escaped quote
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                fields.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        fields.push(current);
+        return fields;
+    },
+
+    // Show community tab content
+    async showTab() {
+        // If already loading, wait
+        if (this.loading) return;
+
+        // If no cached levels, fetch them
+        if (!this.levels) {
+            this.loading = true;
+            this.showLoading();
+            try {
+                this.levels = await this.fetchLevels();
+            } catch (e) {
+                console.error('Failed to fetch community levels:', e);
+                this.showError(this.formatError(e.message));
+                this.loading = false;
+                return;
+            }
+            this.loading = false;
+        }
+
+        // Show levels or empty message
+        if (this.levels.length > 0) {
+            populateLevelList(this.levels);
+        } else {
+            this.showEmpty();
+        }
+    },
+
+    showLoading() {
+        ui.levelList.innerHTML = '<div class="community-message">Loading community levels...</div>';
+    },
+
+    showEmpty() {
+        ui.levelList.innerHTML = `
+            <div class="community-message">
+                No community levels yet.<br>
+                Share your levels from the Level Creator!
+            </div>
+        `;
+    },
+
+    showError(message) {
+        ui.levelList.innerHTML = `
+            <div class="community-message">
+                <span class="community-error">${message}</span>
+            </div>
+        `;
+    },
+
+    // Force refresh on next tab click
+    invalidateCache() {
+        this.levels = null;
+    },
+
+    // Convert fetch errors to helpful messages
+    formatError(message) {
+        if (message.includes('401') || message.includes('403')) {
+            return 'Community levels temporarily unavailable.';
+        }
+        if (message.includes('404')) {
+            return 'Community levels not found.';
+        }
+        if (message.includes('Invalid URL')) {
+            return 'Configuration error.';
+        }
+        return `Failed to load: ${message}`;
     },
 };
 
@@ -110,7 +274,6 @@ for (let lvl of levels) {
 Game.init();
 Editor.init();
 
-// TODO FOR CLAUDE. Fix this. Just populate the default levels 
 // Build level list
 ui.sidebarTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -121,8 +284,8 @@ ui.sidebarTabs.forEach(tab => {
             populateLevelList(levels);
         } else if (tabName === 'my-levels') {
             populateLevelList(Editor.getCustomLevels(), { deletable: true });
-        } else {
-            populateLevelList(shuffled(levels));
+        } else if (tabName === 'community') {
+            community.showTab();
         }
     });
 });
@@ -135,6 +298,11 @@ window.addEventListener('levels-updated', () => {
     if (activeTab?.dataset.tab === 'my-levels') {
         populateLevelList(Editor.getCustomLevels(), { deletable: true });
     }
+});
+
+// Invalidate community cache when a level is shared
+window.addEventListener('community-levels-updated', () => {
+    community.invalidateCache();
 });
 
 // Load shared level from URL, or select first level
