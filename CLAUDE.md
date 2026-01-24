@@ -30,7 +30,7 @@ Styles are organized in `css/` directory with modular files:
 | `base.css` | CSS variables, reset, body, scrollbar, notification utility (including `.light` variant) |
 | `layout.css` | App container, main content, play/editor panes, editor name input, responsive breakpoints |
 | `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
-| `sidebar.css` | Sidebar, tabs (with editor-mode hiding), level list, thumbnails, delete button |
+| `sidebar.css` | Sidebar, pull-tab, tabs (with editor-mode hiding), level list, thumbnails, delete button |
 | `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
 | `game.css` | Grid, tiles, colors, pig sprites, pig element, color HUD, confetti |
 | `help.css` | Help modal, shortcuts list, toggle switch, lock icon shake, fadeIn/slideUp keyframes |
@@ -64,7 +64,7 @@ Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
 - **Level list** - `populateLevelList(levelArray, { deletable? })` with optional delete buttons
 - **Initialize** - Game.init(), level list setup, URL import, Game.enter()
-- **Event handlers** - Sidebar toggle, help pane, mode toggle, global shortcuts, `'levels-updated'` listener
+- **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, global shortcuts, `'levels-updated'` listener
 
 ### game.js Structure
 
@@ -438,6 +438,8 @@ This allows levels to be stored efficiently while maintaining their original can
 - List auto-refreshes when `'levels-updated'` event fires
 
 ## Sidebar Level List
+
+The sidebar is hidden by default with a green "LEVELS" pull-tab visible on the left edge (20% from top). Click the tab to open; click outside (or on the tab again) to close. Mode toggle clicks don't close the sidebar.
 
 The sidebar displays levels as visual thumbnails rather than text buttons. Each thumbnail shows:
 - Tile colors using the same `TILE_CLASSES` mapping
