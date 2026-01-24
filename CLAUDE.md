@@ -62,9 +62,10 @@ const help = {
 
 Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
+- **Community levels** - `community.showTab()`, `community.fetchLevels()`, `community.parseCsv()`, `community.invalidateCache()`
 - **Level list** - `populateLevelList(levelArray, { deletable? })` with optional delete buttons
 - **Initialize** - Game.init(), level list setup, URL import, Game.enter()
-- **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, global shortcuts, `'levels-updated'` listener
+- **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, global shortcuts, `'levels-updated'` and `'community-levels-updated'` listeners
 
 ### game.js Structure
 
@@ -436,6 +437,47 @@ This allows levels to be stored efficiently while maintaining their original can
 - In editor mode, only "My Levels" tab is visible (others hidden via CSS)
 - Delete button appears on hover (trash icon)
 - List auto-refreshes when `'levels-updated'` event fires
+
+### Community Levels
+
+Students can share levels to a central community pool via Google Sheets. No teacher setup required.
+
+**Architecture:**
+- **Google Sheet** — Stores submissions (Timestamp, Name, Level URL)
+- **Apps Script submit endpoint** — Receives POST, appends row to sheet
+- **Apps Script proxy** — Fetches sheet CSV (bypasses CORS)
+- **Apps Script cleanup** — Daily trigger deletes entries >90 days old
+
+**Submission flow (editor.js):**
+1. Click "Share to Community" → validate level
+2. POST JSON `{name, url}` to `COMMUNITY_SUBMIT_URL`
+3. Apps Script appends row to sheet
+4. Dispatch `'community-levels-updated'` event to invalidate cache
+
+**Fetch flow (main.js):**
+1. Community tab clicked → `community.showTab()`
+2. If no cache: fetch `COMMUNITY_LEVELS_URL` via proxy
+3. Parse CSV (skip header, extract Name + URL columns)
+4. Decode level from URL fragment (`#level=base64`)
+5. Cache and display via `populateLevelList()`
+
+**CSV parsing:**
+- `parseCSVLine()` handles quoted fields with commas and escaped quotes
+- Format: Timestamp (A), Name (B), Level URL (C)
+
+**Constants:**
+```javascript
+// main.js
+const COMMUNITY_LEVELS_URL = 'https://docs.google.com/.../pub?output=csv';
+
+// editor.js
+const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/.../exec';
+```
+
+**Setup scripts (scratch/):**
+- `community-submit.gs` — Submission endpoint
+- `community-cleanup.gs` — Daily cleanup trigger
+- `community-analytics.gs` — Optional geo tracking (placeholder)
 
 ## Sidebar Level List
 
