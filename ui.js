@@ -25,6 +25,7 @@ export const ui = {
     playPane:       gid("play-pane"),
     editorPane:     gid("editor-pane"),
     editorGrid:     gid("editor-grid"),
+    editorLevelName: gid("editor-level-name"),
     editorSave:     gid("editor-save"),
     editorShare:    gid("editor-share"),
     editorNotification: gid("editor-notification"),

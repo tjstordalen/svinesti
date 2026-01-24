@@ -67,6 +67,11 @@
     color: white;
 }
 
+/* In editor mode, only show My Levels tab */
+.editor-mode .sidebar-tab:not([data-tab="my-levels"]) {
+    display: none;
+}
+
 /* Sidebar Level List (thumbnail-based) */
 .sidebar-level-list {
     margin: 0;
@@ -80,6 +85,7 @@
 }
 
 .sidebar-level-item {
+    position: relative;
     padding: 10px;
     border-radius: var(--radius-md);
     cursor: pointer;
@@ -87,6 +93,34 @@
     background: var(--color-surface);
     border: 2px solid var(--color-border);
     box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.delete-level-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    opacity: 0;
+    border-radius: var(--radius-sm);
+    transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-level-item:hover .delete-level-btn {
+    opacity: 1;
+}
+
+.delete-level-btn:hover {
+    background: var(--tile-red);
+    color: white;
 }
 
 .thumbnail-wrapper {

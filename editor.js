@@ -49,6 +49,7 @@ const state = {
     isMouseDown: false,
     isDraggingPig: false,
     grid: null,      // grid object for DOM refs
+    editingLevelId: null,  // ID of level being edited, null = new level
 };
 
 const inPaintMode = () => state.clipboard !== null;
@@ -152,16 +153,59 @@ function moveCursor(direction) {
 
 // --- Load / Serialize ---
 
+function randomDefaultName() {
+    return `My Level ${Math.floor(Math.random() * 1000)}`;
+}
+
+function expand(level, canvasRows = DEFAULT_LEVEL.nRows, canvasCols = DEFAULT_LEVEL.nCols) {
+    // Expand compacted level back to canvas size
+    const { originRow = 0, originCol = 0 } = level;
+
+    // Create empty canvas
+    const cells = Array(canvasRows * canvasCols).fill('.');
+
+    // Place compacted content at origin
+    for (let r = 0; r < level.nRows; r++) {
+        for (let c = 0; c < level.nCols; c++) {
+            const canvasIndex = (originRow + r) * canvasCols + (originCol + c);
+            cells[canvasIndex] = level.grid[r][c];
+        }
+    }
+
+    // Adjust pig position
+    const pigRow = originRow + level.start[0];
+    const pigCol = originCol + level.start[1];
+
+    return { cells, pigRow, pigCol, canvasRows, canvasCols };
+}
+
 function load(level) {
-    state.nRows = level.nRows;
-    state.nCols = level.nCols;
-    state.cells = level.grid.join('').split('');
-    state.pigIndex = level.start[0] * level.nCols + level.start[1];
+    const { cells, pigRow, pigCol, canvasRows, canvasCols } = expand(level);
+
+    state.nRows = canvasRows;
+    state.nCols = canvasCols;
+    state.cells = cells;
+    state.pigIndex = pigRow * canvasCols + pigCol;
     state.pigDir = level.dir;
     state.cursor = state.pigIndex;
     state.clipboard = null;
+    state.editingLevelId = level.id || null;
 
-    state.grid = createGrid(ui.editorGrid, level.nRows, level.nCols, level);
+    ui.editorLevelName.value = level.name || randomDefaultName();
+
+    // Build grid from expanded cells
+    const expandedLevel = {
+        nRows: canvasRows,
+        nCols: canvasCols,
+        grid: [],
+        start: [pigRow, pigCol],
+        dir: level.dir,
+    };
+    for (let r = 0; r < canvasRows; r++) {
+        expandedLevel.grid.push(cells.slice(r * canvasCols, (r + 1) * canvasCols).join(''));
+    }
+
+    state.grid = createGrid(ui.editorGrid, canvasRows, canvasCols, expandedLevel);
     state.grid.tiles.forEach((tile, i) => tile.index = i);
     state.grid.pig.remove();
     render();
@@ -455,6 +499,8 @@ function compact(level) {
         grid: newGrid,
         start: [start[0] - minRow, start[1] - minCol],
         dir,
+        originRow: minRow,
+        originCol: minCol,
     };
 }
 
@@ -509,6 +555,20 @@ function saveCustomLevel(level) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
 }
 
+function updateCustomLevel(id, levelData) {
+    const levels = getCustomLevels();
+    const index = levels.findIndex(l => l.id === id);
+    if (index !== -1) {
+        levels[index] = { ...levels[index], ...levelData };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+    }
+}
+
+function deleteCustomLevel(id) {
+    const levels = getCustomLevels().filter(l => l.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+}
+
 function handleSaveClick() {
     const level = serialize();
     const error = validate(level);
@@ -517,9 +577,17 @@ function handleSaveClick() {
         return;
     }
     const compacted = compact(level);
-    compacted.name = 'Custom';
-    saveCustomLevel(compacted);
-    animations.notify(ui.editorNotification, 'Level saved!');
+    compacted.name = ui.editorLevelName.value.trim() || 'Untitled';
+
+    if (state.editingLevelId) {
+        updateCustomLevel(state.editingLevelId, compacted);
+    } else {
+        compacted.id = crypto.randomUUID();
+        saveCustomLevel(compacted);
+        state.editingLevelId = compacted.id;
+    }
+    animations.notify(ui.editorNotification, 'Saved!');
+    window.dispatchEvent(new CustomEvent('levels-updated'));
 }
 
 // --- Init / Enter / Exit ---
@@ -555,4 +623,4 @@ function exit() {
     ui.editorShare.removeEventListener('click', handleShareClick);
 }
 
-export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels };
+export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels, deleteCustomLevel };

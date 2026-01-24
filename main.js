@@ -40,7 +40,7 @@ const help = {
 
 // --- Level list ---
 
-function populateLevelList(levelArray) {
+function populateLevelList(levelArray, { deletable = false } = {}) {
     ui.levelList.innerHTML = '';
     for (const lvl of levelArray) {
         const item = document.createElement('div');
@@ -58,9 +58,24 @@ function populateLevelList(levelArray) {
 
         item.appendChild(wrapper);
         item.appendChild(name);
+
+        if (deletable && lvl.id) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-level-btn';
+            deleteBtn.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/></svg>';
+            deleteBtn.title = 'Delete level';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete "${lvl.name}"?`)) {
+                    Editor.deleteCustomLevel(lvl.id);
+                    populateLevelList(Editor.getCustomLevels(), { deletable: true });
+                }
+            });
+            item.appendChild(deleteBtn);
+        }
+
         ui.levelList.appendChild(item);
-		
-		// TODO: I don't know if this is the reight behavior. Revisit
+
         item.addEventListener('click', () => {
             if (document.body.classList.contains('editor-mode')) {
                 Editor.load(lvl);
@@ -104,8 +119,8 @@ ui.sidebarTabs.forEach(tab => {
         const tabName = tab.dataset.tab;
         if (tabName === 'default') {
             populateLevelList(levels);
-        } else if (tabName === 'local') {
-            populateLevelList(Editor.getCustomLevels());
+        } else if (tabName === 'my-levels') {
+            populateLevelList(Editor.getCustomLevels(), { deletable: true });
         } else {
             populateLevelList(shuffled(levels));
         }
@@ -113,6 +128,14 @@ ui.sidebarTabs.forEach(tab => {
 });
 
 populateLevelList(levels);
+
+// Refresh My Levels tab when levels change
+window.addEventListener('levels-updated', () => {
+    const activeTab = document.querySelector('.sidebar-tab.active');
+    if (activeTab?.dataset.tab === 'my-levels') {
+        populateLevelList(Editor.getCustomLevels(), { deletable: true });
+    }
+});
 
 // Load shared level from URL, or select first level
 const sharedLevel = Editor.importFromURL();
@@ -166,8 +189,10 @@ ui.modeEdit.onclick = () => {
     ui.editorPane.hidden = false;
     ui.modePlay.classList.remove("active");
     ui.modeEdit.classList.add("active");
-    ui.sidebar.classList.add('collapsed');
-    ui.sidebarToggle.disabled = true;
+    // Switch to My Levels tab
+    ui.sidebarTabs.forEach(t => t.classList.remove('active'));
+    document.querySelector('[data-tab="my-levels"]').classList.add('active');
+    populateLevelList(Editor.getCustomLevels(), { deletable: true });
     Editor.enter();
 };
 

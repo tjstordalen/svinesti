@@ -49,6 +49,19 @@
     min-height: 0;
 }
 
+.editor-level-name {
+    padding: 8px 12px;
+    font-size: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    text-align: center;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 280px;
+}
+
 .editor-grid-container {
     flex: 1;
     width: 100%;
