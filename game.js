@@ -137,6 +137,7 @@ function switchLanguage(newLang) {
     loadCode();
     const mode = newLang === "java" ? "text/x-java" : "python";
     ui.editor.setOption("mode", mode);
+    ui.editor.setOption("indentUnit", 4);
 }
 
 // --- State machine ---
@@ -159,9 +160,19 @@ async function submitAndEnter(enterFn) {
         animations.flash(ui.codeOutput);
         ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
         animations.notify(ui.gameNotification, null, false, 10000, "light");
-        trace = trace.slice(-100);
 
-        enterFn({ trace });
+        const discarded = trace.slice(0, -100);
+        const kept = trace.slice(-100);
+
+        // Set up grid and fast-forward to where tail begins
+        loadLevel(state.level);
+        for (const msg of discarded) {
+            applyEventSilent(msg);
+        }
+        playback.load(kept);
+
+        // Enter state without trace (skips loadLevel since we already did it)
+        enterFn({});
         animations.timeout(document.getElementById('grid-wrapper'), state.grid.pig);
         return;
     }
@@ -284,8 +295,8 @@ async function processEvent(msg) {
             break;
 
         case "gameover":
-            // We do not play the timeout animation here, as we start that 
-			// immediately when a timeout is noticed. See <CLAUDO INSTERT THE CORRECT FUNCTION NAME HERE> 
+            // We do not play the timeout animation here, as we start that
+			// immediately when a timeout is noticed. See submitAndEnter()
             if (msg.win) {
                 animations.celebrate(pig);
             }
@@ -296,6 +307,21 @@ async function processEvent(msg) {
             }
             enterIdle({ resetBoard: false });
             return "done";
+    }
+}
+
+function applyEventSilent(msg) {
+    switch (msg.type) {
+        case 'move':
+            state.grid.movePigTo(msg.pos[0], msg.pos[1]);
+            break;
+        case 'turn':
+            state.grid.pig.className = 'pig pig-' + msg.dir;
+            break;
+        case 'collected':
+            const [r, c] = msg.pos;
+            state.grid.tiles[r * state.grid.nCols + c].classList.remove('target');
+            break;
     }
 }
 
