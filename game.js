@@ -404,7 +404,7 @@ function attachEventHandlers() {
 // --- Shortcuts (internal) ---
 
 const unlessFocused = (fn) => () => {
-    if (ui.editor.hasFocus()) return;
+    if (ui.editor.hasFocus()) return false;
     fn();
 };
 
@@ -430,7 +430,7 @@ function registerShortcuts() {
     shortcuts.register({
         id:         "run-code",
         name:       "Run code",
-        action:     () => { ui.editor.getInputField().blur(); submitAndEnter(enterPaused); },
+        action:     () => { ui.editor.getInputField().blur(); submitAndEnter(enterPlaying); },
         key:        "ctrl+enter",
         rebindable: false,
     });

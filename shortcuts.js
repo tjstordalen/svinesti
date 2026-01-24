@@ -312,8 +312,10 @@ function createShortcuts(storageKey) {
         for (const shortcut of shortcuts) {
             if (!shortcut.enabled) continue;
             if (shortcut.key === pressedKey) {
-                event.preventDefault();
-                shortcut.action();
+                const handled = shortcut.action(event);
+                if (handled !== false) {
+                    event.preventDefault();
+                }
                 return;
             }
         }
