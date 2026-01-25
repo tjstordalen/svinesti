@@ -155,7 +155,12 @@
 
             <div id="editor-pane" hidden>
                 <div class="editor-main">
-                    <input type="text" id="editor-level-name" class="editor-level-name" placeholder="Level name" maxlength="32">
+                    <div class="editor-name-container">
+                        <input type="text" id="editor-level-name" class="editor-level-name" placeholder="Level name" maxlength="32" readonly>
+                        <button id="editor-name-reset" class="editor-name-reset" title="Generate new name">
+                            <img src="icons/dice.svg" alt="Random" width="30" height="30">
+                        </button>
+                    </div>
                     <div class="editor-grid-container">
                         <div id="editor-grid"></div>
                     </div>

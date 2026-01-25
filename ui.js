@@ -26,6 +26,7 @@ export const ui = {
     editorPane:     gid("editor-pane"),
     editorGrid:     gid("editor-grid"),
     editorLevelName: gid("editor-level-name"),
+    editorNameReset: gid("editor-name-reset"),
     editorSave:     gid("editor-save"),
     editorShare:    gid("editor-share"),
     editorShareCommunity: gid("editor-share-community"),

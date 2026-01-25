@@ -8,6 +8,7 @@ import { createGrid, TILE_CLASSES } from "./grid.js";
 import { ui } from "./ui.js";
 import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
+import { generateLevelName, generateUID } from "./names.js";
 
 // --- Shortcuts ---
 
@@ -20,33 +21,6 @@ const STORAGE_KEY = 'svinesti-custom-levels';
 
 // Community sharing - Apps Script endpoint that writes directly to the sheet
 const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbw1al5x8ZVUDZgMAMnML1ObHimeJwOJhE-X8YLgWo4gJDCd2qQCHeDvpH8hzsBR6kNsXA/exec';
-
-// Analytics endpoint (Apps Script web app)
-const ANALYTICS_URL = 'https://script.google.com/macros/s/PLACEHOLDER/exec';
-
-// Fire-and-forget analytics ping with geo data
-async function pingAnalytics(levelName) {
-    try {
-        // Fetch geo data from free API (no API key needed, allows CORS)
-        const geoResponse = await fetch('http://ip-api.com/json/?fields=country,city');
-        const geo = await geoResponse.json();
-
-        // Send to analytics endpoint
-        fetch(ANALYTICS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                country: geo.country || '',
-                city: geo.city || '',
-                levelName: levelName,
-                event: 'share',
-            }),
-        });
-    } catch (e) {
-        // Silently fail - analytics shouldn't break the app
-    }
-}
 
 // Left-click cycles tile colors (preserves target status)
 const COLOR_CYCLE = {
@@ -80,6 +54,7 @@ const state = {
     isDraggingPig: false,
     grid: null,      // grid object for DOM refs
     editingLevelId: null,  // ID of level being edited, null = new level
+    uid: null,       // Public UID for sharing
 };
 
 const inPaintMode = () => state.clipboard !== null;
@@ -183,10 +158,6 @@ function moveCursor(direction) {
 
 // --- Load / Serialize ---
 
-function randomDefaultName() {
-    return `My Level ${Math.floor(Math.random() * 1000)}`;
-}
-
 function expand(level, canvasRows = DEFAULT_LEVEL.nRows, canvasCols = DEFAULT_LEVEL.nCols) {
     // Expand compacted level back to canvas size
     const { originRow = 0, originCol = 0 } = level;
@@ -220,8 +191,13 @@ function load(level) {
     state.cursor = state.pigIndex;
     state.clipboard = null;
     state.editingLevelId = level.id || null;
+    state.uid = level.uid || null;
 
-    ui.editorLevelName.value = level.name || randomDefaultName();
+    if (level.name) {
+        ui.editorLevelName.value = level.name;
+    } else {
+        ui.editorNameReset.click();
+    }
 
     // Build grid from expanded cells
     const expandedLevel = {
@@ -580,26 +556,22 @@ async function handleShareCommunityClick() {
         return;
     }
 
-    const name = ui.editorLevelName.value.trim() || 'Untitled';
-    const compacted = compact(level);
-    const url = exportToURL(compacted);
+    const levelData = btoa(JSON.stringify(compact(level)));
 
     try {
-        // Submit to Apps Script endpoint
-        await fetch(COMMUNITY_SUBMIT_URL, {
+        const response = await fetch(COMMUNITY_SUBMIT_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, url }),
+            body: JSON.stringify({ level: levelData }),
         });
+        const result = await response.text();
 
-        animations.notify(ui.editorNotification, 'Shared to community!');
+        if (result.startsWith('Error:')) {
+            animations.notify(ui.editorNotification, result, true);
+            return;
+        }
 
-        // Dispatch event so community tab refreshes on next view
+        animations.notify(ui.editorNotification, `Shared as "${result}"!`);
         window.dispatchEvent(new CustomEvent('community-levels-updated'));
-
-        // Fire-and-forget analytics ping with geo data
-        pingAnalytics(name);
     } catch (e) {
         console.error('Failed to share to community:', e);
         animations.notify(ui.editorNotification, 'Failed to share. Try again.', true);
@@ -642,6 +614,7 @@ function handleSaveClick() {
     }
     const compacted = compact(level);
     compacted.name = ui.editorLevelName.value.trim() || 'Untitled';
+    compacted.uid = state.uid;
 
     if (state.editingLevelId) {
         updateCustomLevel(state.editingLevelId, compacted);
@@ -652,6 +625,11 @@ function handleSaveClick() {
     }
     animations.notify(ui.editorNotification, 'Saved!');
     window.dispatchEvent(new CustomEvent('levels-updated'));
+}
+
+function handleNameResetClick() {
+    ui.editorLevelName.value = generateLevelName();
+    state.uid = generateUID();
 }
 
 // --- Init / Enter / Exit ---
@@ -674,6 +652,7 @@ function enter() {
     ui.editorSave.addEventListener('click', handleSaveClick);
     ui.editorShare.addEventListener('click', handleShareClick);
     ui.editorShareCommunity.addEventListener('click', handleShareCommunityClick);
+    ui.editorNameReset.addEventListener('click', handleNameResetClick);
 }
 
 function exit() {
@@ -687,6 +666,7 @@ function exit() {
     ui.editorSave.removeEventListener('click', handleSaveClick);
     ui.editorShare.removeEventListener('click', handleShareClick);
     ui.editorShareCommunity.removeEventListener('click', handleShareCommunityClick);
+    ui.editorNameReset.removeEventListener('click', handleNameResetClick);
 }
 
 export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels, deleteCustomLevel };

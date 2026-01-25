@@ -49,6 +49,15 @@
     min-height: 0;
 }
 
+.editor-name-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 280px;
+}
+
 .editor-level-name {
     padding: 8px 12px;
     font-size: 1rem;
@@ -57,9 +66,30 @@
     background: var(--color-bg);
     color: var(--color-text);
     text-align: center;
-    margin-bottom: 16px;
-    width: 100%;
-    max-width: 280px;
+    flex: 1;
+}
+
+.editor-name-reset {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.editor-name-reset:hover {
+    background: var(--color-border);
+}
+
+.editor-name-reset:active {
+    background: var(--color-interactive);
+    color: white;
 }
 
 .editor-grid-container {
