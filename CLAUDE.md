@@ -449,25 +449,31 @@ Students can share levels to a central community pool via Google Sheets. No teac
 
 **Architecture:**
 - **Google Sheet** — Stores submissions (Timestamp, Level as base64 JSON)
-- **Apps Script** — Single endpoint: GET returns levels, POST submits new level
+- **PropertiesService** — Stores version number for efficient polling
+- **Apps Script** — Single endpoint: GET returns levels (or version), POST submits new level
 
 **Submission flow (editor.js):**
 1. Click "Share to Community" → validate level (including DFS reachability)
-2. POST JSON `{level: base64}` to `COMMUNITY_LEVELS_URL`
-3. Server validates, fixes name/UID if needed, appends to sheet
-4. Dispatch `'community-levels-updated'` event to invalidate cache
+2. Show "Sharing..." notification immediately
+3. POST JSON `{level: base64}` to `COMMUNITY_LEVELS_URL`
+4. Server validates, fixes name/UID if needed, appends to sheet, increments version
+5. Dispatch `'community-levels-updated'` event to trigger refresh
 
 **Fetch flow (main.js):**
 1. Community tab clicked → `community.showTab()`
-2. If no cache: GET `COMMUNITY_LEVELS_URL`
+2. If no cache: GET `?version`, then GET full list
 3. Parse response (one base64 level per line)
-4. Cache and display via `populateLevelList()`
+4. Cache levels and version, display via `populateLevelList()`
 
-**Constants:**
-```javascript
-// main.js and editor.js use the same endpoint
-const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/.../exec';
-```
+**Polling (main.js):**
+- `community.refresh()` checks `?version` every 3 minutes
+- If version changed, fetches full list and updates UI
+- Also triggered by `'community-levels-updated'` event after submission
+
+**API endpoints:**
+- `GET ?version` — Returns version number (no sheet read, uses PropertiesService)
+- `GET` — Returns all levels (one base64 per line)
+- `POST {level: base64}` — Validates, appends to sheet, increments version
 
 **Setup scripts (appscript/):**
 - `main.gs` — API endpoints (doGet, doPost), level validation (DFS reachability)
