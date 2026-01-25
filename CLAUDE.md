@@ -63,7 +63,7 @@ const help = {
 
 Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
-- **Community levels** - `community.showTab()`, `community.fetchLevels()`, `community.parseTsv()`, `community.invalidateCache()`
+- **Community levels** - `community.showTab()`, `community.fetchLevels()`, `community.parse()`, `community.invalidateCache()`
 - **Level list** - `populateLevelList(levelArray, { deletable? })` with optional delete buttons
 - **Initialize** - Game.init(), level list setup, URL import, Game.enter()
 - **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, global shortcuts, `'levels-updated'` and `'community-levels-updated'` listeners
@@ -448,41 +448,30 @@ This allows levels to be stored efficiently while maintaining their original can
 Students can share levels to a central community pool via Google Sheets. No teacher setup required.
 
 **Architecture:**
-- **Google Sheet** — Stores submissions (Timestamp, Name, Level URL)
-- **Apps Script submit endpoint** — Receives POST, appends row to sheet
-- **Apps Script proxy** — Fetches sheet CSV (bypasses CORS)
-- **Apps Script cleanup** — Daily trigger deletes entries >90 days old
+- **Google Sheet** — Stores submissions (Timestamp, Level as base64 JSON)
+- **Apps Script** — Single endpoint: GET returns levels, POST submits new level
 
 **Submission flow (editor.js):**
-1. Click "Share to Community" → validate level
-2. POST JSON `{name, url}` to `COMMUNITY_SUBMIT_URL`
-3. Apps Script appends row to sheet
+1. Click "Share to Community" → validate level (including DFS reachability)
+2. POST JSON `{level: base64}` to `COMMUNITY_LEVELS_URL`
+3. Server validates, fixes name/UID if needed, appends to sheet
 4. Dispatch `'community-levels-updated'` event to invalidate cache
 
 **Fetch flow (main.js):**
 1. Community tab clicked → `community.showTab()`
-2. If no cache: fetch `COMMUNITY_LEVELS_URL` via proxy
-3. Parse TSV (skip header, extract Name + Level Data columns)
-4. Decode level from base64 JSON
-5. Cache and display via `populateLevelList()`
-
-**TSV parsing:**
-- Simple tab-split (no quote handling needed)
-- Format: Timestamp (A), Name (B), Level Data (C, base64-encoded JSON)
+2. If no cache: GET `COMMUNITY_LEVELS_URL`
+3. Parse response (one base64 level per line)
+4. Cache and display via `populateLevelList()`
 
 **Constants:**
 ```javascript
-// main.js
-const COMMUNITY_LEVELS_URL = 'https://docs.google.com/.../pub?output=tsv';
-
-// editor.js
-const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/.../exec';
+// main.js and editor.js use the same endpoint
+const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/.../exec';
 ```
 
-**Setup scripts (scratch/):**
-- `community-submit.gs` — Submission endpoint
-- `community-cleanup.gs` — Daily cleanup trigger
-- `community-analytics.gs` — Optional geo tracking (placeholder)
+**Setup scripts (appscript/):**
+- `main.gs` — API endpoints (doGet, doPost) and cleanup trigger
+- `names.gs` — Name validation and generation
 
 ## Sidebar Level List
 

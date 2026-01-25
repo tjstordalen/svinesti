@@ -556,21 +556,24 @@ async function handleShareCommunityClick() {
         return;
     }
 
-    const levelData = btoa(JSON.stringify(compact(level)));
+    const compacted = compact(level);
+    compacted.name = ui.editorLevelName.value.trim();
+    compacted.uid = state.uid;
+    const levelData = btoa(JSON.stringify(compacted));
 
     try {
         const response = await fetch(COMMUNITY_SUBMIT_URL, {
             method: 'POST',
             body: JSON.stringify({ level: levelData }),
         });
-        const result = await response.text();
+        const result = await response.json();
 
-        if (result.startsWith('Error:')) {
-            animations.notify(ui.editorNotification, result, true);
+        if (result.error) {
+            animations.notify(ui.editorNotification, result.error, true);
             return;
         }
 
-        animations.notify(ui.editorNotification, `Shared as "${result}"!`);
+        animations.notify(ui.editorNotification, `Shared as "${result.name}"!`);
         window.dispatchEvent(new CustomEvent('community-levels-updated'));
     } catch (e) {
         console.error('Failed to share to community:', e);

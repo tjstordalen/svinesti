@@ -9,23 +9,8 @@ import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = true;
 
-// Published Google Sheet for community levels (Google Form responses)
-const COMMUNITY_LEVELS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSO0QMVljUDTfJ3GiLc1mkteJhXKRdLg0FrokGhVS4O1jx7IE74f3saAtoms9ANGwWp2HcK2yWT7Jt3/pub?output=tsv';
-
-// Google Apps Script proxy for fetching Google Sheets data.
-//
-// Why this exists: Browsers block direct requests to Google Sheets due to CORS
-// (Cross-Origin Resource Sharing) restrictions.
-//
-// How it works: The proxy runs on Google's servers (Apps Script), which can fetch
-// any URL. It receives a Google Docs URL, fetches the content, and returns it with
-// permissive CORS headers that browsers accept.
-//
-// The proxy only accepts URLs starting with "https://docs.google.com/" to prevent
-// misuse as a general-purpose proxy.
-//
-// To deploy your own proxy, see: scratch/proxy.gs
-const LEVELS_PROXY_URL = "https://script.google.com/macros/s/AKfycbzencsltNIwXXFy1bTl_ELzFcAXrNkL0EbtZw1v8r9ZdLylJqbg2CUYH1xs7k3umHCw/exec";
+// Apps Script endpoint for community levels (GET to fetch, POST to submit)
+const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/AKfycbw1al5x8ZVUDZgMAMnML1ObHimeJwOJhE-X8YLgWo4gJDCd2qQCHeDvpH8hzsBR6kNsXA/exec';
 
 // --- Help pane ---
 
@@ -62,37 +47,25 @@ const community = {
     levels: null,       // Cached levels after successful fetch
     loading: false,     // Prevent concurrent fetches
 
-    // Fetch levels from the community Google Sheet via the proxy
+    // Fetch levels from the community Apps Script endpoint
     async fetchLevels() {
-        const proxyUrl = `${LEVELS_PROXY_URL}?url=${encodeURIComponent(COMMUNITY_LEVELS_URL)}`;
-        const response = await fetch(proxyUrl);
-        const tsv = await response.text();
+        const response = await fetch(COMMUNITY_LEVELS_URL);
+        const text = await response.text();
 
-        if (tsv.startsWith('Invalid URL') || tsv.startsWith('Fetch failed')) {
-            throw new Error(tsv);
+        if (text.startsWith('Error:')) {
+            throw new Error(text);
         }
 
-        return this.parseTsv(tsv);
+        return this.parse(text);
     },
 
-    // Parse TSV from Google Sheets
-    // Format: Timestamp (A), Name (B), Level Data (C, base64-encoded JSON)
-    parseTsv(tsv) {
+    // Parse response: one base64-encoded level per line
+    parse(text) {
         const levels = [];
-        const lines = tsv.trim().split('\n');
-
-        // Skip header row
-        for (let i = 1; i < lines.length; i++) {
-            const fields = lines[i].split('\t');
-            if (fields.length < 3) continue;
-
-            const name = fields[1];
-            const levelData = fields[2];
-
+        for (const line of text.trim().split('\n')) {
+            if (!line) continue;
             try {
-                const level = JSON.parse(atob(levelData));
-                level.name = name || level.name || 'Untitled';
-                levels.push(level);
+                levels.push(JSON.parse(atob(line)));
             } catch (e) {
                 console.warn('Failed to parse level:', e);
             }
