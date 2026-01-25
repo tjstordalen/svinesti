@@ -10,7 +10,7 @@ import { ui } from "./ui.js";
 const ENABLE_SPLASH_SCREEN = true;
 
 // Apps Script endpoint for community levels (GET to fetch, POST to submit)
-const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/AKfycbyieWViZzK6oxdCX7MV8TI-UdE86-0LVUklY1eHcRkiQvI9s0ODqmKiFOs9HgSbTUnt/exec';
+const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/AKfycbwZUIdxptq5nfy9Tcea89TqcizBdPxP_DQrWAoiI2hnHjbEx23UceIVBfxkf77ZZ8dSrw/exec';
 
 // --- Help pane ---
 
@@ -43,11 +43,22 @@ const help = {
 
 // --- Community levels ---
 
+const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
+
 const community = {
     levels: null,       // Cached levels after successful fetch
+    version: null,      // Cached version for efficient polling
     loading: false,     // Prevent concurrent fetches
 
-    // Fetch levels from the community Apps Script endpoint
+    // Fetch just the version number (lightweight, no sheet read)
+    async fetchVersion() {
+        const response = await fetch(`${COMMUNITY_LEVELS_URL}?version`);
+        const text = await response.text();
+        if (text.startsWith('Error:')) throw new Error(text);
+        return parseInt(text, 10);
+    },
+
+    // Fetch all levels from the community Apps Script endpoint
     async fetchLevels() {
         const response = await fetch(COMMUNITY_LEVELS_URL);
         const text = await response.text();
@@ -57,6 +68,31 @@ const community = {
         }
 
         return this.parse(text);
+    },
+
+    // Check for new levels and update list if changed
+    async refresh() {
+        if (this.loading || this.levels === null) return;
+
+        try {
+            const newVersion = await this.fetchVersion();
+            if (newVersion !== this.version) {
+                this.version = newVersion;
+                this.levels = await this.fetchLevels();
+                // Update UI if community tab is active
+                const activeTab = document.querySelector('.sidebar-tab.active');
+                if (activeTab?.dataset.tab === 'community') {
+                    populateLevelList(this.levels);
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to refresh community levels:', e);
+        }
+    },
+
+    // Start periodic polling
+    startPolling() {
+        setInterval(() => this.refresh(), REFRESH_INTERVAL);
     },
 
     // Parse response: one base64-encoded level per line
@@ -83,6 +119,7 @@ const community = {
             this.loading = true;
             this.showLoading();
             try {
+                this.version = await this.fetchVersion();
                 this.levels = await this.fetchLevels();
             } catch (e) {
                 console.error('Failed to fetch community levels:', e);
@@ -120,11 +157,6 @@ const community = {
                 <span class="community-error">${message}</span>
             </div>
         `;
-    },
-
-    // Force refresh on next tab click
-    invalidateCache() {
-        this.levels = null;
     },
 
     // Convert fetch errors to helpful messages
@@ -240,10 +272,13 @@ window.addEventListener('levels-updated', () => {
     }
 });
 
-// Invalidate community cache when a level is shared
+// Refresh community levels when a level is shared
 window.addEventListener('community-levels-updated', () => {
-    community.invalidateCache();
+    community.refresh();
 });
+
+// Start polling for new community levels
+community.startPolling();
 
 // Load shared level from URL, or select first level
 const sharedLevel = Editor.importFromURL();

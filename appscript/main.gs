@@ -84,12 +84,20 @@ function validateLevel(level) {
 // -----------------------------------------------------------------------------
 
 // GET: Return all levels (one base64-encoded JSON per line)
+// Add ?version to get just the version number (for efficient polling)
 function doGet(e) {
     try {
+        // ?version — return just the version (no sheet read)
+        if (e.parameter.version !== undefined) {
+            var props = PropertiesService.getScriptProperties();
+            var version = props.getProperty('version') || '0';
+            return ContentService.createTextOutput(version)
+                .setMimeType(ContentService.MimeType.TEXT);
+        }
+
+        // Full fetch — return all levels
         var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
         var data = sheet.getDataRange().getValues();
-
-        // Skip header row, return only level column (index 1)
         var levels = [];
         for (var i = 1; i < data.length; i++) {
             levels.push(data[i][1]);
@@ -141,6 +149,11 @@ function doPost(e) {
             new Date(),
             encodeLevel(level)
         ]);
+
+        // Increment version for polling
+        var props = PropertiesService.getScriptProperties();
+        var version = parseInt(props.getProperty('version') || '0', 10);
+        props.setProperty('version', String(version + 1));
 
         var result = {
             success: true,
