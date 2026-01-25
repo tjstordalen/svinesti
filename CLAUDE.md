@@ -470,7 +470,7 @@ const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/.../exec';
 ```
 
 **Setup scripts (appscript/):**
-- `main.gs` — API endpoints (doGet, doPost) and cleanup trigger
+- `main.gs` — API endpoints (doGet, doPost), level validation (DFS reachability)
 - `names.gs` — Name validation and generation
 
 ## Sidebar Level List
