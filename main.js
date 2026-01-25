@@ -95,6 +95,19 @@ const community = {
         setInterval(() => this.refresh(), REFRESH_INTERVAL);
     },
 
+    // Fetch levels in background so they're ready when user opens tab
+    async preload() {
+        if (this.loading || this.levels) return;
+        this.loading = true;
+        try {
+            this.version = await this.fetchVersion();
+            this.levels = await this.fetchLevels();
+        } catch (e) {
+            console.warn('Failed to preload community levels:', e);
+        }
+        this.loading = false;
+    },
+
     // Parse response: base64<TAB>stars per line
     parse(text) {
         const levels = [];
@@ -113,30 +126,21 @@ const community = {
     },
 
     // Star or unstar a level
-    // TEMP-MULTISTAR: Modified to allow multi-star for testing
-    async starLevel(uid, starred = true) {  // TEMP-MULTISTAR: added starred param
+    starLevel(uid) {
         const key = `starred-${uid}`;
-        // TEMP-MULTISTAR: Commented out localStorage check
-        // const isStarred = localStorage.getItem(key) === '1';
+        const isStarred = localStorage.getItem(key) === '1';
 
-        try {
-            const response = await fetch(COMMUNITY_LEVELS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'star', uid, starred })  // TEMP-MULTISTAR: use param directly
-            });
-            const result = await response.json();
+        // Optimistic update
+        localStorage.setItem(key, isStarred ? '0' : '1');
+        const level = this.levels.find(l => l.uid === uid);
+        if (level) level.stars += isStarred ? -1 : 1;
+        this.showLevels();
 
-            if (result.success) {
-                // TEMP-MULTISTAR: Commented out localStorage update
-                // localStorage.setItem(key, isStarred ? '0' : '1');
-                // Update local level object
-                const level = this.levels.find(l => l.uid === uid);
-                if (level) level.stars = result.stars;
-                this.showLevels();
-            }
-        } catch (e) {
-            console.warn('Failed to star level:', e);
-        }
+        // Fire and forget
+        fetch(COMMUNITY_LEVELS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'star', uid, starred: !isStarred })
+        });
     },
 
     searchQuery: '',    // Current search filter
@@ -286,26 +290,15 @@ function populateLevelList(levelArray, { deletable = false } = {}, container = n
         }
 
         // Star button for community levels
-        // TEMP-MULTISTAR: Modified for testing (left=star, right=unstar)
         if (lvl.stars !== undefined && lvl.uid) {
-            // TEMP-MULTISTAR: Commented out localStorage check
-            // const isStarred = localStorage.getItem(`starred-${lvl.uid}`) === '1';
+            const isStarred = localStorage.getItem(`starred-${lvl.uid}`) === '1';
             const starBtn = document.createElement('button');
-            // TEMP-MULTISTAR: Removed starred class logic
-            starBtn.className = 'star-btn';
+            starBtn.className = 'star-btn' + (isStarred ? ' starred' : '');
             starBtn.innerHTML = `<img src="/img/golden-apple.png" alt=""><span>${lvl.stars}</span>`;
-            // TEMP-MULTISTAR: Updated title
-            starBtn.title = 'Left-click: star, Right-click: unstar';
-            // TEMP-MULTISTAR: Left click = star
+            starBtn.title = isStarred ? 'Remove star' : 'Star this level';
             starBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                community.starLevel(lvl.uid, true);
-            });
-            // TEMP-MULTISTAR: Right click = unstar
-            starBtn.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                community.starLevel(lvl.uid, false);
+                community.starLevel(lvl.uid);
             });
             item.appendChild(starBtn);
         }
@@ -377,7 +370,8 @@ window.addEventListener('community-levels-updated', () => {
     community.refresh();
 });
 
-// Start polling for new community levels
+// Preload community levels and start polling
+community.preload();
 community.startPolling();
 
 // Load shared level from URL, or select first level
