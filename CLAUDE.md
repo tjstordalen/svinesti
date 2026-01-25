@@ -468,8 +468,8 @@ Students can share levels to a central community pool via Google Sheets. No teac
 5. Dispatch `'community-levels-updated'` event to trigger refresh
 
 **Fetch flow (main.js):**
-1. Community tab clicked → `community.showTab()`
-2. If no cache: GET `?version`, then GET full list
+1. On page load: `community.preload()` fetches levels in background
+2. Community tab clicked → `community.showTab()` displays cached levels immediately
 3. Parse response (`base64<TAB>stars` per line), add stars to level object
 4. Cache levels and version, display sorted by stars (descending)
 
@@ -477,7 +477,7 @@ Students can share levels to a central community pool via Google Sheets. No teac
 - Search field filters levels by name (case-insensitive)
 - Star button (golden apple) on each level thumbnail
 - Click to star/unstar; localStorage tracks user's starred levels
-- `community.starLevel(uid)` POSTs to increment/decrement
+- Optimistic UI: count updates instantly, POST fires without awaiting response
 
 **Polling (main.js):**
 - `community.refresh()` checks `?version` every 3 minutes
