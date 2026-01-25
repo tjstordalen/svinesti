@@ -9,10 +9,10 @@ import { ui } from "./ui.js";
 
 const ENABLE_SPLASH_SCREEN = true;
 
-// Published Google Sheet CSV for community levels (Google Form responses)
-const COMMUNITY_LEVELS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSO0QMVljUDTfJ3GiLc1mkteJhXKRdLg0FrokGhVS4O1jx7IE74f3saAtoms9ANGwWp2HcK2yWT7Jt3/pub?output=csv';
+// Published Google Sheet for community levels (Google Form responses)
+const COMMUNITY_LEVELS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSO0QMVljUDTfJ3GiLc1mkteJhXKRdLg0FrokGhVS4O1jx7IE74f3saAtoms9ANGwWp2HcK2yWT7Jt3/pub?output=tsv';
 
-// Google Apps Script proxy for fetching Google Sheets CSV data.
+// Google Apps Script proxy for fetching Google Sheets data.
 //
 // Why this exists: Browsers block direct requests to Google Sheets due to CORS
 // (Cross-Origin Resource Sharing) restrictions.
@@ -62,75 +62,42 @@ const community = {
     levels: null,       // Cached levels after successful fetch
     loading: false,     // Prevent concurrent fetches
 
-    // Fetch levels from the community Google Sheet CSV via the proxy
+    // Fetch levels from the community Google Sheet via the proxy
     async fetchLevels() {
         const proxyUrl = `${LEVELS_PROXY_URL}?url=${encodeURIComponent(COMMUNITY_LEVELS_URL)}`;
         const response = await fetch(proxyUrl);
-        const csv = await response.text();
+        const tsv = await response.text();
 
-        if (csv.startsWith('Invalid URL') || csv.startsWith('Fetch failed')) {
-            throw new Error(csv);
+        if (tsv.startsWith('Invalid URL') || tsv.startsWith('Fetch failed')) {
+            throw new Error(tsv);
         }
 
-        return this.parseCsv(csv);
+        return this.parseTsv(tsv);
     },
 
-    // Parse CSV from Google Form responses
-    // Format: Timestamp (A), Name (B), Level URL (C)
-    parseCsv(csv) {
+    // Parse TSV from Google Sheets
+    // Format: Timestamp (A), Name (B), Level Data (C, base64-encoded JSON)
+    parseTsv(tsv) {
         const levels = [];
-        const lines = csv.trim().split('\n');
+        const lines = tsv.trim().split('\n');
 
         // Skip header row
         for (let i = 1; i < lines.length; i++) {
-            const line = lines[i];
-            // Parse CSV carefully (handle quoted fields with commas)
-            const fields = this.parseCSVLine(line);
+            const fields = lines[i].split('\t');
             if (fields.length < 3) continue;
 
-            const name = fields[1];  // Column B: Name
-            const url = fields[2];   // Column C: Level URL
+            const name = fields[1];
+            const levelData = fields[2];
 
-            // Extract level from URL fragment
-            const match = url.match(/#level=([A-Za-z0-9+/=]+)/);
-            if (match) {
-                try {
-                    const json = atob(match[1]);
-                    const level = JSON.parse(json);
-                    level.name = name || level.name || 'Untitled';
-                    levels.push(level);
-                } catch (e) {
-                    console.warn('Failed to parse level:', e);
-                }
+            try {
+                const level = JSON.parse(atob(levelData));
+                level.name = name || level.name || 'Untitled';
+                levels.push(level);
+            } catch (e) {
+                console.warn('Failed to parse level:', e);
             }
         }
         return levels;
-    },
-
-    // Parse a single CSV line, handling quoted fields
-    parseCSVLine(line) {
-        const fields = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-                if (inQuotes && line[i + 1] === '"') {
-                    current += '"';
-                    i++;  // Skip escaped quote
-                } else {
-                    inQuotes = !inQuotes;
-                }
-            } else if (char === ',' && !inQuotes) {
-                fields.push(current);
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        fields.push(current);
-        return fields;
     },
 
     // Show community tab content
