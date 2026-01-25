@@ -1,7 +1,7 @@
 // main.gs - API endpoints for community levels
 //
 // SETUP:
-// 1. Create a Google Sheet with columns: Timestamp | Level
+// 1. Create a Google Sheet with columns: Timestamp | UID | Level | Stars
 // 2. Extensions > Apps Script
 // 3. Create two files: names.gs and main.gs
 // 4. Paste the respective code into each
@@ -83,7 +83,7 @@ function validateLevel(level) {
 // API ENDPOINTS
 // -----------------------------------------------------------------------------
 
-// GET: Return all levels (one base64-encoded JSON per line)
+// GET: Return all levels (base64<TAB>stars per line)
 // Add ?version to get just the version number (for efficient polling)
 function doGet(e) {
     try {
@@ -95,40 +95,68 @@ function doGet(e) {
                 .setMimeType(ContentService.MimeType.TEXT);
         }
 
-        // Full fetch — return all levels
+        // Full fetch — return all levels with stars
+        // Sheet columns: Timestamp (A) | UID (B) | Level (C) | Stars (D)
         var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
         var data = sheet.getDataRange().getValues();
-        var levels = [];
+        var lines = [];
         for (var i = 1; i < data.length; i++) {
-            levels.push(data[i][1]);
+            var level = data[i][2];   // Column C: base64 level
+            if (!level) continue;     // Skip rows without level data
+            // Column D: star count (handle Date objects from Sheets interpreting 0 as date)
+            var rawStars = data[i][3];
+            var stars = (typeof rawStars === 'number') ? rawStars : 0;
+            lines.push(level + '\t' + stars);
         }
 
-        return ContentService.createTextOutput(levels.join('\n'))
+        return ContentService.createTextOutput(lines.join('\n'))
             .setMimeType(ContentService.MimeType.TEXT);
     } catch (err) {
         return ContentService.createTextOutput('Error: ' + err.message);
     }
 }
 
-// POST: Submit a new level
-// Expects: { level: "base64-encoded-json" }
-// Level JSON should have: { name, uid, nRows, nCols, grid, start, dir, ... }
+// POST: Submit a new level or star/unstar
+// Submit: { level: "base64-encoded-json" }
+// Star:   { action: "star", uid: "...", starred: true/false }
 function doPost(e) {
     try {
         var data = JSON.parse(e.postData.contents);
+        var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
-        if (!data.level) {
+        // --- Star/unstar action ---
+        if (data.action === 'star') {
+            if (!data.uid) {
+                return ContentService.createTextOutput(JSON.stringify({ error: 'Missing uid' }));
+            }
+
+            var finder = sheet.getRange('B:B').createTextFinder(data.uid).matchEntireCell(true);
+            var cell = finder.findNext();
+            if (!cell) {
+                return ContentService.createTextOutput(JSON.stringify({ error: 'Level not found' }));
+            }
+
+            var row = cell.getRow();
+            var starsCell = sheet.getRange(row, 4);  // Column D
+            var current = starsCell.getValue() || 0;
+            var newValue = data.starred ? current + 1 : Math.max(0, current - 1);
+            starsCell.setValue(newValue);
+
             return ContentService.createTextOutput(JSON.stringify({
-                error: 'Missing level data'
+                success: true,
+                stars: newValue
             }));
+        }
+
+        // --- Submit new level ---
+        if (!data.level) {
+            return ContentService.createTextOutput(JSON.stringify({ error: 'Missing level data' }));
         }
 
         var level = decodeLevel(data.level);
         var validationError = validateLevel(level);
         if (validationError) {
-            return ContentService.createTextOutput(JSON.stringify({
-                error: validationError
-            }));
+            return ContentService.createTextOutput(JSON.stringify({ error: validationError }));
         }
 
         // Check/fix name (uses functions from names.gs)
@@ -143,11 +171,12 @@ function doPost(e) {
             level.uid = generateUID(8);
         }
 
-        // Append: Timestamp | Level (base64 with updated name/uid)
-        var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        // Append: Timestamp | UID | Level | Stars
         sheet.appendRow([
             new Date(),
-            encodeLevel(level)
+            level.uid,
+            encodeLevel(level),
+            0
         ]);
 
         // Increment version for polling
@@ -166,9 +195,7 @@ function doPost(e) {
 
         return ContentService.createTextOutput(JSON.stringify(result));
     } catch (err) {
-        return ContentService.createTextOutput(JSON.stringify({
-            error: err.message
-        }));
+        return ContentService.createTextOutput(JSON.stringify({ error: err.message }));
     }
 }
 

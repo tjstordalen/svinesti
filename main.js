@@ -10,7 +10,7 @@ import { ui } from "./ui.js";
 const ENABLE_SPLASH_SCREEN = true;
 
 // Apps Script endpoint for community levels (GET to fetch, POST to submit)
-const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/AKfycbwZUIdxptq5nfy9Tcea89TqcizBdPxP_DQrWAoiI2hnHjbEx23UceIVBfxkf77ZZ8dSrw/exec';
+const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/AKfycbwne7UEsOMM6Aa0WD5X2KdUx0eZX8QyZQ6FcWajARqaUa9Zs_ICcfJYCuVhrWXzgHjO7Q/exec';
 
 // --- Help pane ---
 
@@ -82,7 +82,7 @@ const community = {
                 // Update UI if community tab is active
                 const activeTab = document.querySelector('.sidebar-tab.active');
                 if (activeTab?.dataset.tab === 'community') {
-                    populateLevelList(this.levels);
+                    this.showLevels();
                 }
             }
         } catch (e) {
@@ -95,19 +95,51 @@ const community = {
         setInterval(() => this.refresh(), REFRESH_INTERVAL);
     },
 
-    // Parse response: one base64-encoded level per line
+    // Parse response: base64<TAB>stars per line
     parse(text) {
         const levels = [];
         for (const line of text.trim().split('\n')) {
             if (!line) continue;
             try {
-                levels.push(JSON.parse(atob(line)));
+                const [encoded, stars] = line.split('\t');
+                const level = JSON.parse(atob(encoded));
+                level.stars = parseInt(stars, 10) || 0;
+                levels.push(level);
             } catch (e) {
                 console.warn('Failed to parse level:', e);
             }
         }
         return levels;
     },
+
+    // Star or unstar a level
+    // TEMP-MULTISTAR: Modified to allow multi-star for testing
+    async starLevel(uid, starred = true) {  // TEMP-MULTISTAR: added starred param
+        const key = `starred-${uid}`;
+        // TEMP-MULTISTAR: Commented out localStorage check
+        // const isStarred = localStorage.getItem(key) === '1';
+
+        try {
+            const response = await fetch(COMMUNITY_LEVELS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'star', uid, starred })  // TEMP-MULTISTAR: use param directly
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                // TEMP-MULTISTAR: Commented out localStorage update
+                // localStorage.setItem(key, isStarred ? '0' : '1');
+                // Update local level object
+                const level = this.levels.find(l => l.uid === uid);
+                if (level) level.stars = result.stars;
+                this.showLevels();
+            }
+        } catch (e) {
+            console.warn('Failed to star level:', e);
+        }
+    },
+
+    searchQuery: '',    // Current search filter
 
     // Show community tab content
     async showTab() {
@@ -132,9 +164,50 @@ const community = {
 
         // Show levels or empty message
         if (this.levels.length > 0) {
-            populateLevelList(this.levels);
+            this.showLevels();
         } else {
             this.showEmpty();
+        }
+    },
+
+    // Show search field and filtered levels (sorted by stars)
+    showLevels() {
+        const sorted = [...this.levels].sort((a, b) => (b.stars || 0) - (a.stars || 0));
+        const filtered = this.searchQuery
+            ? sorted.filter(l => l.name?.toLowerCase().includes(this.searchQuery))
+            : sorted;
+
+        ui.levelList.innerHTML = '';
+
+        // Search input
+        const search = document.createElement('input');
+        search.type = 'text';
+        search.className = 'community-search';
+        search.placeholder = 'Search levels...';
+        search.value = this.searchQuery;
+        search.addEventListener('input', (e) => {
+            this.searchQuery = e.target.value.toLowerCase();
+            this.showLevels();
+        });
+        ui.levelList.appendChild(search);
+
+        // Levels
+        if (filtered.length > 0) {
+            const container = document.createElement('div');
+            container.className = 'community-levels-container';
+            populateLevelList(filtered, {}, container);
+            ui.levelList.appendChild(container);
+        } else if (this.searchQuery) {
+            const msg = document.createElement('div');
+            msg.className = 'community-message';
+            msg.textContent = 'No levels match your search.';
+            ui.levelList.appendChild(msg);
+        }
+
+        // Re-focus search if actively searching
+        if (this.searchQuery) {
+            search.focus();
+            search.selectionStart = search.selectionEnd = search.value.length;
         }
     },
 
@@ -176,8 +249,10 @@ const community = {
 
 // --- Level list ---
 
-function populateLevelList(levelArray, { deletable = false } = {}) {
-    ui.levelList.innerHTML = '';
+function populateLevelList(levelArray, { deletable = false } = {}, container = null) {
+    const target = container || ui.levelList;
+    if (!container) target.innerHTML = '';
+
     for (const lvl of levelArray) {
         const item = document.createElement('div');
         item.className = 'sidebar-level-item';
@@ -210,7 +285,32 @@ function populateLevelList(levelArray, { deletable = false } = {}) {
             item.appendChild(deleteBtn);
         }
 
-        ui.levelList.appendChild(item);
+        // Star button for community levels
+        // TEMP-MULTISTAR: Modified for testing (left=star, right=unstar)
+        if (lvl.stars !== undefined && lvl.uid) {
+            // TEMP-MULTISTAR: Commented out localStorage check
+            // const isStarred = localStorage.getItem(`starred-${lvl.uid}`) === '1';
+            const starBtn = document.createElement('button');
+            // TEMP-MULTISTAR: Removed starred class logic
+            starBtn.className = 'star-btn';
+            starBtn.innerHTML = `<img src="/img/golden-apple.png" alt=""><span>${lvl.stars}</span>`;
+            // TEMP-MULTISTAR: Updated title
+            starBtn.title = 'Left-click: star, Right-click: unstar';
+            // TEMP-MULTISTAR: Left click = star
+            starBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                community.starLevel(lvl.uid, true);
+            });
+            // TEMP-MULTISTAR: Right click = unstar
+            starBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                community.starLevel(lvl.uid, false);
+            });
+            item.appendChild(starBtn);
+        }
+
+        target.appendChild(item);
 
         item.addEventListener('click', () => {
             if (document.body.classList.contains('editor-mode')) {
