@@ -10,7 +10,7 @@ import { ui } from "./ui.js";
 const ENABLE_SPLASH_SCREEN = true;
 
 // Apps Script endpoint for community levels (GET to fetch, POST to submit)
-const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/AKfycbw1al5x8ZVUDZgMAMnML1ObHimeJwOJhE-X8YLgWo4gJDCd2qQCHeDvpH8hzsBR6kNsXA/exec';
+const COMMUNITY_LEVELS_URL = 'https://script.google.com/macros/s/AKfycbyieWViZzK6oxdCX7MV8TI-UdE86-0LVUklY1eHcRkiQvI9s0ODqmKiFOs9HgSbTUnt/exec';
 
 // --- Help pane ---
 

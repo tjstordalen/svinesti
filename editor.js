@@ -20,7 +20,7 @@ const paintShortcuts = Shortcuts.new('svinesti-editor-paint-v1');
 const STORAGE_KEY = 'svinesti-custom-levels';
 
 // Community sharing - Apps Script endpoint that writes directly to the sheet
-const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbw1al5x8ZVUDZgMAMnML1ObHimeJwOJhE-X8YLgWo4gJDCd2qQCHeDvpH8hzsBR6kNsXA/exec';
+const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbyieWViZzK6oxdCX7MV8TI-UdE86-0LVUklY1eHcRkiQvI9s0ODqmKiFOs9HgSbTUnt/exec';
 
 // Left-click cycles tile colors (preserves target status)
 const COLOR_CYCLE = {
