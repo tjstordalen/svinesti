@@ -448,9 +448,17 @@ This allows levels to be stored efficiently while maintaining their original can
 Students can share levels to a central community pool via Google Sheets. No teacher setup required.
 
 **Architecture:**
-- **Google Sheet** — Stores submissions (Timestamp, Level as base64 JSON)
+- **Google Sheet** — Stores submissions (Timestamp | UID | Level | Stars)
 - **PropertiesService** — Stores version number for efficient polling
-- **Apps Script** — Single endpoint: GET returns levels (or version), POST submits new level
+- **Apps Script** — Single endpoint: GET returns levels, POST submits or stars
+
+**Sheet structure:**
+| Column | Contents |
+|--------|----------|
+| A (Timestamp) | Submission date |
+| B (UID) | Level unique ID (for starring lookup) |
+| C (Level) | Base64-encoded level JSON |
+| D (Stars) | Star count (integer) |
 
 **Submission flow (editor.js):**
 1. Click "Share to Community" → validate level (including DFS reachability)
@@ -462,8 +470,14 @@ Students can share levels to a central community pool via Google Sheets. No teac
 **Fetch flow (main.js):**
 1. Community tab clicked → `community.showTab()`
 2. If no cache: GET `?version`, then GET full list
-3. Parse response (one base64 level per line)
-4. Cache levels and version, display via `populateLevelList()`
+3. Parse response (`base64<TAB>stars` per line), add stars to level object
+4. Cache levels and version, display sorted by stars (descending)
+
+**Search and starring (main.js):**
+- Search field filters levels by name (case-insensitive)
+- Star button (golden apple) on each level thumbnail
+- Click to star/unstar; localStorage tracks user's starred levels
+- `community.starLevel(uid)` POSTs to increment/decrement
 
 **Polling (main.js):**
 - `community.refresh()` checks `?version` every 3 minutes
@@ -472,8 +486,9 @@ Students can share levels to a central community pool via Google Sheets. No teac
 
 **API endpoints:**
 - `GET ?version` — Returns version number (no sheet read, uses PropertiesService)
-- `GET` — Returns all levels (one base64 per line)
+- `GET` — Returns all levels (`base64<TAB>stars` per line)
 - `POST {level: base64}` — Validates, appends to sheet, increments version
+- `POST {action:'star', uid, starred}` — Increments or decrements star count
 
 **Setup scripts (appscript/):**
 - `main.gs` — API endpoints (doGet, doPost), level validation (DFS reachability)
