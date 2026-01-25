@@ -18,6 +18,7 @@ Svinesti is a browser-based educational programming game where students control 
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
 - **shortcuts.js** - Keyboard shortcut factory with rebindable keys, persistence, and enable/disable lifecycle
 - **levels.js** - Level definitions and `DEFAULT_LEVEL` for editor
+- **names.js** - Random level name generator (two-word combinations from adjectives, nouns, verbs) and UID generator
 - **worker.js** - Web Worker that loads Pyodide and executes student code in isolated namespaces
 - **svinesti.py** - Python game engine with operation counting for infinite loop detection (MAX_OPS = 10,000)
 
@@ -62,7 +63,7 @@ const help = {
 
 Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
-- **Community levels** - `community.showTab()`, `community.fetchLevels()`, `community.parseCsv()`, `community.invalidateCache()`
+- **Community levels** - `community.showTab()`, `community.fetchLevels()`, `community.parseTsv()`, `community.invalidateCache()`
 - **Level list** - `populateLevelList(levelArray, { deletable? })` with optional delete buttons
 - **Initialize** - Game.init(), level list setup, URL import, Game.enter()
 - **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, global shortcuts, `'levels-updated'` and `'community-levels-updated'` listeners
@@ -366,6 +367,7 @@ const state = {
     isDraggingPig: false,
     grid: null,          // grid object for DOM refs
     editingLevelId: null, // ID of saved level being edited, null = new level
+    uid: null,           // Public UID for sharing
 };
 ```
 
@@ -406,8 +408,9 @@ User-created levels are saved to localStorage under key `'svinesti-custom-levels
 **Saved level format:**
 ```javascript
 {
-    id: "uuid",           // crypto.randomUUID()
-    name: "My Level 42",  // from name input field
+    id: "uuid",           // crypto.randomUUID() - internal storage ID
+    uid: "X7bK9f2A",      // public UID for sharing
+    name: "Brave Tiger",  // randomly generated two-word name
     nRows, nCols, grid, start, dir,  // standard level fields
     originRow: 2,         // row offset for re-expansion
     originCol: 3,         // col offset for re-expansion
@@ -426,8 +429,10 @@ This allows levels to be stored efficiently while maintaining their original can
 - `updateCustomLevel(id, levelData)` — Updates existing level by ID
 - `deleteCustomLevel(id)` — Removes level by ID
 
+**Random name generator:** New levels get a randomly generated two-word name (e.g., "Brave Tiger") plus a UID. Click the dice button to regenerate. The name field is readonly.
+
 **Save flow:**
-1. User edits level, types name in input field (defaults to "My Level {random}")
+1. User edits level (name auto-generated with UID, can regenerate via dice button)
 2. Click Save → validates level, compacts grid
 3. If `editingLevelId` is null: creates new level with UUID
 4. If `editingLevelId` exists: updates existing level
@@ -457,18 +462,18 @@ Students can share levels to a central community pool via Google Sheets. No teac
 **Fetch flow (main.js):**
 1. Community tab clicked → `community.showTab()`
 2. If no cache: fetch `COMMUNITY_LEVELS_URL` via proxy
-3. Parse CSV (skip header, extract Name + URL columns)
-4. Decode level from URL fragment (`#level=base64`)
+3. Parse TSV (skip header, extract Name + Level Data columns)
+4. Decode level from base64 JSON
 5. Cache and display via `populateLevelList()`
 
-**CSV parsing:**
-- `parseCSVLine()` handles quoted fields with commas and escaped quotes
-- Format: Timestamp (A), Name (B), Level URL (C)
+**TSV parsing:**
+- Simple tab-split (no quote handling needed)
+- Format: Timestamp (A), Name (B), Level Data (C, base64-encoded JSON)
 
 **Constants:**
 ```javascript
 // main.js
-const COMMUNITY_LEVELS_URL = 'https://docs.google.com/.../pub?output=csv';
+const COMMUNITY_LEVELS_URL = 'https://docs.google.com/.../pub?output=tsv';
 
 // editor.js
 const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/.../exec';
