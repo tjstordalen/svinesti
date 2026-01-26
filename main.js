@@ -149,6 +149,8 @@ const community = {
 
     // Star or unstar a level
     starLevel(uid) {
+        if (!this.hasConsent()) return;
+
         const key = `starred-${uid}`;
         const isStarred = localStorage.getItem(key) === '1';
 
@@ -170,6 +172,7 @@ const community = {
     // Manual refresh: check version, fetch if changed, update in background
     // Returns true if new levels were found, false otherwise
     async forceRefresh() {
+        if (!this.hasConsent()) return false;
         try {
             const newVersion = await this.fetchVersion();
             if (newVersion === this.version) return false; // No changes
@@ -351,7 +354,8 @@ const community = {
                 <button class="btn btn-primary" id="community-consent-btn">Enable Community Levels</button>
             </div>
         `;
-        document.getElementById('community-consent-btn').addEventListener('click', () => {
+        document.getElementById('community-consent-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
             this.setConsent(true);
             ui.communityConsentToggle.checked = true;
             this.showTab();

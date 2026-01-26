@@ -21,6 +21,7 @@ const STORAGE_KEY = 'svinesti-custom-levels';
 
 // Community sharing - Apps Script endpoint that writes directly to the sheet
 const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwne7UEsOMM6Aa0WD5X2KdUx0eZX8QyZQ6FcWajARqaUa9Zs_ICcfJYCuVhrWXzgHjO7Q/exec';
+const COMMUNITY_CONSENT_KEY = 'svinesti-community-consent';
 
 // Left-click cycles tile colors (preserves target status)
 const COLOR_CYCLE = {
@@ -550,6 +551,11 @@ async function handleShareClick() {
 }
 
 async function handleShareCommunityClick() {
+    if (localStorage.getItem(COMMUNITY_CONSENT_KEY) !== 'true') {
+        animations.notify(ui.editorNotification, 'Enable Community Levels in Help menu first', true);
+        return;
+    }
+
     const level = serialize();
     const error = validate(level);
     if (error) {
