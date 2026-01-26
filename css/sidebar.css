@@ -183,15 +183,26 @@
 }
 
 /* Community tab */
+.community-header {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.community-view-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
 .community-search {
-    width: 100%;
+    flex: 1;
     padding: 10px 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     font-size: 0.875rem;
     background: var(--color-bg);
     color: var(--color-text);
-    flex-shrink: 0;
 }
 
 .community-search:focus {
@@ -205,6 +216,34 @@
 
 .community-levels-container {
     display: contents;
+}
+
+/* List view: tiny thumbnails, compact rows */
+.community-levels-container.list-view .thumbnail-wrapper {
+    width: 64px;
+    height: 36px;
+    flex-shrink: 0;
+    margin-right: 10px;
+}
+
+.community-levels-container.list-view .grid {
+    border-radius: 4px;
+}
+
+.community-levels-container.list-view .sidebar-level-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+}
+
+.community-levels-container.list-view .sidebar-level-name {
+    flex: 1;
+    margin: 0;
+    text-align: left;
+}
+
+.community-levels-container.list-view .star-btn {
+    position: static;
 }
 
 /* Star button */
@@ -245,6 +284,10 @@
     background: var(--color-interactive);
     border-color: var(--color-interactive);
     color: white;
+}
+
+.sidebar-level-item.selected .star-btn.starred {
+    border-color: white;
 }
 
 .star-btn.starred img {

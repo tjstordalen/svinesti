@@ -49,6 +49,7 @@ const community = {
     levels: null,       // Cached levels after successful fetch
     version: null,      // Cached version for efficient polling
     loading: false,     // Prevent concurrent fetches
+    viewMode: localStorage.getItem('svinesti-community-view') || 'thumbnails', // 'thumbnails' | 'list'
 
     // Fetch just the version number (lightweight, no sheet read)
     async fetchVersion() {
@@ -147,8 +148,11 @@ const community = {
 
     // Show community tab content
     async showTab() {
-        // If already loading, wait
-        if (this.loading) return;
+        // If already loading, show loading message
+        if (this.loading) {
+            this.showLoading();
+            return;
+        }
 
         // If no cached levels, fetch them
         if (!this.levels) {
@@ -183,7 +187,10 @@ const community = {
 
         ui.levelList.innerHTML = '';
 
-        // Search input
+        // Header: search + view toggle
+        const header = document.createElement('div');
+        header.className = 'community-header';
+
         const search = document.createElement('input');
         search.type = 'text';
         search.className = 'community-search';
@@ -193,12 +200,38 @@ const community = {
             this.searchQuery = e.target.value.toLowerCase();
             this.showLevels();
         });
-        ui.levelList.appendChild(search);
+        header.appendChild(search);
+
+        // View toggle
+        const toggleLabel = document.createElement('label');
+        toggleLabel.className = 'toggle-switch';
+        toggleLabel.title = 'Toggle list view';
+        const toggleInput = document.createElement('input');
+        toggleInput.type = 'checkbox';
+        toggleInput.checked = this.viewMode === 'list';
+        toggleInput.addEventListener('change', () => {
+            this.viewMode = toggleInput.checked ? 'list' : 'thumbnails';
+            localStorage.setItem('svinesti-community-view', this.viewMode);
+            this.showLevels();
+        });
+        const toggleSlider = document.createElement('span');
+        toggleSlider.className = 'toggle-slider';
+        toggleLabel.appendChild(toggleInput);
+        toggleLabel.appendChild(toggleSlider);
+        header.appendChild(toggleLabel);
+
+        const viewLabel = document.createElement('span');
+        viewLabel.className = 'community-view-label';
+        viewLabel.textContent = 'Compact';
+        header.appendChild(viewLabel);
+
+        ui.levelList.appendChild(header);
 
         // Levels
         if (filtered.length > 0) {
             const container = document.createElement('div');
             container.className = 'community-levels-container';
+            if (this.viewMode === 'list') container.classList.add('list-view');
             populateLevelList(filtered, {}, container);
             ui.levelList.appendChild(container);
         } else if (this.searchQuery) {
