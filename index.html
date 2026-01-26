@@ -49,13 +49,7 @@
         </div>
         <div class="header-spacer"></div>
         <button id="help-button" class="icon-btn" title="Help - Press ?">
-            <!-- https://icons.getbootstrap.com/icons/question-lg/ (with circle added) -->
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10" fill="none"></circle>
-                <g transform="translate(4, 4) scale(1)">
-                    <path fill-rule="evenodd" d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"/>
-                </g>
-            </svg>
+<img src="icons/question-circle.svg" alt="Help" width="24" height="24">
         </button>
     </header>
 
@@ -83,15 +77,7 @@
                     </div>
                     <div class="font-size-control">
                         <label for="editor-font-size-slider" title="Font Size">
-                            <!-- https://icons.getbootstrap.com/icons/fonts/ (two copies: small and large) -->
-                            <svg width="18" height="18" viewBox="0 0 18 16" fill="currentColor">
-                                <g transform="translate(-1, 1) scale(0.85)">
-                                    <path d="M12.258 3h-8.51l-.083 2.46h.479c.26-1.544.758-1.783 2.693-1.845l.424-.013v7.827c0 .663-.144.82-1.3.923v.52h4.082v-.52c-1.162-.103-1.306-.26-1.306-.923V3.602l.431.013c1.934.062 2.434.301 2.693 1.846h.479z"/>
-                                </g>
-                                <g transform="translate(7.5, 5.5) scale(0.75)">
-                                    <path d="M12.258 3h-8.51l-.083 2.46h.479c.26-1.544.758-1.783 2.693-1.845l.424-.013v7.827c0 .663-.144.82-1.3.923v.52h4.082v-.52c-1.162-.103-1.306-.26-1.306-.923V3.602l.431.013c1.934.062 2.434.301 2.693 1.846h.479z"/>
-                                </g>
-                            </svg>
+<img src="icons/font-size.svg" alt="Font Size" width="18" height="18">
                         </label>
                         <input id="editor-font-size-slider" type="range" min="12" max="28" value="16" step="1">
                     </div>
@@ -104,27 +90,14 @@
                 <div class="playback-toolbar idle">
                     <div class="button-group">
                         <button id="btn1" class="btn btn-primary">
-                            <!-- https://icons.getbootstrap.com/icons/play-fill/ -->
-                            <svg class="icon-play" width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"/>
-                            </svg>
-                            <!-- https://icons.getbootstrap.com/icons/pause/ -->
-                            <svg class="icon-pause" width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5m4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5"/>
-                            </svg>
+<img class="icon-play" src="icons/play-fill.svg" alt="Play" width="24" height="24">
+                            <img class="icon-pause" src="icons/pause.svg" alt="Pause" width="24" height="24">
                         </button>
                         <button id="btn2" class="btn btn-secondary">
-                            <!-- https://icons.getbootstrap.com/icons/chevron-bar-right/ -->
-                            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4.146 3.646a.5.5 0 0 0 0 .708L7.793 8l-3.647 3.646a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708 0M11.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5"/>
-                            </svg>
+                            <img src="icons/chevron-bar-right.svg" alt="Step" width="24" height="24">
                         </button>
                         <button id="btn3" class="btn btn-secondary">
-                            <!-- https://icons.getbootstrap.com/icons/arrow-counterclockwise/ -->
-                            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
-                                <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
-                                <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
-                            </svg>
+                            <img src="icons/arrow-counterclockwise.svg" alt="Reset" width="24" height="24">
                         </button>
                     </div>
                     <div class="speed-control">
