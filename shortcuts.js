@@ -315,6 +315,7 @@ function createShortcuts(storageKey) {
                 const handled = shortcut.action(event);
                 if (handled !== false) {
                     event.preventDefault();
+                    event.stopImmediatePropagation();
                 }
                 return;
             }
