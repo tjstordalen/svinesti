@@ -138,10 +138,18 @@ export function starLevel(uid) {
     if (level) level.stars += isStarred ? -1 : 1;
     showLevels();
 
-    // Fire and forget
     fetch(COMMUNITY_URL, {
         method: 'POST',
         body: JSON.stringify({ action: 'star', uid, starred: !isStarred })
+    }).then(response => {
+        if (!response.ok) throw new Error('Server error');
+    }).catch(() => {
+        // Revert optimistic update
+        localStorage.setItem(key, isStarred ? '1' : '0');
+        if (level) level.stars += isStarred ? 1 : -1;
+        showLevels();
+        const notif = document.querySelector('.community-header .notification');
+        if (notif) notify(notif, 'Failed to save', true, 2000);
     });
 }
 
