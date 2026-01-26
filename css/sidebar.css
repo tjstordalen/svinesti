@@ -195,6 +195,30 @@
     color: var(--color-text-muted);
 }
 
+.community-refresh-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--color-interactive);
+    opacity: 0.5;
+    transition: opacity var(--transition-fast);
+}
+
+.community-refresh-btn:hover {
+    opacity: 1;
+}
+
+.community-refresh-btn:disabled {
+    opacity: 0.2;
+}
+
+.community-refresh-btn img {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
 .community-search {
     flex: 1;
     padding: 10px 12px;

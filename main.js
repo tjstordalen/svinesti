@@ -6,6 +6,7 @@ import * as Game from "./game.js";
 import { createGrid } from "./grid.js";
 import { levels } from "./levels.js";
 import { ui } from "./ui.js";
+import { spin } from "./animations.js";
 
 const ENABLE_SPLASH_SCREEN = true;
 
@@ -107,6 +108,11 @@ const community = {
             console.warn('Failed to preload community levels:', e);
         }
         this.loading = false;
+        // Update UI if community tab is active
+        const activeTab = document.querySelector('.sidebar-tab.active');
+        if (activeTab?.dataset.tab === 'community') {
+            this.showLevels();
+        }
     },
 
     // Parse response: base64<TAB>stars per line
@@ -145,6 +151,23 @@ const community = {
     },
 
     searchQuery: '',    // Current search filter
+
+    // Manual refresh: check version, fetch if changed, update in background
+    async forceRefresh() {
+        try {
+            const newVersion = await this.fetchVersion();
+            if (newVersion === this.version) return; // No changes
+            this.version = newVersion;
+            this.levels = await this.fetchLevels();
+            // Update UI if community tab is still active
+            const activeTab = document.querySelector('.sidebar-tab.active');
+            if (activeTab?.dataset.tab === 'community') {
+                this.showLevels();
+            }
+        } catch (e) {
+            console.warn('Failed to refresh community levels:', e);
+        }
+    },
 
     // Show community tab content
     async showTab() {
@@ -224,6 +247,19 @@ const community = {
         viewLabel.className = 'community-view-label';
         viewLabel.textContent = 'Compact';
         header.appendChild(viewLabel);
+
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'community-refresh-btn';
+        refreshBtn.title = 'Refresh levels';
+        refreshBtn.innerHTML = '<img src="icons/arrow-counterclockwise.svg" alt="">';
+        refreshBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            refreshBtn.disabled = true;
+            const anim = spin(refreshBtn.querySelector('img'));
+            this.forceRefresh().then(() => anim.cancel());
+            setTimeout(() => refreshBtn.disabled = false, 30000);
+        });
+        header.appendChild(refreshBtn);
 
         ui.levelList.appendChild(header);
 

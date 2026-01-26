@@ -135,6 +135,13 @@ const KEYFRAMES = {
         { transform: 'translate(0, -5%) rotate(0deg)' }
     ],
 
+    // SPIN_PAUSE: rotate counter-clockwise, pause, repeat (for refresh button)
+    SPIN_PAUSE: [
+        { transform: 'rotate(0deg)', offset: 0 },
+        { transform: 'rotate(-360deg)', offset: 0.5 },
+        { transform: 'rotate(-360deg)', offset: 1 },
+    ],
+
     // FLASH: red glow pulses 3 times (1s each, inset to avoid z-index issues)
     FLASH: [
         { offset: 0,      boxShadow: 'inset 0 0 0 0 transparent' },
@@ -347,6 +354,18 @@ export function flash(element, duration = 3000) {
     return element.animate(KEYFRAMES.FLASH, {
         duration,
         easing: 'ease-in-out',
+    });
+}
+
+/**
+ * Spin with pause - rotates counter-clockwise, pauses, repeats.
+ * Returns animation handle so caller can cancel when done.
+ */
+export function spin(element, duration = 1500) {
+    return element.animate(KEYFRAMES.SPIN_PAUSE, {
+        duration,
+        easing: 'ease-in-out',
+        iterations: Infinity
     });
 }
 
