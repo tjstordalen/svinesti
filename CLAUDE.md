@@ -13,6 +13,7 @@ Svinesti is a browser-based educational programming game where students control 
 - **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
 - **main.js** - App shell: help modal, sidebar, mode switching (see structure below)
 - **game.js** - Game mode: code editor, playback, worker (see structure below)
+- **community.js** - Community levels: fetching, sharing, consent management, Google server interaction
 - **grid.js** - Unified grid rendering module (see structure below)
 - **animations.js** - All animation logic as direct exports (walk, move, turn, hudFlash, celebrate, lose, timeout, notify, flash, confetti), plus `pigSpriteUrl()` helper and `ABORT` constant
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
@@ -63,10 +64,9 @@ const help = {
 
 Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
-- **Community levels** - `community.showTab()`, `community.fetchLevels()`, `community.parse()`, `community.invalidateCache()`
 - **Level list** - `populateLevelList(levelArray, { deletable? })` with optional delete buttons
-- **Initialize** - Game.init(), level list setup, URL import, Game.enter()
-- **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, global shortcuts, `'levels-updated'` and `'community-levels-updated'` listeners
+- **Initialize** - Game.init(), Editor.init(), community.init(), level list setup, URL import, Game.enter()
+- **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, settings toggles, global shortcuts, `'levels-updated'` and `'community-levels-updated'` listeners
 
 ### game.js Structure
 
@@ -448,9 +448,19 @@ This allows levels to be stored efficiently while maintaining their original can
 Students can share levels to a central community pool via Google Sheets. No teacher setup required.
 
 **Architecture:**
+- **community.js** — All Google server interaction (fetching, submitting, starring)
 - **Google Sheet** — Stores submissions (Timestamp | UID | Level | Stars)
 - **PropertiesService** — Stores version number for efficient polling
 - **Apps Script** — Single endpoint: GET returns levels, POST submits or stars
+
+**Consent system:**
+
+Community features require user consent before any Google server contact. Consent is stored in localStorage (`svinesti-community-consent`).
+
+- Toggle in Help menu under Settings enables/disables community features
+- Community tab shows privacy explanation until consent given
+- All server-contacting functions call `requireConsent()` which throws if consent missing
+- Defense in depth: consent checked at both caller level and fetch level
 
 **Sheet structure:**
 | Column | Contents |
@@ -460,27 +470,27 @@ Students can share levels to a central community pool via Google Sheets. No teac
 | C (Level) | Base64-encoded level JSON |
 | D (Stars) | Star count (integer) |
 
-**Submission flow (editor.js):**
-1. Click "Share to Community" → validate level (including DFS reachability)
+**Submission flow (editor.js → community.js):**
+1. Click "Share to Community" → check consent, validate level (including DFS reachability)
 2. Show "Sharing..." notification immediately
-3. POST JSON `{level: base64}` to `COMMUNITY_LEVELS_URL`
+3. Call `community.submitLevel(base64)` which POSTs to Google
 4. Server validates, fixes name/UID if needed, appends to sheet, increments version
 5. Dispatch `'community-levels-updated'` event to trigger refresh
 
-**Fetch flow (main.js):**
-1. On page load: `community.preload()` fetches levels in background
-2. Community tab clicked → `community.showTab()` displays cached levels immediately
+**Fetch flow (community.js):**
+1. On page load: `community.preload()` fetches levels in background (if consent given)
+2. Community tab clicked → `community.showTab()` displays cached levels or consent request
 3. Parse response (`base64<TAB>stars` per line), add stars to level object
 4. Cache levels and version, display sorted by stars (descending)
 
-**Search and starring (main.js):**
+**Search and starring (community.js):**
 - Search field filters levels by name (case-insensitive)
 - Star button (golden apple) on each level thumbnail
 - Click to star/unstar; localStorage tracks user's starred levels
 - Optimistic UI: count updates instantly, POST fires without awaiting response
 
-**Polling (main.js):**
-- `community.refresh()` checks `?version` every 3 minutes
+**Polling (community.js):**
+- `community.refresh()` checks `?version` every 3 minutes (if consent given)
 - If version changed, fetches full list and updates UI
 - Also triggered by `'community-levels-updated'` event after submission
 
