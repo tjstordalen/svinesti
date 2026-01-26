@@ -67,6 +67,8 @@
     color: var(--color-text);
     text-align: center;
     flex: 1;
+    cursor: default;
+    caret-color: transparent;
 }
 
 .editor-name-reset {
@@ -90,6 +92,13 @@
 .editor-name-reset:active {
     background: var(--color-interactive);
     color: white;
+}
+
+.editor-name-hint {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-left: auto;
+    align-self: center;
 }
 
 .editor-grid-container {

@@ -1,6 +1,5 @@
 // Empty 9x16 grid for new levels in editor
 export const DEFAULT_LEVEL = {
-    name: "New Level",
     nRows: 9,
     nCols: 16,
     grid: [

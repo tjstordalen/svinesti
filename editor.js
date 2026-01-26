@@ -196,7 +196,8 @@ function load(level) {
     if (level.name) {
         ui.editorLevelName.value = level.name;
     } else {
-        ui.editorNameReset.click();
+        ui.editorLevelName.value = generateLevelName();
+        state.uid = generateUID();
     }
 
     // Build grid from expanded cells
