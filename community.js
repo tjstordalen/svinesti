@@ -25,9 +25,6 @@ export function hasConsent() {
 
 export function setConsent(enabled) {
     localStorage.setItem(CONSENT_KEY, enabled ? 'true' : 'false');
-    if (enabled && !state.levels) {
-        preload();
-    }
 }
 
 // --- State Access ---
