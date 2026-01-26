@@ -96,12 +96,14 @@ function cycleColor(i) {
         state.cells[i] = COLOR_CYCLE[state.cells[i]];
     }
     render();
+    autosave();
 }
 
 function cycleTarget(i) {
     if (i === state.pigIndex) return;
     state.cells[i] = TARGET_CYCLE[state.cells[i]];
     render();
+    autosave();
 }
 
 function movePigTo(i) {
@@ -112,12 +114,14 @@ function movePigTo(i) {
     }
     state.pigIndex = i;
     render();
+    autosave();
 }
 
 function pasteCell(i) {
     if (state.clipboard && !(i === state.pigIndex && state.clipboard === '.')) {
         state.cells[i] = state.clipboard;
         render();
+        autosave();
     }
 }
 
@@ -610,13 +614,8 @@ function deleteCustomLevel(id) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
 }
 
-function handleSaveClick() {
+function autosave() {
     const level = serialize();
-    const error = validate(level);
-    if (error) {
-        animations.notify(ui.editorNotification, error, true);
-        return;
-    }
     const compacted = compact(level);
     compacted.name = ui.editorLevelName.value.trim() || 'Untitled';
     compacted.uid = state.uid;
@@ -628,13 +627,13 @@ function handleSaveClick() {
         saveCustomLevel(compacted);
         state.editingLevelId = compacted.id;
     }
-    animations.notify(ui.editorNotification, 'Saved!');
     window.dispatchEvent(new CustomEvent('levels-updated'));
 }
 
 function handleNameResetClick() {
     ui.editorLevelName.value = generateLevelName();
     state.uid = generateUID();
+    autosave();
 }
 
 // --- Init / Enter / Exit ---
@@ -654,7 +653,6 @@ function enter() {
     ui.editorGrid.addEventListener('mousedown', handleMouseDown);
     ui.editorGrid.addEventListener('mousemove', handleMouseMove);
     ui.editorGrid.addEventListener('contextmenu', handleContextMenu);
-    ui.editorSave.addEventListener('click', handleSaveClick);
     ui.editorShare.addEventListener('click', handleShareClick);
     ui.editorShareCommunity.addEventListener('click', handleShareCommunityClick);
     ui.editorNameReset.addEventListener('click', handleNameResetClick);
@@ -668,7 +666,6 @@ function exit() {
     ui.editorGrid.removeEventListener('mousedown', handleMouseDown);
     ui.editorGrid.removeEventListener('mousemove', handleMouseMove);
     ui.editorGrid.removeEventListener('contextmenu', handleContextMenu);
-    ui.editorSave.removeEventListener('click', handleSaveClick);
     ui.editorShare.removeEventListener('click', handleShareClick);
     ui.editorShareCommunity.removeEventListener('click', handleShareCommunityClick);
     ui.editorNameReset.removeEventListener('click', handleNameResetClick);

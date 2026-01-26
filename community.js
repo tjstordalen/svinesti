@@ -109,6 +109,7 @@ export async function preload() {
     if (isTabActive()) showLevels();
 }
 
+// Returns: true = new levels, false = no changes, null = error (shows own notification)
 async function forceRefresh() {
     if (!hasConsent()) return false;
     try {
@@ -120,7 +121,9 @@ async function forceRefresh() {
         return true;
     } catch (e) {
         console.warn('Failed to refresh community levels:', e);
-        return false;
+        const notif = document.querySelector('.community-header .notification');
+        if (notif) notify(notif, 'Could not reach server', true, 2000);
+        return null;
     }
 }
 
@@ -149,7 +152,7 @@ export function starLevel(uid) {
         if (level) level.stars += isStarred ? 1 : -1;
         showLevels();
         const notif = document.querySelector('.community-header .notification');
-        if (notif) notify(notif, 'Failed to save', true, 2000);
+        if (notif) notify(notif, 'Could not reach server', true, 2000);
     });
 }
 
@@ -262,9 +265,9 @@ function showLevels() {
         e.stopPropagation();
         refreshBtn.disabled = true;
         const anim = spin(refreshBtn.querySelector('img'));
-        forceRefresh().then((hasNew) => {
+        forceRefresh().then((result) => {
             anim.cancel();
-            if (!hasNew) notify(refreshNotification, 'No new levels', false, 2000);
+            if (result === false) notify(refreshNotification, 'No new levels', false, 2000);
         });
         setTimeout(() => refreshBtn.disabled = false, 30000);
     });
