@@ -108,14 +108,6 @@ const KEYFRAMES = {
         { transform: 'translate(0, 0)', offset: 1 },
     ],
 
-    // NOTIFICATION: toast message fades in quickly, holds, fades out
-    NOTIFICATION: [
-        { opacity: 0, offset: 0 },
-        { opacity: 1, offset: 0.05 },   // very quick fade in
-        { opacity: 1, offset: 0.95 },   // hold
-        { opacity: 0, offset: 1 },      // fade out
-    ],
-
     // TIMEOUT_GRID: worker timeout (student code ran too long, likely infinite loop)
     // Grid wobbles with pulsing red glow
     TIMEOUT_GRID: [
@@ -324,6 +316,8 @@ export function timeout(gridWrapper, pig) {
 const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';   // sage green
 const NOTIFY_COLOR_ERROR = 'rgba(60, 60, 70, 0.95)';   // dark slate
 
+const NOTIFY_FADE_MS = 150;  // Fixed fade time regardless of duration
+
 /**
  * Toast notification - fades in, holds, fades out.
  * Cancels any existing animation on the element first.
@@ -341,9 +335,19 @@ export function notify(element, message, isError = false, duration = 2500, class
         element.style.background = isError ? NOTIFY_COLOR_ERROR : NOTIFY_COLOR_INFO;
     }
 
-    return element.animate(KEYFRAMES.NOTIFICATION, {
+    // Calculate offsets for fixed fade time regardless of duration
+    const fadeIn = Math.min(NOTIFY_FADE_MS / duration, 0.05);
+    const fadeOut = Math.max(1 - NOTIFY_FADE_MS / duration, 0.95);
+    const keyframes = [
+        { opacity: 0, offset: 0 },
+        { opacity: 1, offset: fadeIn },
+        { opacity: 1, offset: fadeOut },
+        { opacity: 0, offset: 1 },
+    ];
+
+    return element.animate(keyframes, {
         duration,
-        easing: 'ease-in-out',
+        easing: 'linear',
     });
 }
 
