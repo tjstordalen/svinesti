@@ -1,10 +1,10 @@
-// main.js - App shell (help pane, sidebar, mode switching)
+// main.js - App shell (help pane, mode switching)
 
 import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
-import { createGrid } from "./grid.js";
+import * as sidebar from "./sidebar.js";
 import { levels } from "./levels.js";
 import { ui } from "./ui.js";
 
@@ -39,71 +39,6 @@ const help = {
     },
 };
 
-// --- Level list ---
-
-function populateLevelList(levelArray, { deletable = false } = {}, container = null) {
-    const target = container || ui.levelList;
-    if (!container) target.innerHTML = '';
-
-    for (const lvl of levelArray) {
-        const item = document.createElement('div');
-        item.className = 'sidebar-level-item';
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'thumbnail-wrapper';
-        const grid = document.createElement('div');
-        createGrid(grid, lvl.nRows, lvl.nCols, lvl);
-        wrapper.appendChild(grid);
-
-        const name = document.createElement('div');
-        name.className = 'sidebar-level-name';
-        name.textContent = lvl.name || 'Untitled';
-
-        item.appendChild(wrapper);
-        item.appendChild(name);
-
-        if (deletable && lvl.id) {
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-level-btn';
-            deleteBtn.innerHTML = '<img src="icons/trash3-fill.svg" alt="" width="16" height="16">';
-            deleteBtn.title = 'Delete level';
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                Editor.deleteCustomLevel(lvl.id);
-                populateLevelList(Editor.getCustomLevels(), { deletable: true });
-            });
-            item.appendChild(deleteBtn);
-        }
-
-        // Star button for community levels
-        if (lvl.stars !== undefined && lvl.uid) {
-            const isStarred = localStorage.getItem(`starred-${lvl.uid}`) === '1';
-            const starBtn = document.createElement('button');
-            starBtn.className = 'star-btn' + (isStarred ? ' starred' : '');
-            starBtn.innerHTML = `<img src="/img/golden-apple.png" alt=""><span>${lvl.stars}</span>`;
-            starBtn.title = isStarred ? 'Remove star' : 'Star this level';
-            starBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                community.starLevel(lvl.uid);
-            });
-            item.appendChild(starBtn);
-        }
-
-        target.appendChild(item);
-
-        item.addEventListener('click', () => {
-            if (document.body.classList.contains('editor-mode')) {
-                Editor.load(lvl);
-            } else {
-                Game.selectLevel(lvl);
-            }
-            ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
-            ui.sidebar.classList.add('collapsed');
-        });
-    }
-}
-
 // --- Initialize ---
 
 // Hide splash screen if disabled
@@ -111,8 +46,8 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     ui.splashScreen.style.display = "none";
 }
 
-// TODO: move this to validate? I guess it is not even possible to generate a level like this 
-// at the moment. Maybe just remove from the standard levels and we're good 
+// TODO: move this to validate? I guess it is not even possible to generate a level like this
+// at the moment. Maybe just remove from the standard levels and we're good
 // Prepare levels (convert uppercase start tiles to lowercase)
 for (let lvl of levels) {
     const [r, c] = lvl.start;
@@ -121,110 +56,25 @@ for (let lvl of levels) {
     lvl.grid[r] = row.join("");
 }
 
-// Initialize game and editor modules
+// Initialize modules
 Game.init();
 Editor.init();
-community.init(populateLevelList);
+sidebar.init();
+sidebar.showDefaultTab();
 
-// Build level list
-ui.sidebarTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-        ui.sidebarTabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const tabName = tab.dataset.tab;
-        if (tabName === 'default') {
-            populateLevelList(levels);
-        } else if (tabName === 'my-levels') {
-            populateLevelList(Editor.getCustomLevels(), { deletable: true });
-        } else if (tabName === 'community') {
-            community.showTab();
-        } else if (tabName === 'trash') {
-            showTrashTab();
-        }
-    });
-});
-
-function showTrashTab() {
-    const deleted = Editor.getDeletedLevels();
-    ui.levelList.innerHTML = '';
-
-    // Empty Trash header button
-    if (deleted.length > 0) {
-        const header = document.createElement('div');
-        header.className = 'trash-header';
-        const emptyBtn = document.createElement('button');
-        emptyBtn.className = 'btn empty-trash-btn';
-        emptyBtn.textContent = 'Empty Trash';
-        emptyBtn.addEventListener('click', () => {
-            if (confirm('Permanently delete all levels in trash?')) {
-                Editor.emptyTrash();
-                showTrashTab();
-            }
-        });
-        header.appendChild(emptyBtn);
-        ui.levelList.appendChild(header);
-    }
-
-    if (deleted.length === 0) {
-        const msg = document.createElement('div');
-        msg.className = 'community-message';
-        msg.textContent = 'Trash is empty';
-        ui.levelList.appendChild(msg);
-        return;
-    }
-
-    for (const lvl of deleted) {
-        const item = document.createElement('div');
-        item.className = 'sidebar-level-item';
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'thumbnail-wrapper';
-        const grid = document.createElement('div');
-        createGrid(grid, lvl.nRows, lvl.nCols, lvl);
-        wrapper.appendChild(grid);
-
-        const name = document.createElement('div');
-        name.className = 'sidebar-level-name';
-        name.textContent = lvl.name || 'Untitled';
-
-        item.appendChild(wrapper);
-        item.appendChild(name);
-
-        const restoreBtn = document.createElement('button');
-        restoreBtn.className = 'delete-level-btn';
-        restoreBtn.innerHTML = '<img src="icons/arrow-counterclockwise.svg" alt="" width="16" height="16">';
-        restoreBtn.title = 'Restore level';
-        restoreBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            Editor.restoreLevel(lvl.id);
-            showTrashTab();
-        });
-        item.appendChild(restoreBtn);
-
-        ui.levelList.appendChild(item);
-    }
-}
-
-populateLevelList(levels);
-
-// Refresh My Levels or Trash tab when levels change
-window.addEventListener('levels-updated', () => {
-    const activeTab = document.querySelector('.sidebar-tab.active');
-    if (activeTab?.dataset.tab === 'my-levels') {
-        populateLevelList(Editor.getCustomLevels(), { deletable: true });
-    } else if (activeTab?.dataset.tab === 'trash') {
-        showTrashTab();
-    }
-});
+// Refresh sidebar when levels change
+window.addEventListener('levels-updated', () => sidebar.refreshActiveTab());
 
 // Refresh community levels when a level is shared
 window.addEventListener('community-levels-updated', () => {
-    community.refresh();
+    community.forceRefresh().then(result => {
+        if (result === true) sidebar.refreshActiveTab();
+    });
 });
 
 // Preload community levels and start polling
 community.preload();
-community.startPolling();
+community.startPolling(() => sidebar.refreshActiveTab());
 
 // Load shared level from URL, or select first level
 const sharedLevel = Editor.importFromURL();
@@ -271,7 +121,7 @@ ui.communityConsentToggle.onchange = () => {
     // Refresh community tab if active
     const activeTab = document.querySelector('.sidebar-tab.active');
     if (activeTab?.dataset.tab === 'community') {
-        community.showTab();
+        sidebar.showCommunityTab();
     }
 };
 
@@ -293,6 +143,13 @@ ui.modePlay.onclick = () => {
     ui.editorPane.hidden = true;
     ui.modePlay.classList.add("active");
     ui.modeEdit.classList.remove("active");
+    // Switch away from Trash tab (not visible in play mode)
+    const activeTab = document.querySelector('.sidebar-tab.active');
+    if (activeTab?.dataset.tab === 'trash') {
+        ui.sidebarTabs.forEach(t => t.classList.remove('active'));
+        document.querySelector('[data-tab="default"]').classList.add('active');
+        sidebar.showDefaultTab();
+    }
     Game.enter();
 };
 
@@ -306,7 +163,7 @@ ui.modeEdit.onclick = () => {
     // Switch to My Levels tab
     ui.sidebarTabs.forEach(t => t.classList.remove('active'));
     document.querySelector('[data-tab="my-levels"]').classList.add('active');
-    populateLevelList(Editor.getCustomLevels(), { deletable: true });
+    sidebar.showMyLevelsTab();
     Editor.enter();
 };
 
