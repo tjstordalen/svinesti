@@ -209,6 +209,16 @@ function createShortcuts(storageKey) {
             group.forEach((shortcut, i) => {
                 if (i > 0) keysContainer.appendChild(document.createTextNode(' '));
 
+                // Lock icon for non-rebindable shortcuts
+                if (!shortcut.rebindable) {
+                    const lockIcon = document.createElement('img');
+                    lockIcon.src = 'icons/lock.svg';
+                    lockIcon.alt = '';
+                    lockIcon.className = 'shortcut-lock';
+                    shortcut.lockIcon = lockIcon;
+                    keysContainer.appendChild(lockIcon);
+                }
+
                 const keySpan = document.createElement('span');
                 keySpan.className = 'shortcut-key';
                 keySpan.innerHTML = formatKeyDisplay(shortcut.key);
@@ -261,9 +271,11 @@ function createShortcuts(storageKey) {
      */
     function startRebinding(shortcut, keySpan) {
         // Non-rebindable shortcuts show shake animation on lock icon
-        if (!shortcut.rebindable && shortcut.lockIcon) {
-            shortcut.lockIcon.classList.add('shake');
-            setTimeout(() => shortcut.lockIcon.classList.remove('shake'), 300);
+        if (!shortcut.rebindable) {
+            if (shortcut.lockIcon) {
+                shortcut.lockIcon.classList.add('shake');
+                setTimeout(() => shortcut.lockIcon.classList.remove('shake'), 300);
+            }
             return;
         }
 

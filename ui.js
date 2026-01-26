@@ -50,4 +50,6 @@ export const ui = {
     editorEditShortcuts: gid("editor-edit-shortcuts"),
     editorPaintShortcuts: gid("editor-paint-shortcuts"),
     colorblindToggle: gid("colorblind-toggle"),
+    communityConsentToggle: gid("community-consent-toggle"),
+    showHelpOnStartToggle: gid("show-help-on-start-toggle"),
 };

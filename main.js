@@ -46,11 +46,24 @@ const help = {
 
 const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
 
+const COMMUNITY_CONSENT_KEY = 'svinesti-community-consent';
+
 const community = {
     levels: null,       // Cached levels after successful fetch
     version: null,      // Cached version for efficient polling
     loading: false,     // Prevent concurrent fetches
     viewMode: localStorage.getItem('svinesti-community-view') || 'thumbnails', // 'thumbnails' | 'list'
+
+    hasConsent() {
+        return localStorage.getItem(COMMUNITY_CONSENT_KEY) === 'true';
+    },
+
+    setConsent(enabled) {
+        localStorage.setItem(COMMUNITY_CONSENT_KEY, enabled ? 'true' : 'false');
+        if (enabled && !this.levels) {
+            this.preload();
+        }
+    },
 
     // Fetch just the version number (lightweight, no sheet read)
     async fetchVersion() {
@@ -74,6 +87,7 @@ const community = {
 
     // Check for new levels and update list if changed
     async refresh() {
+        if (!this.hasConsent()) return;
         if (this.loading || this.levels === null) return;
 
         try {
@@ -99,6 +113,7 @@ const community = {
 
     // Fetch levels in background so they're ready when user opens tab
     async preload() {
+        if (!this.hasConsent()) return;
         if (this.loading || this.levels) return;
         this.loading = true;
         try {
@@ -174,6 +189,12 @@ const community = {
 
     // Show community tab content
     async showTab() {
+        // If no consent, show consent request
+        if (!this.hasConsent()) {
+            this.showConsentRequest();
+            return;
+        }
+
         // If already loading, show loading message
         if (this.loading) {
             this.showLoading();
@@ -314,6 +335,27 @@ const community = {
                 <span class="community-error">${message}</span>
             </div>
         `;
+    },
+
+    showConsentRequest() {
+        ui.levelList.innerHTML = `
+            <div class="community-consent">
+                <h3>Community Levels</h3>
+                <p>Community levels are stored on Google's servers. To browse and share levels, this app will contact Google.</p>
+                <p><strong>What's stored:</strong></p>
+                <ul>
+                    <li>Levels you share (grid layout, name)</li>
+                    <li>Star counts for levels</li>
+                </ul>
+                <p><strong>Note:</strong> Google receives your IP address when requests are made. Svinesti does not store any personal data. You can withdraw consent in the help menu.</p>
+                <button class="btn btn-primary" id="community-consent-btn">Enable Community Levels</button>
+            </div>
+        `;
+        document.getElementById('community-consent-btn').addEventListener('click', () => {
+            this.setConsent(true);
+            ui.communityConsentToggle.checked = true;
+            this.showTab();
+        });
     },
 
     // Convert fetch errors to helpful messages
@@ -491,6 +533,27 @@ ui.colorblindToggle.onchange = () => {
     document.body.classList.toggle('colorblind-mode', enabled);
     localStorage.setItem('colorblind-mode', enabled);
 };
+
+// Community consent toggle
+ui.communityConsentToggle.checked = community.hasConsent();
+ui.communityConsentToggle.onchange = () => {
+    community.setConsent(ui.communityConsentToggle.checked);
+    // Refresh community tab if active
+    const activeTab = document.querySelector('.sidebar-tab.active');
+    if (activeTab?.dataset.tab === 'community') {
+        community.showTab();
+    }
+};
+
+// Show help on start toggle (default: true)
+const showHelpOnStart = localStorage.getItem('svinesti-show-help-on-start') !== 'false';
+ui.showHelpOnStartToggle.checked = showHelpOnStart;
+ui.showHelpOnStartToggle.onchange = () => {
+    localStorage.setItem('svinesti-show-help-on-start', ui.showHelpOnStartToggle.checked);
+};
+if (showHelpOnStart) {
+    help.enter();
+}
 
 // Mode toggle
 ui.modePlay.onclick = () => {
