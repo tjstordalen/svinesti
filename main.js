@@ -69,10 +69,8 @@ function populateLevelList(levelArray, { deletable = false } = {}, container = n
             deleteBtn.title = 'Delete level';
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (confirm(`Delete "${lvl.name}"?`)) {
-                    Editor.deleteCustomLevel(lvl.id);
-                    populateLevelList(Editor.getCustomLevels(), { deletable: true });
-                }
+                Editor.deleteCustomLevel(lvl.id);
+                populateLevelList(Editor.getCustomLevels(), { deletable: true });
             });
             item.appendChild(deleteBtn);
         }
@@ -140,17 +138,82 @@ ui.sidebarTabs.forEach(tab => {
             populateLevelList(Editor.getCustomLevels(), { deletable: true });
         } else if (tabName === 'community') {
             community.showTab();
+        } else if (tabName === 'trash') {
+            showTrashTab();
         }
     });
 });
 
+function showTrashTab() {
+    const deleted = Editor.getDeletedLevels();
+    ui.levelList.innerHTML = '';
+
+    // Empty Trash header button
+    if (deleted.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'trash-header';
+        const emptyBtn = document.createElement('button');
+        emptyBtn.className = 'btn empty-trash-btn';
+        emptyBtn.textContent = 'Empty Trash';
+        emptyBtn.addEventListener('click', () => {
+            if (confirm('Permanently delete all levels in trash?')) {
+                Editor.emptyTrash();
+                showTrashTab();
+            }
+        });
+        header.appendChild(emptyBtn);
+        ui.levelList.appendChild(header);
+    }
+
+    if (deleted.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'community-message';
+        msg.textContent = 'Trash is empty';
+        ui.levelList.appendChild(msg);
+        return;
+    }
+
+    for (const lvl of deleted) {
+        const item = document.createElement('div');
+        item.className = 'sidebar-level-item';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'thumbnail-wrapper';
+        const grid = document.createElement('div');
+        createGrid(grid, lvl.nRows, lvl.nCols, lvl);
+        wrapper.appendChild(grid);
+
+        const name = document.createElement('div');
+        name.className = 'sidebar-level-name';
+        name.textContent = lvl.name || 'Untitled';
+
+        item.appendChild(wrapper);
+        item.appendChild(name);
+
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'delete-level-btn';
+        restoreBtn.innerHTML = '<img src="icons/arrow-counterclockwise.svg" alt="" width="16" height="16">';
+        restoreBtn.title = 'Restore level';
+        restoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            Editor.restoreLevel(lvl.id);
+            showTrashTab();
+        });
+        item.appendChild(restoreBtn);
+
+        ui.levelList.appendChild(item);
+    }
+}
+
 populateLevelList(levels);
 
-// Refresh My Levels tab when levels change
+// Refresh My Levels or Trash tab when levels change
 window.addEventListener('levels-updated', () => {
     const activeTab = document.querySelector('.sidebar-tab.active');
     if (activeTab?.dataset.tab === 'my-levels') {
         populateLevelList(Editor.getCustomLevels(), { deletable: true });
+    } else if (activeTab?.dataset.tab === 'trash') {
+        showTrashTab();
     }
 });
 

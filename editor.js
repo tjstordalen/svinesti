@@ -591,7 +591,8 @@ async function handleShareCommunityClick() {
 
 function getCustomLevels() {
     const json = localStorage.getItem(STORAGE_KEY);
-    return json ? JSON.parse(json) : [];
+    const levels = json ? JSON.parse(json) : [];
+    return levels.filter(l => !l.deleted);
 }
 
 function saveCustomLevel(level) {
@@ -610,8 +611,36 @@ function updateCustomLevel(id, levelData) {
 }
 
 function deleteCustomLevel(id) {
-    const levels = getCustomLevels().filter(l => l.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+    const json = localStorage.getItem(STORAGE_KEY);
+    const levels = json ? JSON.parse(json) : [];
+    const index = levels.findIndex(l => l.id === id);
+    if (index !== -1) {
+        levels[index].deleted = true;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+    }
+}
+
+function getDeletedLevels() {
+    const json = localStorage.getItem(STORAGE_KEY);
+    const levels = json ? JSON.parse(json) : [];
+    return levels.filter(l => l.deleted);
+}
+
+function restoreLevel(id) {
+    const json = localStorage.getItem(STORAGE_KEY);
+    const levels = json ? JSON.parse(json) : [];
+    const index = levels.findIndex(l => l.id === id);
+    if (index !== -1) {
+        delete levels[index].deleted;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+    }
+}
+
+function emptyTrash() {
+    const json = localStorage.getItem(STORAGE_KEY);
+    const levels = json ? JSON.parse(json) : [];
+    const remaining = levels.filter(l => !l.deleted);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
 }
 
 function autosave() {
@@ -671,4 +700,4 @@ function exit() {
     ui.editorNameReset.removeEventListener('click', handleNameResetClick);
 }
 
-export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels, deleteCustomLevel };
+export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash };

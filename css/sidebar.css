@@ -91,8 +91,13 @@
     color: white;
 }
 
-/* In editor mode, only show My Levels tab */
-.editor-mode .sidebar-tab:not([data-tab="my-levels"]) {
+/* In editor mode, only show My Levels and Trash tabs */
+.editor-mode .sidebar-tab:not([data-tab="my-levels"]):not([data-tab="trash"]) {
+    display: none;
+}
+
+/* In play mode, hide Trash tab */
+body:not(.editor-mode) .sidebar-tab[data-tab="trash"] {
     display: none;
 }
 
@@ -359,4 +364,26 @@
 
 .community-consent .btn {
     width: 100%;
+}
+
+/* Trash tab */
+.trash-header {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 4px;
+}
+
+.trash-header .empty-trash-btn {
+    width: 100%;
+    font-size: 0.8125rem;
+    background: var(--tile-red);
+    border-color: var(--tile-red);
+    color: white;
+}
+
+.trash-header .empty-trash-btn:hover {
+    background: #c0392b;
+    border-color: #c0392b;
 }
