@@ -6,7 +6,7 @@ import * as Game from "./game.js";
 import { createGrid } from "./grid.js";
 import { levels } from "./levels.js";
 import { ui } from "./ui.js";
-import { spin } from "./animations.js";
+import { spin, notify } from "./animations.js";
 
 const ENABLE_SPLASH_SCREEN = true;
 
@@ -153,10 +153,11 @@ const community = {
     searchQuery: '',    // Current search filter
 
     // Manual refresh: check version, fetch if changed, update in background
+    // Returns true if new levels were found, false otherwise
     async forceRefresh() {
         try {
             const newVersion = await this.fetchVersion();
-            if (newVersion === this.version) return; // No changes
+            if (newVersion === this.version) return false; // No changes
             this.version = newVersion;
             this.levels = await this.fetchLevels();
             // Update UI if community tab is still active
@@ -164,8 +165,10 @@ const community = {
             if (activeTab?.dataset.tab === 'community') {
                 this.showLevels();
             }
+            return true;
         } catch (e) {
             console.warn('Failed to refresh community levels:', e);
+            return false;
         }
     },
 
@@ -252,14 +255,22 @@ const community = {
         refreshBtn.className = 'community-refresh-btn';
         refreshBtn.title = 'Refresh levels';
         refreshBtn.innerHTML = '<img src="icons/arrow-counterclockwise.svg" alt="">';
+
+        const refreshNotification = document.createElement('div');
+        refreshNotification.className = 'notification';
+
         refreshBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             refreshBtn.disabled = true;
             const anim = spin(refreshBtn.querySelector('img'));
-            this.forceRefresh().then(() => anim.cancel());
+            this.forceRefresh().then((hasNew) => {
+                anim.cancel();
+                if (!hasNew) notify(refreshNotification, 'No new levels', false, 2000);
+            });
             setTimeout(() => refreshBtn.disabled = false, 30000);
         });
         header.appendChild(refreshBtn);
+        header.appendChild(refreshNotification);
 
         ui.levelList.appendChild(header);
 
