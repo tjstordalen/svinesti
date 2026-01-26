@@ -8,6 +8,7 @@ import { createGrid, TILE_CLASSES } from "./grid.js";
 import { ui } from "./ui.js";
 import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
+import * as community from "./community.js";
 import { generateLevelName, generateUID } from "./names.js";
 
 // --- Shortcuts ---
@@ -18,10 +19,6 @@ const paintShortcuts = Shortcuts.new('svinesti-editor-paint-v1');
 // --- Constants ---
 
 const STORAGE_KEY = 'svinesti-custom-levels';
-
-// Community sharing - Apps Script endpoint that writes directly to the sheet
-const COMMUNITY_SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwne7UEsOMM6Aa0WD5X2KdUx0eZX8QyZQ6FcWajARqaUa9Zs_ICcfJYCuVhrWXzgHjO7Q/exec';
-const COMMUNITY_CONSENT_KEY = 'svinesti-community-consent';
 
 // Left-click cycles tile colors (preserves target status)
 const COLOR_CYCLE = {
@@ -551,7 +548,7 @@ async function handleShareClick() {
 }
 
 async function handleShareCommunityClick() {
-    if (localStorage.getItem(COMMUNITY_CONSENT_KEY) !== 'true') {
+    if (!community.hasConsent()) {
         animations.notify(ui.editorNotification, 'Enable Community Levels in Help menu first', true);
         return;
     }
@@ -571,11 +568,7 @@ async function handleShareCommunityClick() {
     animations.notify(ui.editorNotification, 'Sharing...', false, 60000);
 
     try {
-        const response = await fetch(COMMUNITY_SUBMIT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ level: levelData }),
-        });
-        const result = await response.json();
+        const result = await community.submitLevel(levelData);
 
         if (result.error) {
             animations.notify(ui.editorNotification, result.error, true);
