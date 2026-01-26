@@ -147,6 +147,10 @@
     margin-top: 16px;
 }
 
+#editor-share-community {
+    width: 175px;
+}
+
 .editor-sidebar {
     width: 340px;
     flex-shrink: 0;
