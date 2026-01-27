@@ -263,6 +263,17 @@ export function onReady(callback) {
 
 export function setReady() {
     ready = true;
+    hideSplashScreen();
     readyCallbacks.forEach(cb => cb());
     readyCallbacks.length = 0;
+}
+
+const SPLASH_FADE_MS = 500;
+
+function hideSplashScreen() {
+    if (!ui.splashScreen) return;
+    ui.splashScreen.classList.add("fade-out");
+    setTimeout(() => {
+        ui.splashScreen.style.display = "none";
+    }, SPLASH_FADE_MS);
 }

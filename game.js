@@ -323,19 +323,9 @@ function applyEventSilent(msg) {
 
 // --- Worker management ---
 
-const FADE_DURATION_MS = 500;
-
 function resolveExecution(result) {
     state.pendingResolve?.(result);
     state.pendingResolve = null;
-}
-
-function hideSplashScreen() {
-    if (!ui.splashScreen) return;
-    ui.splashScreen.classList.add("fade-out");
-    setTimeout(() => {
-        ui.splashScreen.style.display = "none";
-    }, FADE_DURATION_MS);
 }
 
 function initWorker() {
@@ -346,7 +336,6 @@ function initWorker() {
         switch (data.type) {
             case "ready":
                 app.setReady();
-                hideSplashScreen();
                 break;
             case "execution-trace":
                 resolveExecution(data.trace);
@@ -490,7 +479,7 @@ export function init() {
     registerShortcuts();
     shortcuts.init(ui.gameShortcutsContainer);
 
-    // Initialize worker
+    // Initialize worker (triggers app.setReady() when Pyodide loads)
     initWorker();
 }
 
