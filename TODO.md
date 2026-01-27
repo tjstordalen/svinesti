@@ -33,3 +33,13 @@ Add functionality to delete from the custom list. This should work as follows: t
 ## UI
 
 Color the playback icon white
+
+
+#Sidebar
+Being in custom levels in editor mode and switching to game mode persists the delete button
+
+
+
+## Sidebar
+After clicking the button to enable community levels, the info message does not disappear until the levels have actually been loaded
+

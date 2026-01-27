@@ -9,7 +9,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, getCommunityLevels } from "./app.js";
+import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, getCommunityLevels, isStarred as isLevelStarred } from "./app.js";
 
 // --- State ---
 
@@ -65,11 +65,11 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
 
         // Star button (Community)
         if (lvl.stars !== undefined && lvl.uid) {
-            const isStarred = localStorage.getItem(`starred-${lvl.uid}`) === '1';
+            const starred = isLevelStarred(lvl.uid);
             const starBtn = document.createElement('button');
-            starBtn.className = 'star-btn' + (isStarred ? ' starred' : '');
+            starBtn.className = 'star-btn' + (starred ? ' starred' : '');
             starBtn.innerHTML = `<img src="/img/golden-apple.png" alt=""><span>${lvl.stars}</span>`;
-            starBtn.title = isStarred ? 'Remove star' : 'Star this level';
+            starBtn.title = starred ? 'Remove star' : 'Star this level';
             starBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 community.starLevel(lvl.uid, showCommunityLevels, () => {

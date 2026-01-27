@@ -4,18 +4,29 @@ import { ui } from './ui.js';
 import { levels as builtInLevels } from './levels.js';
 
 const CUSTOM_LEVELS_KEY = 'svinesti-custom-levels';
+const STARRED_KEY = 'svinesti-starred';
 
 let initialized = false;
 let mode = 'game';
 let customLevels = [];
 let communityLevels = [];
+let starred = new Set();
 const levelChangeCallbacks = [];
 
 export function init() {
     if (initialized) return;
     initialized = true;
-    console.log('app.init() called');
     loadCustomLevels();
+    loadStarred();
+}
+
+function loadStarred() {
+    const json = localStorage.getItem(STARRED_KEY);
+    starred = json ? new Set(JSON.parse(json)) : new Set();
+}
+
+function persistStarred() {
+    localStorage.setItem(STARRED_KEY, JSON.stringify([...starred]));
 }
 
 function loadCustomLevels() {
@@ -127,4 +138,16 @@ export function getCommunityLevels() {
 export function setCommunityLevels(levels) {
     communityLevels = levels;
     notifyLevelsChange();
+}
+
+// --- Starred ---
+
+export function isStarred(uid) {
+    return starred.has(uid);
+}
+
+export function setStarred(uid, value) {
+    if (value) starred.add(uid);
+    else starred.delete(uid);
+    persistStarred();
 }

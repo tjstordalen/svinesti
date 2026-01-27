@@ -163,24 +163,25 @@ export async function preload() {
 export function starLevel(uid, onUpdate, onError) {
     requireConsent();
 
-    const key = `starred-${uid}`;
-    const isStarred = localStorage.getItem(key) === '1';
+    const wasStarred = app.isStarred(uid);
 
     // Optimistic update
-    localStorage.setItem(key, isStarred ? '0' : '1');
-    const level = state.levels?.find(l => l.uid === uid);
-    if (level) level.stars += isStarred ? -1 : 1;
+    app.setStarred(uid, !wasStarred);
+    const levels = app.getCommunityLevels();
+    const level = levels.find(l => l.uid === uid);
+    if (level) level.stars += wasStarred ? -1 : 1;
     if (onUpdate) onUpdate();
 
     fetch(COMMUNITY_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'star', uid, starred: !isStarred })
+        body: JSON.stringify({ action: 'star', uid, starred: !wasStarred })
     }).then(response => {
         if (!response.ok) throw new Error('Server error');
     }).catch(() => {
         // Revert optimistic update
-        localStorage.setItem(key, isStarred ? '1' : '0');
-        if (level) level.stars += isStarred ? 1 : -1;
+        app.setStarred(uid, wasStarred);
+        const lvl = app.getCommunityLevels().find(l => l.uid === uid);
+        if (lvl) lvl.stars += wasStarred ? 1 : -1;
         if (onUpdate) onUpdate();
         if (onError) onError();
     });
