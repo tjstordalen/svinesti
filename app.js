@@ -13,7 +13,6 @@ let ready = false;
 const readyCallbacks = [];
 let mode = 'game';
 let customLevels = [];
-let communityLevels = [];
 let starred = new Set();
 let code = {};  // { [levelKey]: { python: '...', java: '...' } }
 let preferences = {
@@ -164,17 +163,6 @@ export function emptyTrash() {
 
 export function onLevelsChange(callback) {
     levelChangeCallbacks.push(callback);
-}
-
-// --- Levels: Community ---
-
-export function getCommunityLevels() {
-    return communityLevels;
-}
-
-export function setCommunityLevels(levels) {
-    communityLevels = levels;
-    notifyLevelsChange();
 }
 
 // --- Starred ---

@@ -9,7 +9,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, getCommunityLevels, isStarred as isLevelStarred, hasCommunityConsent, setCommunityConsent } from "./app.js";
+import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, isStarred as isLevelStarred, setStarred as setLevelStarred, hasCommunityConsent, setCommunityConsent } from "./app.js";
 
 // --- State ---
 
@@ -72,7 +72,19 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
             starBtn.title = starred ? 'Remove star' : 'Star this level';
             starBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                community.starLevel(lvl.uid, showCommunityLevels, () => {
+                const wasStarred = isLevelStarred(lvl.uid);
+                const newStarred = !wasStarred;
+
+                // Optimistic update
+                setLevelStarred(lvl.uid, newStarred);
+                lvl.stars += newStarred ? 1 : -1;
+                showCommunityLevels();
+
+                community.sendStar(lvl.uid, newStarred).catch(() => {
+                    // Revert
+                    setLevelStarred(lvl.uid, wasStarred);
+                    lvl.stars += wasStarred ? 1 : -1;
+                    showCommunityLevels();
                     const notif = document.querySelector('.community-header .notification');
                     if (notif) notify(notif, 'Could not reach server', true, 2000);
                 });
@@ -179,7 +191,7 @@ export async function showCommunityTab() {
 }
 
 function showCommunityLevels() {
-    const levels = getCommunityLevels();
+    const levels = community.getLevels();
     const sorted = [...levels].sort((a, b) => (b.stars || 0) - (a.stars || 0));
     const filtered = state.searchQuery
         ? sorted.filter(l => l.name?.toLowerCase().includes(state.searchQuery))
@@ -330,6 +342,7 @@ export function init() {
     });
 
     onLevelsChange(() => refreshActiveTab());
+    community.onChange(() => refreshActiveTab());
 }
 
 export function refreshActiveTab() {

@@ -18,6 +18,22 @@ const state = {
     loading: false,     // Prevent concurrent fetches
 };
 
+const changeCallbacks = [];
+
+// --- Exports ---
+
+export function getLevels() {
+    return state.levels || [];
+}
+
+export function onChange(callback) {
+    changeCallbacks.push(callback);
+}
+
+function notifyChange() {
+    changeCallbacks.forEach(cb => cb());
+}
+
 // --- State Access ---
 
 export function isLoading() {
@@ -84,7 +100,7 @@ export async function fetchIfNeeded() {
     try {
         state.version = await fetchVersion();
         state.levels = await fetchLevels();
-        app.setCommunityLevels(state.levels);
+        notifyChange();
         return { levels: state.levels };
     } catch (e) {
         console.error('Failed to fetch community levels:', e);
@@ -104,7 +120,7 @@ export async function forceRefresh() {
         if (newVersion === state.version) return false;
         state.version = newVersion;
         state.levels = await fetchLevels();
-        app.setCommunityLevels(state.levels);
+        notifyChange();
         return true;
     } catch (e) {
         console.warn('Failed to refresh community levels:', e);
@@ -121,7 +137,7 @@ async function pollRefresh(onUpdate) {
         if (newVersion !== state.version) {
             state.version = newVersion;
             state.levels = await fetchLevels();
-            app.setCommunityLevels(state.levels);
+            notifyChange();
             if (onUpdate) onUpdate();
         }
     } catch (e) {
@@ -140,7 +156,7 @@ export async function preload() {
     try {
         state.version = await fetchVersion();
         state.levels = await fetchLevels();
-        app.setCommunityLevels(state.levels);
+        notifyChange();
     } catch (e) {
         console.warn('Failed to preload community levels:', e);
     }
@@ -149,30 +165,11 @@ export async function preload() {
 
 // --- Starring ---
 
-export function starLevel(uid, onUpdate, onError) {
+export function sendStar(uid, starred) {
     requireConsent();
-
-    const wasStarred = app.isStarred(uid);
-
-    // Optimistic update
-    app.setStarred(uid, !wasStarred);
-    const levels = app.getCommunityLevels();
-    const level = levels.find(l => l.uid === uid);
-    if (level) level.stars += wasStarred ? -1 : 1;
-    if (onUpdate) onUpdate();
-
-    fetch(COMMUNITY_URL, {
+    return fetch(COMMUNITY_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'star', uid, starred: !wasStarred })
-    }).then(response => {
-        if (!response.ok) throw new Error('Server error');
-    }).catch(() => {
-        // Revert optimistic update
-        app.setStarred(uid, wasStarred);
-        const lvl = app.getCommunityLevels().find(l => l.uid === uid);
-        if (lvl) lvl.stars += wasStarred ? 1 : -1;
-        if (onUpdate) onUpdate();
-        if (onError) onError();
+        body: JSON.stringify({ action: 'star', uid, starred })
     });
 }
 
