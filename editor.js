@@ -9,6 +9,7 @@ import { ui } from "./ui.js";
 import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as community from "./community.js";
+import * as app from "./app.js";
 import { generateLevelName, generateUID } from "./names.js";
 
 // --- Shortcuts ---
@@ -17,8 +18,6 @@ const editShortcuts = Shortcuts.new('svinesti-editor-edit-v1');
 const paintShortcuts = Shortcuts.new('svinesti-editor-paint-v1');
 
 // --- Constants ---
-
-const STORAGE_KEY = 'svinesti-custom-levels';
 
 // Left-click cycles tile colors (preserves target status)
 const COLOR_CYCLE = {
@@ -587,62 +586,6 @@ async function handleShareCommunityClick() {
     }
 }
 
-// --- Local Storage ---
-
-function getCustomLevels() {
-    const json = localStorage.getItem(STORAGE_KEY);
-    const levels = json ? JSON.parse(json) : [];
-    return levels.filter(l => !l.deleted);
-}
-
-function saveCustomLevel(level) {
-    const levels = getCustomLevels();
-    levels.push(level);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
-}
-
-function updateCustomLevel(id, levelData) {
-    const levels = getCustomLevels();
-    const index = levels.findIndex(l => l.id === id);
-    if (index !== -1) {
-        levels[index] = { ...levels[index], ...levelData };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
-    }
-}
-
-function deleteCustomLevel(id) {
-    const json = localStorage.getItem(STORAGE_KEY);
-    const levels = json ? JSON.parse(json) : [];
-    const index = levels.findIndex(l => l.id === id);
-    if (index !== -1) {
-        levels[index].deleted = true;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
-    }
-}
-
-function getDeletedLevels() {
-    const json = localStorage.getItem(STORAGE_KEY);
-    const levels = json ? JSON.parse(json) : [];
-    return levels.filter(l => l.deleted);
-}
-
-function restoreLevel(id) {
-    const json = localStorage.getItem(STORAGE_KEY);
-    const levels = json ? JSON.parse(json) : [];
-    const index = levels.findIndex(l => l.id === id);
-    if (index !== -1) {
-        delete levels[index].deleted;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
-    }
-}
-
-function emptyTrash() {
-    const json = localStorage.getItem(STORAGE_KEY);
-    const levels = json ? JSON.parse(json) : [];
-    const remaining = levels.filter(l => !l.deleted);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
-}
-
 function autosave() {
     const level = serialize();
     const compacted = compact(level);
@@ -650,13 +593,12 @@ function autosave() {
     compacted.uid = state.uid;
 
     if (state.editingLevelId) {
-        updateCustomLevel(state.editingLevelId, compacted);
+        app.updateCustomLevel(state.editingLevelId, compacted);
     } else {
         compacted.id = crypto.randomUUID();
-        saveCustomLevel(compacted);
+        app.saveCustomLevel(compacted);
         state.editingLevelId = compacted.id;
     }
-    window.dispatchEvent(new CustomEvent('levels-updated'));
 }
 
 function handleNameResetClick() {
@@ -700,4 +642,4 @@ function exit() {
     ui.editorNameReset.removeEventListener('click', handleNameResetClick);
 }
 
-export { init, enter, exit, load, serialize, validate, importFromURL, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash };
+export { init, enter, exit, load, serialize, validate, importFromURL };

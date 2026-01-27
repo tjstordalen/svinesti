@@ -9,7 +9,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { isEditorMode, getBuiltInLevels } from "./app.js";
+import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange } from "./app.js";
 
 // --- State ---
 
@@ -52,7 +52,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
             deleteBtn.title = 'Delete level';
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                Editor.deleteCustomLevel(lvl.id);
+                deleteCustomLevel(lvl.id);
                 showMyLevelsTab();
             });
             item.appendChild(deleteBtn);
@@ -85,7 +85,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
         if (restorable && lvl.id) {
             // Trash: clicking restores the level
             item.addEventListener('click', () => {
-                Editor.restoreLevel(lvl.id);
+                restoreLevel(lvl.id);
                 showTrashTab();
             });
         } else {
@@ -113,11 +113,11 @@ export function showDefaultTab() {
 
 export function showMyLevelsTab() {
     ui.levelList.innerHTML = '';
-    populateLevelList(Editor.getCustomLevels(), { deletable: true });
+    populateLevelList(getCustomLevels(), { deletable: true });
 }
 
 export function showTrashTab() {
-    const deleted = Editor.getDeletedLevels();
+    const deleted = getDeletedLevels();
     ui.levelList.innerHTML = '';
 
     if (deleted.length === 0) {
@@ -136,7 +136,7 @@ export function showTrashTab() {
     emptyBtn.textContent = 'Empty Trash';
     emptyBtn.addEventListener('click', () => {
         if (confirm('Permanently delete all levels in trash?')) {
-            Editor.emptyTrash();
+            emptyTrash();
             showTrashTab();
         }
     });
@@ -328,6 +328,8 @@ export function init() {
             else if (tabName === 'trash') showTrashTab();
         });
     });
+
+    onLevelsChange(() => refreshActiveTab());
 }
 
 export function refreshActiveTab() {

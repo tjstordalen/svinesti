@@ -65,9 +65,6 @@ Editor.init();
 sidebar.init();
 sidebar.showDefaultTab();
 
-// Refresh sidebar when levels change
-window.addEventListener('levels-updated', () => sidebar.refreshActiveTab());
-
 // Refresh community levels when a level is shared
 window.addEventListener('community-levels-updated', () => {
     community.forceRefresh().then(result => {
