@@ -83,34 +83,33 @@ function validateLevel(level) {
 // API ENDPOINTS
 // -----------------------------------------------------------------------------
 
-// GET: Return all levels (base64<TAB>stars per line)
-// Add ?version to get just the version number (for efficient polling)
+// GET: Conditional fetch
+// ?v=<num> — if current, returns just version; otherwise version + data
+// ?v= or no param — always returns version + data
 function doGet(e) {
     try {
-        // ?version — return just the version (no sheet read)
-        if (e.parameter.version !== undefined) {
-            var props = PropertiesService.getScriptProperties();
-            var version = props.getProperty('version') || '0';
-            return ContentService.createTextOutput(version)
-                .setMimeType(ContentService.MimeType.TEXT);
+        var props = PropertiesService.getScriptProperties();
+        var currentVersion = props.getProperty('version') || '0';
+        var clientVersion = e.parameter.v;
+
+        // Client is up to date — return just version
+        if (clientVersion === currentVersion) {
+            return ContentService.createTextOutput(currentVersion);
         }
 
-        // Full fetch — return all levels with stars
-        // Sheet columns: Timestamp (A) | UID (B) | Level (C) | Stars (D)
+        // Client needs data — return version + levels
         var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
         var data = sheet.getDataRange().getValues();
         var lines = [];
         for (var i = 1; i < data.length; i++) {
-            var level = data[i][2];   // Column C: base64 level
-            if (!level) continue;     // Skip rows without level data
-            // Column D: star count (handle Date objects from Sheets interpreting 0 as date)
+            var level = data[i][2];
+            if (!level) continue;
             var rawStars = data[i][3];
             var stars = (typeof rawStars === 'number') ? rawStars : 0;
             lines.push(level + '\t' + stars);
         }
 
-        return ContentService.createTextOutput(lines.join('\n'))
-            .setMimeType(ContentService.MimeType.TEXT);
+        return ContentService.createTextOutput(currentVersion + '\n' + lines.join('\n'));
     } catch (err) {
         return ContentService.createTextOutput('Error: ' + err.message);
     }
