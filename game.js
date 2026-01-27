@@ -111,17 +111,8 @@ function loadLevel(level) {
 
 // --- Code storage ---
 
-function storeCode() {
-    if (!state.level) return;
-    const key = state.level.name + selectedLanguage();
-    localStorage.setItem(key, ui.editor.getValue());
-}
-
-function loadCode() {
-    if (!state.level) return;
-    const key = state.level.name + selectedLanguage();
-    const code = localStorage.getItem(key) ?? "";
-    ui.editor.setValue(code);
+function levelKey(level) {
+    return level.id || level.name;
 }
 
 // --- Language switching ---
@@ -130,12 +121,16 @@ function switchLanguage(newLang) {
     const currentLang = selectedLanguage();
     if (currentLang === newLang) return;
 
-    storeCode();
+    if (state.level) {
+        app.setCode(levelKey(state.level), currentLang, ui.editor.getValue());
+    }
 
     ui.langPython.classList.toggle('active', newLang === 'python');
     ui.langJava.classList.toggle('active', newLang === 'java');
 
-    loadCode();
+    if (state.level) {
+        ui.editor.setValue(app.getCode(levelKey(state.level), newLang));
+    }
     const mode = newLang === "java" ? "text/x-java" : "python";
     ui.editor.setOption("mode", mode);
     ui.editor.setOption("indentUnit", 4);
@@ -409,7 +404,9 @@ function attachEventHandlers() {
     // Editor change - save updated code, and auto-reset if editing during pause
 	// (because the trace that we have in memory becomes invalidated when you modify the code)
     ui.editor.on("change", () => {
-        storeCode();
+        if (state.level) {
+            app.setCode(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
+        }
         if (state.status === "paused") {
             enterIdle();
         }
@@ -506,9 +503,11 @@ export function exit() {
 }
 
 export function selectLevel(level) {
-    storeCode();
+    if (state.level) {
+        app.setCode(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
+    }
     state.level = level;
-    loadCode();
+    ui.editor.setValue(app.getCode(levelKey(level), selectedLanguage()));
     loadLevel(level);
     ui.codeOutput.textContent = "";
     enterIdle();

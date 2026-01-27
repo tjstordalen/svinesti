@@ -6,12 +6,14 @@ import { levels as builtInLevels } from './levels.js';
 const CUSTOM_LEVELS_KEY = 'svinesti-custom-levels';
 const STARRED_KEY = 'svinesti-starred';
 const PREFERENCES_KEY = 'svinesti-preferences';
+const CODE_KEY = 'svinesti-code';
 
 let initialized = false;
 let mode = 'game';
 let customLevels = [];
 let communityLevels = [];
 let starred = new Set();
+let code = {};  // { [levelKey]: { python: '...', java: '...' } }
 let preferences = {
     colorblind: false,
     communityConsent: false,
@@ -27,6 +29,7 @@ export function init() {
     loadCustomLevels();
     loadStarred();
     loadPreferences();
+    loadCode();
     applyPreferences();
 }
 
@@ -37,6 +40,15 @@ function loadPreferences() {
 
 function persistPreferences() {
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+}
+
+function loadCode() {
+    const json = localStorage.getItem(CODE_KEY);
+    code = json ? JSON.parse(json) : {};
+}
+
+function persistCode() {
+    localStorage.setItem(CODE_KEY, JSON.stringify(code));
 }
 
 function applyPreferences() {
@@ -221,4 +233,17 @@ export function getEditorFontSize() {
 export function setEditorFontSize(value) {
     preferences.editorFontSize = value;
     persistPreferences();
+}
+
+// --- Code Storage ---
+
+// levelKey: use level.id for custom levels, level.name for built-in
+export function getCode(levelKey, language) {
+    return code[levelKey]?.[language] ?? '';
+}
+
+export function setCode(levelKey, language, value) {
+    if (!code[levelKey]) code[levelKey] = {};
+    code[levelKey][language] = value;
+    persistCode();
 }
