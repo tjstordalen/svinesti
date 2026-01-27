@@ -8,6 +8,7 @@ const CUSTOM_LEVELS_KEY = 'svinesti-custom-levels';
 let initialized = false;
 let mode = 'game';
 let customLevels = [];
+let communityLevels = [];
 const levelChangeCallbacks = [];
 
 export function init() {
@@ -115,4 +116,15 @@ export function emptyTrash() {
 
 export function onLevelsChange(callback) {
     levelChangeCallbacks.push(callback);
+}
+
+// --- Levels: Community ---
+
+export function getCommunityLevels() {
+    return communityLevels;
+}
+
+export function setCommunityLevels(levels) {
+    communityLevels = levels;
+    notifyLevelsChange();
 }

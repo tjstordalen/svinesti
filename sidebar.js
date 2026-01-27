@@ -9,7 +9,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange } from "./app.js";
+import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, getCommunityLevels } from "./app.js";
 
 // --- State ---
 
@@ -179,7 +179,7 @@ export async function showCommunityTab() {
 }
 
 function showCommunityLevels() {
-    const levels = community.getLevels();
+    const levels = getCommunityLevels();
     const sorted = [...levels].sort((a, b) => (b.stars || 0) - (a.stars || 0));
     const filtered = state.searchQuery
         ? sorted.filter(l => l.name?.toLowerCase().includes(state.searchQuery))

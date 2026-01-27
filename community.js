@@ -3,6 +3,8 @@
 // Fetching, submitting, starring levels. Consent management.
 // UI rendering moved to sidebar.js.
 
+import * as app from './app.js';
+
 // Apps Script endpoint for community levels (GET to fetch, POST to submit)
 const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbwne7UEsOMM6Aa0WD5X2KdUx0eZX8QyZQ6FcWajARqaUa9Zs_ICcfJYCuVhrWXzgHjO7Q/exec';
 
@@ -28,10 +30,6 @@ export function setConsent(enabled) {
 }
 
 // --- State Access ---
-
-export function getLevels() {
-    return state.levels || [];
-}
 
 export function isLoading() {
     return state.loading;
@@ -97,6 +95,7 @@ export async function fetchIfNeeded() {
     try {
         state.version = await fetchVersion();
         state.levels = await fetchLevels();
+        app.setCommunityLevels(state.levels);
         return { levels: state.levels };
     } catch (e) {
         console.error('Failed to fetch community levels:', e);
@@ -116,6 +115,7 @@ export async function forceRefresh() {
         if (newVersion === state.version) return false;
         state.version = newVersion;
         state.levels = await fetchLevels();
+        app.setCommunityLevels(state.levels);
         return true;
     } catch (e) {
         console.warn('Failed to refresh community levels:', e);
@@ -132,6 +132,7 @@ async function pollRefresh(onUpdate) {
         if (newVersion !== state.version) {
             state.version = newVersion;
             state.levels = await fetchLevels();
+            app.setCommunityLevels(state.levels);
             if (onUpdate) onUpdate();
         }
     } catch (e) {
@@ -150,6 +151,7 @@ export async function preload() {
     try {
         state.version = await fetchVersion();
         state.levels = await fetchLevels();
+        app.setCommunityLevels(state.levels);
     } catch (e) {
         console.warn('Failed to preload community levels:', e);
     }
