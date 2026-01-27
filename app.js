@@ -9,6 +9,8 @@ const PREFERENCES_KEY = 'svinesti-preferences';
 const CODE_KEY = 'svinesti-code';
 
 let initialized = false;
+let ready = false;
+const readyCallbacks = [];
 let mode = 'game';
 let customLevels = [];
 let communityLevels = [];
@@ -246,4 +248,21 @@ export function setCode(levelKey, language, value) {
     if (!code[levelKey]) code[levelKey] = {};
     code[levelKey][language] = value;
     persistCode();
+}
+
+// --- Ready State ---
+
+export function isReady() {
+    return ready;
+}
+
+export function onReady(callback) {
+    if (ready) callback();
+    else readyCallbacks.push(callback);
+}
+
+export function setReady() {
+    ready = true;
+    readyCallbacks.forEach(cb => cb());
+    readyCallbacks.length = 0;
 }

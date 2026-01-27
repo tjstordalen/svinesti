@@ -345,6 +345,7 @@ function initWorker() {
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
             case "ready":
+                app.setReady();
                 hideSplashScreen();
                 break;
             case "execution-trace":

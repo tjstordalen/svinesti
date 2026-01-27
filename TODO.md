@@ -43,3 +43,6 @@ Being in custom levels in editor mode and switching to game mode persists the de
 ## Sidebar
 After clicking the button to enable community levels, the info message does not disappear until the levels have actually been loaded
 
+
+BUG??? when typing ? in the code editor, it opes the help menu and surpresses the keystroke
+
