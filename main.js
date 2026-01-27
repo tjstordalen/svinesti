@@ -7,6 +7,7 @@ import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
 import { levels } from "./levels.js";
 import { ui } from "./ui.js";
+import { setMode, isEditorMode } from "./mode.js";
 
 const ENABLE_SPLASH_SCREEN = true;
 
@@ -138,9 +139,7 @@ if (showHelpOnStart) {
 // Mode toggle
 ui.modePlay.onclick = () => {
     Editor.exit();
-    document.body.classList.remove('editor-mode');
-    ui.playPane.hidden = false;
-    ui.editorPane.hidden = true;
+    setMode('game');
     ui.modePlay.classList.add("active");
     ui.modeEdit.classList.remove("active");
     // Switch away from Trash tab (not visible in play mode)
@@ -155,9 +154,7 @@ ui.modePlay.onclick = () => {
 
 ui.modeEdit.onclick = () => {
     Game.exit();
-    document.body.classList.add('editor-mode');
-    ui.playPane.hidden = true;
-    ui.editorPane.hidden = false;
+    setMode('editor');
     ui.modePlay.classList.remove("active");
     ui.modeEdit.classList.add("active");
     // Switch to My Levels tab
@@ -170,7 +167,7 @@ ui.modeEdit.onclick = () => {
 // Global shortcuts (editor mode only - game mode uses shortcuts.js)
 document.addEventListener('keydown', (e) => {
     // Help toggle - only in editor mode when not typing
-    if (e.key === '?' && document.body.classList.contains('editor-mode') && !ui.editor.hasFocus()) {
+    if (e.key === '?' && isEditorMode() && !ui.editor.hasFocus()) {
         e.preventDefault();
 		help.toggle();
     }

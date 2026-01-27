@@ -10,6 +10,7 @@ import * as Game from "./game.js";
 import * as community from "./community.js";
 import { levels } from "./levels.js";
 import { spin, notify } from "./animations.js";
+import { isEditorMode } from "./mode.js";
 
 // --- State ---
 
@@ -25,7 +26,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
     if (!container && !append) target.innerHTML = '';
 
     // Only allow delete in editor mode
-    const canDelete = deletable && document.body.classList.contains('editor-mode');
+    const canDelete = deletable && isEditorMode();
 
     for (const lvl of levelArray) {
         const item = document.createElement('div');
@@ -45,7 +46,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
         item.appendChild(name);
 
         // Delete button (My Levels, editor mode only)
-        if (canDelete && lvl.id) {
+        if (canDelete) {
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'delete-level-btn';
             deleteBtn.innerHTML = '<img src="icons/trash3-fill.svg" alt="" width="16" height="16">';
@@ -91,7 +92,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
         } else {
             // Normal: clicking loads the level
             item.addEventListener('click', () => {
-                if (document.body.classList.contains('editor-mode')) {
+                if (isEditorMode()) {
                     Editor.load(lvl);
                 } else {
                     Game.selectLevel(lvl);
