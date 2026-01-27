@@ -551,7 +551,7 @@ async function handleShareClick() {
 }
 
 async function handleShareCommunityClick() {
-    if (!app.hasCommunityConsent()) {
+    if (!app.prefs.communityConsent.get()) {
         animations.notify(ui.editorNotification, 'Enable Community Levels in Help menu first', true);
         return;
     }
@@ -593,10 +593,10 @@ function autosave() {
     compacted.uid = state.uid;
 
     if (state.editingLevelId) {
-        app.updateCustomLevel(state.editingLevelId, compacted);
+        app.levels.update(state.editingLevelId, compacted);
     } else {
         compacted.id = crypto.randomUUID();
-        app.saveCustomLevel(compacted);
+        app.levels.save(compacted);
         state.editingLevelId = compacted.id;
     }
 }

@@ -7,7 +7,6 @@ import * as Game from "./game.js";
 import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
 import { ui } from "./ui.js";
-import { setMode, isEditorMode, getBuiltInLevels, isColorblind, setColorblind, hasCommunityConsent, setCommunityConsent, showHelpOnStart, setShowHelpOnStart } from "./app.js";
 
 app.init();
 
@@ -96,13 +95,13 @@ ui.helpClose.onclick = () => help.exit();
 ui.helpOverlay.onclick = () => help.exit();
 
 // Colorblind mode toggle
-ui.colorblindToggle.checked = isColorblind();
-ui.colorblindToggle.onchange = () => setColorblind(ui.colorblindToggle.checked);
+ui.colorblindToggle.checked = app.prefs.colorblind.get();
+ui.colorblindToggle.onchange = () => app.prefs.colorblind.set(ui.colorblindToggle.checked);
 
 // Community consent toggle
-ui.communityConsentToggle.checked = hasCommunityConsent();
+ui.communityConsentToggle.checked = app.prefs.communityConsent.get();
 ui.communityConsentToggle.onchange = () => {
-    setCommunityConsent(ui.communityConsentToggle.checked);
+    app.prefs.communityConsent.set(ui.communityConsentToggle.checked);
     // Refresh community tab if active
     const activeTab = document.querySelector('.sidebar-tab.active');
     if (activeTab?.dataset.tab === 'community') {
@@ -111,16 +110,16 @@ ui.communityConsentToggle.onchange = () => {
 };
 
 // Show help on start toggle (default: true)
-ui.showHelpOnStartToggle.checked = showHelpOnStart();
-ui.showHelpOnStartToggle.onchange = () => setShowHelpOnStart(ui.showHelpOnStartToggle.checked);
-if (showHelpOnStart()) {
+ui.showHelpOnStartToggle.checked = app.prefs.showHelpOnStart.get();
+ui.showHelpOnStartToggle.onchange = () => app.prefs.showHelpOnStart.set(ui.showHelpOnStartToggle.checked);
+if (app.prefs.showHelpOnStart.get()) {
     help.enter();
 }
 
 // Mode toggle
 ui.modePlay.onclick = () => {
     Editor.exit();
-    setMode('game');
+    app.setMode('game');
     ui.modePlay.classList.add("active");
     ui.modeEdit.classList.remove("active");
     // Switch away from Trash tab (not visible in play mode)
@@ -135,7 +134,7 @@ ui.modePlay.onclick = () => {
 
 ui.modeEdit.onclick = () => {
     Game.exit();
-    setMode('editor');
+    app.setMode('editor');
     ui.modePlay.classList.remove("active");
     ui.modeEdit.classList.add("active");
     // Switch to My Levels tab
@@ -148,7 +147,7 @@ ui.modeEdit.onclick = () => {
 // Global shortcuts (editor mode only - game mode uses shortcuts.js)
 document.addEventListener('keydown', (e) => {
     // Help toggle - only in editor mode when not typing
-    if (e.key === '?' && isEditorMode() && !ui.editor.hasFocus()) {
+    if (e.key === '?' && app.isEditorMode() && !ui.editor.hasFocus()) {
         e.preventDefault();
 		help.toggle();
     }

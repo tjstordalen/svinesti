@@ -122,14 +122,14 @@ function switchLanguage(newLang) {
     if (currentLang === newLang) return;
 
     if (state.level) {
-        app.setCode(levelKey(state.level), currentLang, ui.editor.getValue());
+        app.code.set(levelKey(state.level), currentLang, ui.editor.getValue());
     }
 
     ui.langPython.classList.toggle('active', newLang === 'python');
     ui.langJava.classList.toggle('active', newLang === 'java');
 
     if (state.level) {
-        ui.editor.setValue(app.getCode(levelKey(state.level), newLang));
+        ui.editor.setValue(app.code.get(levelKey(state.level), newLang));
     }
     const mode = newLang === "java" ? "text/x-java" : "python";
     ui.editor.setOption("mode", mode);
@@ -383,19 +383,19 @@ function attachEventHandlers() {
     ui.fontSizeSlider.addEventListener("input", (e) => {
         const size = parseInt(e.target.value, 10);
         ui.editor.getWrapperElement().style.fontSize = size + "px";
-        app.setEditorFontSize(size);
+        app.prefs.editorFontSize.set(size);
     });
 
     // Playback speed
     ui.speedSlider.addEventListener("input", () => {
-        app.setPlaybackSpeed(getAnimSpeed());
+        app.prefs.playbackSpeed.set(getAnimSpeed());
     });
 
     // Editor change - save updated code, and auto-reset if editing during pause
 	// (because the trace that we have in memory becomes invalidated when you modify the code)
     ui.editor.on("change", () => {
         if (state.level) {
-            app.setCode(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
+            app.code.set(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
         }
         if (state.status === "paused") {
             enterIdle();
@@ -468,9 +468,9 @@ function registerShortcuts() {
 
 export function init() {
     // Initialize sliders from preferences
-    ui.fontSizeSlider.value = app.getEditorFontSize();
-    ui.editor.getWrapperElement().style.fontSize = app.getEditorFontSize() + "px";
-    ui.speedSlider.value = ui.speedSlider.max - app.getPlaybackSpeed();
+    ui.fontSizeSlider.value = app.prefs.editorFontSize.get();
+    ui.editor.getWrapperElement().style.fontSize = app.prefs.editorFontSize.get() + "px";
+    ui.speedSlider.value = ui.speedSlider.max - app.prefs.playbackSpeed.get();
 
     // Attach event handlers
     attachEventHandlers();
@@ -494,10 +494,10 @@ export function exit() {
 
 export function selectLevel(level) {
     if (state.level) {
-        app.setCode(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
+        app.code.set(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
     }
     state.level = level;
-    ui.editor.setValue(app.getCode(levelKey(level), selectedLanguage()));
+    ui.editor.setValue(app.code.get(levelKey(level), selectedLanguage()));
     loadLevel(level);
     ui.codeOutput.textContent = "";
     enterIdle();

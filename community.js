@@ -43,7 +43,7 @@ export function isLoading() {
 // --- Fetching ---
 
 function requireConsent() {
-    if (!app.hasCommunityConsent()) throw new Error('Community features require consent');
+    if (!app.prefs.communityConsent.get()) throw new Error('Community features require consent');
 }
 
 async function fetchVersion() {
@@ -114,7 +114,7 @@ export async function fetchIfNeeded() {
 
 // Returns: true = new levels, false = no changes, null = error
 export async function forceRefresh() {
-    if (!app.hasCommunityConsent()) return false;
+    if (!app.prefs.communityConsent.get()) return false;
     try {
         const newVersion = await fetchVersion();
         if (newVersion === state.version) return false;
@@ -129,7 +129,7 @@ export async function forceRefresh() {
 }
 
 async function pollRefresh(onUpdate) {
-    if (!app.hasCommunityConsent()) return;
+    if (!app.prefs.communityConsent.get()) return;
     if (state.loading || state.levels === null) return;
 
     try {
@@ -150,7 +150,7 @@ export function startPolling(onUpdate) {
 }
 
 export async function preload() {
-    if (!app.hasCommunityConsent()) return;
+    if (!app.prefs.communityConsent.get()) return;
     if (state.loading || state.levels) return;
     state.loading = true;
     try {

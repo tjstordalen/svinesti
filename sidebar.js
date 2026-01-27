@@ -9,7 +9,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, isStarred as isLevelStarred, setStarred as setLevelStarred, hasCommunityConsent, setCommunityConsent } from "./app.js";
+import { isEditorMode, levels, prefs } from "./app.js";
 
 // --- State ---
 
@@ -52,7 +52,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
             deleteBtn.title = 'Delete level';
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                deleteCustomLevel(lvl.id);
+                levels.delete(lvl.id);
                 showMyLevelsTab();
             });
             item.appendChild(deleteBtn);
@@ -65,24 +65,24 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
 
         // Star button (Community)
         if (lvl.stars !== undefined && lvl.uid) {
-            const starred = isLevelStarred(lvl.uid);
+            const starred = levels.isStarred(lvl.uid);
             const starBtn = document.createElement('button');
             starBtn.className = 'star-btn' + (starred ? ' starred' : '');
             starBtn.innerHTML = `<img src="/img/golden-apple.png" alt=""><span>${lvl.stars}</span>`;
             starBtn.title = starred ? 'Remove star' : 'Star this level';
             starBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const wasStarred = isLevelStarred(lvl.uid);
+                const wasStarred = levels.isStarred(lvl.uid);
                 const newStarred = !wasStarred;
 
                 // Optimistic update
-                setLevelStarred(lvl.uid, newStarred);
+                levels.setStarred(lvl.uid, newStarred);
                 lvl.stars += newStarred ? 1 : -1;
                 showCommunityLevels();
 
                 community.sendStar(lvl.uid, newStarred).catch(() => {
                     // Revert
-                    setLevelStarred(lvl.uid, wasStarred);
+                    levels.setStarred(lvl.uid, wasStarred);
                     lvl.stars += wasStarred ? 1 : -1;
                     showCommunityLevels();
                     const notif = document.querySelector('.community-header .notification');
@@ -97,7 +97,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
         if (restorable && lvl.id) {
             // Trash: clicking restores the level
             item.addEventListener('click', () => {
-                restoreLevel(lvl.id);
+                levels.restore(lvl.id);
                 showTrashTab();
             });
         } else {
@@ -120,16 +120,16 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
 
 export function showDefaultTab() {
     ui.levelList.innerHTML = '';
-    populateLevelList(getBuiltInLevels());
+    populateLevelList(levels.builtIn());
 }
 
 export function showMyLevelsTab() {
     ui.levelList.innerHTML = '';
-    populateLevelList(getCustomLevels(), { deletable: true });
+    populateLevelList(levels.custom(), { deletable: true });
 }
 
 export function showTrashTab() {
-    const deleted = getDeletedLevels();
+    const deleted = levels.deleted();
     ui.levelList.innerHTML = '';
 
     if (deleted.length === 0) {
@@ -148,7 +148,7 @@ export function showTrashTab() {
     emptyBtn.textContent = 'Empty Trash';
     emptyBtn.addEventListener('click', () => {
         if (confirm('Permanently delete all levels in trash?')) {
-            emptyTrash();
+            levels.emptyTrash();
             showTrashTab();
         }
     });
@@ -167,7 +167,7 @@ export function showTrashTab() {
 // --- Community Tab ---
 
 export async function showCommunityTab() {
-    if (!hasCommunityConsent()) {
+    if (!prefs.communityConsent.get()) {
         showConsentRequest();
         return;
     }
@@ -191,8 +191,8 @@ export async function showCommunityTab() {
 }
 
 function showCommunityLevels() {
-    const levels = community.getLevels();
-    const sorted = [...levels].sort((a, b) => (b.stars || 0) - (a.stars || 0));
+    const communityLevels = community.getLevels();
+    const sorted = [...communityLevels].sort((a, b) => (b.stars || 0) - (a.stars || 0));
     const filtered = state.searchQuery
         ? sorted.filter(l => l.name?.toLowerCase().includes(state.searchQuery))
         : sorted;
@@ -320,7 +320,7 @@ function showConsentRequest() {
     `;
     document.getElementById('community-consent-btn').addEventListener('click', (e) => {
         e.stopPropagation();
-        setCommunityConsent(true);
+        prefs.communityConsent.set(true);
         ui.communityConsentToggle.checked = true;
         showCommunityTab();
     });
@@ -341,7 +341,7 @@ export function init() {
         });
     });
 
-    onLevelsChange(() => refreshActiveTab());
+    levels.onChange(() => refreshActiveTab());
     community.onChange(() => refreshActiveTab());
 }
 

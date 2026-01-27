@@ -11,10 +11,10 @@ const CODE_KEY = 'svinesti-code';
 let initialized = false;
 let ready = false;
 const readyCallbacks = [];
-let mode = 'game';
+let currentMode = 'game';
 let customLevels = [];
 let starred = new Set();
-let code = {};  // { [levelKey]: { python: '...', java: '...' } }
+let codeStorage = {};
 let preferences = {
     colorblind: false,
     communityConsent: false,
@@ -23,6 +23,8 @@ let preferences = {
     editorFontSize: 16,
 };
 const levelChangeCallbacks = [];
+
+// --- Init ---
 
 export function init() {
     if (initialized) return;
@@ -33,6 +35,8 @@ export function init() {
     loadCode();
     applyPreferences();
 }
+
+// --- Persistence helpers ---
 
 function loadPreferences() {
     const json = localStorage.getItem(PREFERENCES_KEY);
@@ -45,11 +49,11 @@ function persistPreferences() {
 
 function loadCode() {
     const json = localStorage.getItem(CODE_KEY);
-    code = json ? JSON.parse(json) : {};
+    codeStorage = json ? JSON.parse(json) : {};
 }
 
 function persistCode() {
-    localStorage.setItem(CODE_KEY, JSON.stringify(code));
+    localStorage.setItem(CODE_KEY, JSON.stringify(codeStorage));
 }
 
 function applyPreferences() {
@@ -81,14 +85,13 @@ function notifyLevelsChange() {
 // --- Mode ---
 
 export function getMode() {
-    return mode;
+    return currentMode;
 }
 
 export function setMode(newMode) {
-    mode = newMode;
+    currentMode = newMode;
     document.body.classList.toggle('editor-mode', newMode === 'editor');
 
-    // Toggle pane visibility
     if (newMode === 'editor') {
         ui.playPane.setAttribute('hidden', '');
         ui.editorPane.removeAttribute('hidden');
@@ -99,144 +102,112 @@ export function setMode(newMode) {
 }
 
 export function isEditorMode() {
-    return mode === 'editor';
+    return currentMode === 'editor';
 }
 
 export function isGameMode() {
-    return mode === 'game';
-}
-
-// --- Levels: Built-in ---
-
-export function getBuiltInLevels() {
-    return builtInLevels;
-}
-
-// --- Levels: Custom ---
-
-export function getCustomLevels() {
-    return customLevels.filter(l => !l.deleted);
-}
-
-export function saveCustomLevel(level) {
-    customLevels.push(level);
-    persistCustomLevels();
-    notifyLevelsChange();
-}
-
-export function updateCustomLevel(id, levelData) {
-    const index = customLevels.findIndex(l => l.id === id);
-    if (index !== -1) {
-        customLevels[index] = { ...customLevels[index], ...levelData };
-        persistCustomLevels();
-        notifyLevelsChange();
-    }
-}
-
-export function deleteCustomLevel(id) {
-    const index = customLevels.findIndex(l => l.id === id);
-    if (index !== -1) {
-        customLevels[index].deleted = true;
-        persistCustomLevels();
-        notifyLevelsChange();
-    }
-}
-
-export function getDeletedLevels() {
-    return customLevels.filter(l => l.deleted);
-}
-
-export function restoreLevel(id) {
-    const index = customLevels.findIndex(l => l.id === id);
-    if (index !== -1) {
-        delete customLevels[index].deleted;
-        persistCustomLevels();
-        notifyLevelsChange();
-    }
-}
-
-export function emptyTrash() {
-    customLevels = customLevels.filter(l => !l.deleted);
-    persistCustomLevels();
-    notifyLevelsChange();
-}
-
-export function onLevelsChange(callback) {
-    levelChangeCallbacks.push(callback);
-}
-
-// --- Starred ---
-
-export function isStarred(uid) {
-    return starred.has(uid);
-}
-
-export function setStarred(uid, value) {
-    if (value) starred.add(uid);
-    else starred.delete(uid);
-    persistStarred();
+    return currentMode === 'game';
 }
 
 // --- Preferences ---
 
-export function isColorblind() {
-    return preferences.colorblind;
+function pref(key, onSet) {
+    return {
+        get() { return preferences[key]; },
+        set(v) { preferences[key] = v; persistPreferences(); onSet?.(v); }
+    };
 }
 
-export function setColorblind(enabled) {
-    preferences.colorblind = enabled;
-    document.body.classList.toggle('colorblind-mode', enabled);
-    persistPreferences();
-}
+export const prefs = {
+    colorblind: pref('colorblind', v => document.body.classList.toggle('colorblind-mode', v)),
+    communityConsent: pref('communityConsent'),
+    showHelpOnStart: pref('showHelpOnStart'),
+    playbackSpeed: pref('playbackSpeed'),
+    editorFontSize: pref('editorFontSize'),
+};
 
-export function hasCommunityConsent() {
-    return preferences.communityConsent;
-}
+// --- Levels ---
 
-export function setCommunityConsent(enabled) {
-    preferences.communityConsent = enabled;
-    persistPreferences();
-}
+export const levels = {
+    builtIn() {
+        return builtInLevels;
+    },
 
-export function showHelpOnStart() {
-    return preferences.showHelpOnStart;
-}
+    custom() {
+        return customLevels.filter(l => !l.deleted);
+    },
 
-export function setShowHelpOnStart(enabled) {
-    preferences.showHelpOnStart = enabled;
-    persistPreferences();
-}
+    save(level) {
+        customLevels.push(level);
+        persistCustomLevels();
+        notifyLevelsChange();
+    },
 
-export function getPlaybackSpeed() {
-    return preferences.playbackSpeed;
-}
+    update(id, levelData) {
+        const index = customLevels.findIndex(l => l.id === id);
+        if (index !== -1) {
+            customLevels[index] = { ...customLevels[index], ...levelData };
+            persistCustomLevels();
+            notifyLevelsChange();
+        }
+    },
 
-export function setPlaybackSpeed(value) {
-    preferences.playbackSpeed = value;
-    persistPreferences();
-}
+    delete(id) {
+        const index = customLevels.findIndex(l => l.id === id);
+        if (index !== -1) {
+            customLevels[index].deleted = true;
+            persistCustomLevels();
+            notifyLevelsChange();
+        }
+    },
 
-export function getEditorFontSize() {
-    return preferences.editorFontSize;
-}
+    deleted() {
+        return customLevels.filter(l => l.deleted);
+    },
 
-export function setEditorFontSize(value) {
-    preferences.editorFontSize = value;
-    persistPreferences();
-}
+    restore(id) {
+        const index = customLevels.findIndex(l => l.id === id);
+        if (index !== -1) {
+            delete customLevels[index].deleted;
+            persistCustomLevels();
+            notifyLevelsChange();
+        }
+    },
+
+    emptyTrash() {
+        customLevels = customLevels.filter(l => !l.deleted);
+        persistCustomLevels();
+        notifyLevelsChange();
+    },
+
+    isStarred(uid) {
+        return starred.has(uid);
+    },
+
+    setStarred(uid, value) {
+        if (value) starred.add(uid);
+        else starred.delete(uid);
+        persistStarred();
+    },
+
+    onChange(callback) {
+        levelChangeCallbacks.push(callback);
+    },
+};
 
 // --- Code Storage ---
 
-// levelKey: use level.id for custom levels, level.name for built-in
-export function getCode(levelKey, language) {
-    return code[levelKey]?.[language] ?? '';
-}
+export const code = {
+    get(levelKey, language) {
+        return codeStorage[levelKey]?.[language] ?? '';
+    },
 
-export function setCode(levelKey, language, value) {
-    if (!code[levelKey]) code[levelKey] = {};
-    code[levelKey][language] = value;
-    persistCode();
-}
+    set(levelKey, language, value) {
+        if (!codeStorage[levelKey]) codeStorage[levelKey] = {};
+        codeStorage[levelKey][language] = value;
+        persistCode();
+    },
+};
 
 // --- Ready State ---
 
