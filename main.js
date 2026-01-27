@@ -119,7 +119,7 @@ if (app.prefs.showHelpOnStart.get()) {
 // Mode toggle
 ui.modePlay.onclick = () => {
     Editor.exit();
-    app.setMode('game');
+    app.mode.set('game');
     ui.modePlay.classList.add("active");
     ui.modeEdit.classList.remove("active");
     // Switch away from Trash tab (not visible in play mode)
@@ -134,7 +134,7 @@ ui.modePlay.onclick = () => {
 
 ui.modeEdit.onclick = () => {
     Game.exit();
-    app.setMode('editor');
+    app.mode.set('editor');
     ui.modePlay.classList.remove("active");
     ui.modeEdit.classList.add("active");
     // Switch to My Levels tab
@@ -147,7 +147,7 @@ ui.modeEdit.onclick = () => {
 // Global shortcuts (editor mode only - game mode uses shortcuts.js)
 document.addEventListener('keydown', (e) => {
     // Help toggle - only in editor mode when not typing
-    if (e.key === '?' && app.isEditorMode() && !ui.editor.hasFocus()) {
+    if (e.key === '?' && app.mode.isEditor() && !ui.editor.hasFocus()) {
         e.preventDefault();
 		help.toggle();
     }

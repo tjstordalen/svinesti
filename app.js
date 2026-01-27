@@ -84,30 +84,32 @@ function notifyLevelsChange() {
 
 // --- Mode ---
 
-export function getMode() {
-    return currentMode;
-}
+export const mode = {
+    get() {
+        return currentMode;
+    },
 
-export function setMode(newMode) {
-    currentMode = newMode;
-    document.body.classList.toggle('editor-mode', newMode === 'editor');
+    set(newMode) {
+        currentMode = newMode;
+        document.body.classList.toggle('editor-mode', newMode === 'editor');
 
-    if (newMode === 'editor') {
-        ui.playPane.setAttribute('hidden', '');
-        ui.editorPane.removeAttribute('hidden');
-    } else {
-        ui.editorPane.setAttribute('hidden', '');
-        ui.playPane.removeAttribute('hidden');
-    }
-}
+        if (newMode === 'editor') {
+            ui.playPane.setAttribute('hidden', '');
+            ui.editorPane.removeAttribute('hidden');
+        } else {
+            ui.editorPane.setAttribute('hidden', '');
+            ui.playPane.removeAttribute('hidden');
+        }
+    },
 
-export function isEditorMode() {
-    return currentMode === 'editor';
-}
+    isEditor() {
+        return currentMode === 'editor';
+    },
 
-export function isGameMode() {
-    return currentMode === 'game';
-}
+    isGame() {
+        return currentMode === 'game';
+    },
+};
 
 // --- Preferences ---
 
