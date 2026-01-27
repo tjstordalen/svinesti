@@ -551,7 +551,7 @@ async function handleShareClick() {
 }
 
 async function handleShareCommunityClick() {
-    if (!community.hasConsent()) {
+    if (!app.hasCommunityConsent()) {
         animations.notify(ui.editorNotification, 'Enable Community Levels in Help menu first', true);
         return;
     }

@@ -7,7 +7,7 @@ import * as Game from "./game.js";
 import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
 import { ui } from "./ui.js";
-import { setMode, isEditorMode, getBuiltInLevels } from "./app.js";
+import { setMode, isEditorMode, getBuiltInLevels, isColorblind, setColorblind, hasCommunityConsent, setCommunityConsent, showHelpOnStart, setShowHelpOnStart } from "./app.js";
 
 app.init();
 
@@ -105,19 +105,13 @@ ui.helpClose.onclick = () => help.exit();
 ui.helpOverlay.onclick = () => help.exit();
 
 // Colorblind mode toggle
-const colorblindEnabled = localStorage.getItem('colorblind-mode') === 'true';
-document.body.classList.toggle('colorblind-mode', colorblindEnabled);
-ui.colorblindToggle.checked = colorblindEnabled;
-ui.colorblindToggle.onchange = () => {
-    const enabled = ui.colorblindToggle.checked;
-    document.body.classList.toggle('colorblind-mode', enabled);
-    localStorage.setItem('colorblind-mode', enabled);
-};
+ui.colorblindToggle.checked = isColorblind();
+ui.colorblindToggle.onchange = () => setColorblind(ui.colorblindToggle.checked);
 
 // Community consent toggle
-ui.communityConsentToggle.checked = community.hasConsent();
+ui.communityConsentToggle.checked = hasCommunityConsent();
 ui.communityConsentToggle.onchange = () => {
-    community.setConsent(ui.communityConsentToggle.checked);
+    setCommunityConsent(ui.communityConsentToggle.checked);
     // Refresh community tab if active
     const activeTab = document.querySelector('.sidebar-tab.active');
     if (activeTab?.dataset.tab === 'community') {
@@ -126,12 +120,9 @@ ui.communityConsentToggle.onchange = () => {
 };
 
 // Show help on start toggle (default: true)
-const showHelpOnStart = localStorage.getItem('svinesti-show-help-on-start') !== 'false';
-ui.showHelpOnStartToggle.checked = showHelpOnStart;
-ui.showHelpOnStartToggle.onchange = () => {
-    localStorage.setItem('svinesti-show-help-on-start', ui.showHelpOnStartToggle.checked);
-};
-if (showHelpOnStart) {
+ui.showHelpOnStartToggle.checked = showHelpOnStart();
+ui.showHelpOnStartToggle.onchange = () => setShowHelpOnStart(ui.showHelpOnStartToggle.checked);
+if (showHelpOnStart()) {
     help.enter();
 }
 

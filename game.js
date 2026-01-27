@@ -3,6 +3,7 @@
 import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
+import * as app from "./app.js";
 import { createGrid } from "./grid.js";
 import { ui } from "./ui.js";
 
@@ -395,7 +396,14 @@ function execute(code) {
 function attachEventHandlers() {
     // Font size
     ui.fontSizeSlider.addEventListener("input", (e) => {
-        ui.editor.getWrapperElement().style.fontSize = e.target.value + "px";
+        const size = parseInt(e.target.value, 10);
+        ui.editor.getWrapperElement().style.fontSize = size + "px";
+        app.setEditorFontSize(size);
+    });
+
+    // Playback speed
+    ui.speedSlider.addEventListener("input", () => {
+        app.setPlaybackSpeed(getAnimSpeed());
     });
 
     // Editor change - save updated code, and auto-reset if editing during pause
@@ -472,8 +480,10 @@ function registerShortcuts() {
 // --- Public API ---
 
 export function init() {
-    // Initialize font size from slider
-    ui.editor.getWrapperElement().style.fontSize = ui.fontSizeSlider.value + "px";
+    // Initialize sliders from preferences
+    ui.fontSizeSlider.value = app.getEditorFontSize();
+    ui.editor.getWrapperElement().style.fontSize = app.getEditorFontSize() + "px";
+    ui.speedSlider.value = ui.speedSlider.max - app.getPlaybackSpeed();
 
     // Attach event handlers
     attachEventHandlers();

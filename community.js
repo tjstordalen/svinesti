@@ -9,7 +9,6 @@ import * as app from './app.js';
 const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbwne7UEsOMM6Aa0WD5X2KdUx0eZX8QyZQ6FcWajARqaUa9Zs_ICcfJYCuVhrWXzgHjO7Q/exec';
 
 const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
-const CONSENT_KEY = 'svinesti-community-consent';
 
 // --- State ---
 
@@ -18,16 +17,6 @@ const state = {
     version: null,      // Cached version for efficient polling
     loading: false,     // Prevent concurrent fetches
 };
-
-// --- Consent ---
-
-export function hasConsent() {
-    return localStorage.getItem(CONSENT_KEY) === 'true';
-}
-
-export function setConsent(enabled) {
-    localStorage.setItem(CONSENT_KEY, enabled ? 'true' : 'false');
-}
 
 // --- State Access ---
 
@@ -38,7 +27,7 @@ export function isLoading() {
 // --- Fetching ---
 
 function requireConsent() {
-    if (!hasConsent()) throw new Error('Community features require consent');
+    if (!app.hasCommunityConsent()) throw new Error('Community features require consent');
 }
 
 async function fetchVersion() {
@@ -109,7 +98,7 @@ export async function fetchIfNeeded() {
 
 // Returns: true = new levels, false = no changes, null = error
 export async function forceRefresh() {
-    if (!hasConsent()) return false;
+    if (!app.hasCommunityConsent()) return false;
     try {
         const newVersion = await fetchVersion();
         if (newVersion === state.version) return false;
@@ -124,7 +113,7 @@ export async function forceRefresh() {
 }
 
 async function pollRefresh(onUpdate) {
-    if (!hasConsent()) return;
+    if (!app.hasCommunityConsent()) return;
     if (state.loading || state.levels === null) return;
 
     try {
@@ -145,7 +134,7 @@ export function startPolling(onUpdate) {
 }
 
 export async function preload() {
-    if (!hasConsent()) return;
+    if (!app.hasCommunityConsent()) return;
     if (state.loading || state.levels) return;
     state.loading = true;
     try {

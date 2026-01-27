@@ -5,12 +5,20 @@ import { levels as builtInLevels } from './levels.js';
 
 const CUSTOM_LEVELS_KEY = 'svinesti-custom-levels';
 const STARRED_KEY = 'svinesti-starred';
+const PREFERENCES_KEY = 'svinesti-preferences';
 
 let initialized = false;
 let mode = 'game';
 let customLevels = [];
 let communityLevels = [];
 let starred = new Set();
+let preferences = {
+    colorblind: false,
+    communityConsent: false,
+    showHelpOnStart: true,
+    playbackSpeed: 150,
+    editorFontSize: 16,
+};
 const levelChangeCallbacks = [];
 
 export function init() {
@@ -18,6 +26,21 @@ export function init() {
     initialized = true;
     loadCustomLevels();
     loadStarred();
+    loadPreferences();
+    applyPreferences();
+}
+
+function loadPreferences() {
+    const json = localStorage.getItem(PREFERENCES_KEY);
+    if (json) Object.assign(preferences, JSON.parse(json));
+}
+
+function persistPreferences() {
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+}
+
+function applyPreferences() {
+    document.body.classList.toggle('colorblind-mode', preferences.colorblind);
 }
 
 function loadStarred() {
@@ -150,4 +173,52 @@ export function setStarred(uid, value) {
     if (value) starred.add(uid);
     else starred.delete(uid);
     persistStarred();
+}
+
+// --- Preferences ---
+
+export function isColorblind() {
+    return preferences.colorblind;
+}
+
+export function setColorblind(enabled) {
+    preferences.colorblind = enabled;
+    document.body.classList.toggle('colorblind-mode', enabled);
+    persistPreferences();
+}
+
+export function hasCommunityConsent() {
+    return preferences.communityConsent;
+}
+
+export function setCommunityConsent(enabled) {
+    preferences.communityConsent = enabled;
+    persistPreferences();
+}
+
+export function showHelpOnStart() {
+    return preferences.showHelpOnStart;
+}
+
+export function setShowHelpOnStart(enabled) {
+    preferences.showHelpOnStart = enabled;
+    persistPreferences();
+}
+
+export function getPlaybackSpeed() {
+    return preferences.playbackSpeed;
+}
+
+export function setPlaybackSpeed(value) {
+    preferences.playbackSpeed = value;
+    persistPreferences();
+}
+
+export function getEditorFontSize() {
+    return preferences.editorFontSize;
+}
+
+export function setEditorFontSize(value) {
+    preferences.editorFontSize = value;
+    persistPreferences();
 }

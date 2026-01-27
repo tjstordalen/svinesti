@@ -9,7 +9,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, getCommunityLevels, isStarred as isLevelStarred } from "./app.js";
+import { isEditorMode, getBuiltInLevels, getCustomLevels, deleteCustomLevel, getDeletedLevels, restoreLevel, emptyTrash, onLevelsChange, getCommunityLevels, isStarred as isLevelStarred, hasCommunityConsent, setCommunityConsent } from "./app.js";
 
 // --- State ---
 
@@ -155,7 +155,7 @@ export function showTrashTab() {
 // --- Community Tab ---
 
 export async function showCommunityTab() {
-    if (!community.hasConsent()) {
+    if (!hasCommunityConsent()) {
         showConsentRequest();
         return;
     }
@@ -308,7 +308,7 @@ function showConsentRequest() {
     `;
     document.getElementById('community-consent-btn').addEventListener('click', (e) => {
         e.stopPropagation();
-        community.setConsent(true);
+        setCommunityConsent(true);
         ui.communityConsentToggle.checked = true;
         showCommunityTab();
     });
