@@ -1,10 +1,5 @@
 // main.gs - API endpoints for community levels
 //
-// Caching strategy:
-// - GET reads from cache, rebuilds from sheet on miss
-// - POST invalidates cache after writes
-// - First GET after POST pays the rebuild cost
-//
 // SETUP:
 // 1. Create a Google Sheet with columns: Timestamp | UID | Level | Stars
 // 2. Extensions > Apps Script
@@ -14,14 +9,6 @@
 //    - Execute as: Me
 //    - Who has access: Anyone
 // 6. Copy URL, update COMMUNITY_URL in the JS codebase
-
-// -----------------------------------------------------------------------------
-// CACHE
-// -----------------------------------------------------------------------------
-
-var cache = CacheService.getScriptCache();
-var CACHE_KEY = 'levels';
-var CACHE_TTL = 3600;  // 1 hour
 
 // -----------------------------------------------------------------------------
 // LEVEL VALIDATION
@@ -93,30 +80,6 @@ function validateLevel(level) {
 }
 
 // -----------------------------------------------------------------------------
-// CACHE HELPERS
-// -----------------------------------------------------------------------------
-
-function buildLevelsOutput() {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var data = sheet.getDataRange().getValues();
-    var lines = [];
-    for (var i = 1; i < data.length; i++) {
-        var level = data[i][2];   // Column C: base64 level
-        if (!level) continue;     // Skip rows without level data
-        var rawStars = data[i][3];
-        var stars = (typeof rawStars === 'number') ? rawStars : 0;
-        lines.push(level + '\t' + stars);
-    }
-    return lines.join('\n');
-}
-
-function rebuildCache() {
-    var output = buildLevelsOutput();
-    cache.put(CACHE_KEY, output, CACHE_TTL);
-    return output;
-}
-
-// -----------------------------------------------------------------------------
 // API ENDPOINTS
 // -----------------------------------------------------------------------------
 
@@ -132,12 +95,21 @@ function doGet(e) {
                 .setMimeType(ContentService.MimeType.TEXT);
         }
 
-        // Full fetch — check cache first, rebuild on miss
-        var output = cache.get(CACHE_KEY);
-        if (!output) {
-            output = rebuildCache();
+        // Full fetch — return all levels with stars
+        // Sheet columns: Timestamp (A) | UID (B) | Level (C) | Stars (D)
+        var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        var data = sheet.getDataRange().getValues();
+        var lines = [];
+        for (var i = 1; i < data.length; i++) {
+            var level = data[i][2];   // Column C: base64 level
+            if (!level) continue;     // Skip rows without level data
+            // Column D: star count (handle Date objects from Sheets interpreting 0 as date)
+            var rawStars = data[i][3];
+            var stars = (typeof rawStars === 'number') ? rawStars : 0;
+            lines.push(level + '\t' + stars);
         }
-        return ContentService.createTextOutput(output)
+
+        return ContentService.createTextOutput(lines.join('\n'))
             .setMimeType(ContentService.MimeType.TEXT);
     } catch (err) {
         return ContentService.createTextOutput('Error: ' + err.message);
@@ -169,12 +141,6 @@ function doPost(e) {
             var current = starsCell.getValue() || 0;
             var newValue = data.starred ? current + 1 : Math.max(0, current - 1);
             starsCell.setValue(newValue);
-
-            // Invalidate cache and bump version
-            cache.remove(CACHE_KEY);
-            var props = PropertiesService.getScriptProperties();
-            var version = parseInt(props.getProperty('version') || '0', 10);
-            props.setProperty('version', String(version + 1));
 
             return ContentService.createTextOutput(JSON.stringify({
                 success: true,
@@ -213,11 +179,10 @@ function doPost(e) {
             0
         ]);
 
-        // Increment version and invalidate cache
+        // Increment version for polling
         var props = PropertiesService.getScriptProperties();
         var version = parseInt(props.getProperty('version') || '0', 10);
         props.setProperty('version', String(version + 1));
-        cache.remove(CACHE_KEY);
 
         var result = {
             success: true,
