@@ -1,368 +1,34 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
-Svinesti is a browser-based educational programming game where students control a pig on a grid to collect stars. Students write code in either Python 3 or "PigJatin" (a minimal Java-like language) to guide the pig using movement and color-sensing functions.
+Svinesti is a browser-based educational programming game where students control a pig on a grid to collect stars. Students write code in Python 3 or "PigJatin" (a minimal Java-like language) to guide the pig using movement and color-sensing functions.
 
 ## Architecture
 
 ### Core Files
 
-- **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
-- **app.js** - Central state: mode, levels (built-in/custom/community), preferences, code storage, ready state (see structure below)
-- **main.js** - App shell: help modal, sidebar, event handlers (see structure below)
-- **game.js** - Game mode: code editor, playback, worker (see structure below)
-- **community.js** - Community levels: fetching, sharing, Google server interaction
-- **grid.js** - Unified grid rendering module (see structure below)
-- **animations.js** - All animation logic as direct exports (walk, move, turn, hudFlash, celebrate, lose, timeout, notify, flash, confetti), plus `pigSpriteUrl()` helper and `ABORT` constant
-- **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
-- **shortcuts.js** - Keyboard shortcut factory with rebindable keys, persistence, and enable/disable lifecycle
-- **levels.js** - Level definitions and `DEFAULT_LEVEL` for editor
-- **names.js** - Random level name generator (two-word combinations from adjectives, nouns, verbs) and UID generator
-- **worker.js** - Web Worker that loads Pyodide and executes student code in isolated namespaces
-- **svinesti.py** - Python game engine with operation counting for infinite loop detection (MAX_OPS = 10,000)
-
-### CSS Structure
-
-Styles are organized in `css/` directory with modular files:
-
-| File | Contents |
-|------|----------|
-| `base.css` | CSS variables, reset, body, scrollbar, notification utility (including `.light` variant) |
-| `layout.css` | App container, main content, play/editor panes, editor name input, responsive breakpoints |
-| `header.css` | App header, title, mode toggle (Play/Edit), icon buttons |
-| `sidebar.css` | Sidebar, pull-tab, tabs (with editor-mode hiding), level list, thumbnails, delete button |
-| `code-editor.css` | Code section, language tabs, CodeMirror overrides, playback toolbar, buttons |
-| `game.css` | Grid, tiles, colors, pig sprites, pig element, color HUD, confetti |
-| `help.css` | Help modal, shortcuts list, toggle switch, lock icon shake, fadeIn/slideUp keyframes |
-| `splash.css` | Splash screen overlay, animated pig, typewriter loading text, walk/shadow keyframes |
-
-**Design notes:**
-- Each file has a header comment listing its contents
-- Tile colors use standalone classes (`.red`, `.green`, `.blue`, `.empty`)
-- Pig sprites also use standalone classes (`.pig-right`, `.pig-down`, `.pig-left`, `.pig-up`)
-- All gameplay animations use Web Animations API; only splash screen uses CSS keyframes (intentionally, for pre-JS loading)
-
-### Help Pages
-
-Static help content in `help/` directory:
-- **infinite-loop.html** - Explains infinite loops with side-by-side good/bad code examples
-- **help.css** - Standalone styles for help pages (can be viewed outside the app)
-
-### app.js Structure
-
-Central state and coordination. All persistent state lives here.
-
-**State:**
-```javascript
-let currentMode = 'game';    // 'game' | 'editor'
-let customLevels = [];       // User-created levels (persisted)
-let starred = new Set();     // UIDs of starred community levels
-let codeStorage = {};        // { [levelKey]: { python: '...', java: '...' } }
-let preferences = {
-    colorblind: false,
-    communityConsent: false,
-    showHelpOnStart: true,
-    playbackSpeed: 150,
-    editorFontSize: 16,
-};
-```
-
-**Exports:** Grouped into objects with consistent `.get()`/`.set()` accessors:
-
-```javascript
-// Mode
-mode.get()              // Returns 'game' | 'editor'
-mode.set(newMode)       // Switches mode, updates pane visibility
-mode.isEditor()         // Returns true if editor mode
-mode.isGame()           // Returns true if game mode
-
-// Preferences (each has .get() and .set())
-prefs.colorblind        // Also applies CSS class on set
-prefs.communityConsent
-prefs.showHelpOnStart
-prefs.playbackSpeed
-prefs.editorFontSize
-
-// Levels
-levels.builtIn()        // Returns built-in level array
-levels.custom()         // Returns non-deleted custom levels
-levels.save(level)      // Appends new level
-levels.update(id, data) // Updates existing level
-levels.delete(id)       // Soft-deletes (moves to trash)
-levels.deleted()        // Returns deleted levels
-levels.restore(id)      // Restores from trash
-levels.emptyTrash()     // Permanently deletes trashed levels
-levels.isStarred(uid)   // Check if community level is starred
-levels.setStarred(uid, value)  // Star/unstar community level
-levels.onChange(cb)     // Register callback for level changes
-
-// Code storage
-code.get(levelKey, language)        // Returns stored code or ''
-code.set(levelKey, language, value) // Stores code
-
-// Ready state (flat exports)
-isReady(), onReady(callback), setReady()
-
-// Init
-init()
-```
-
-**Persistence:** Four localStorage keys:
-- `svinesti-custom-levels` — custom level array
-- `svinesti-starred` — starred UID array
-- `svinesti-preferences` — preferences object
-- `svinesti-code` — code storage object
-
-**Ready state:** Worker posts `"ready"` when Pyodide loads → game.js calls `app.setReady()` → splash screen hides and `onReady` callbacks fire.
-
-**Level key convention:** Code storage uses `level.id` for custom levels (UUID), `level.name` for built-in levels.
-
-### main.js Structure
-
-App shell. Event handlers and initialization:
-
-```javascript
-const help = {
-    previousFocus: null,
-    enter(),   // Show help, focus pane, capture previous focus
-    exit(),    // Hide help, restore focus
-};
-```
-
-Sections:
-- **Help pane** - `help.enter()`, `help.exit()`
-- **Initialize** - app.init(), Game.init(), Editor.init(), community.init(), sidebar.init(), URL import, Game.enter()
-- **Event handlers** - Sidebar pull-tab, help pane, mode toggle (calls `app.mode.set()`), settings toggles (call `app.prefs` setters), `'community-levels-updated'` listener
-
-### game.js Structure
-
-Game mode module. Owns everything inside `#play-pane`:
-
-```javascript
-const state = {
-    level: null,              // Current level object
-    grid: null,               // Grid object from createGrid()
-    status: "idle",           // "idle" | "playing" | "paused"
-    worker: null,             // Web Worker instance
-    pendingResolve: null,     // Promise resolver for worker response
-};
-
-const playback = {
-    trace: null,              // Reversed array, consumed via pop()
-    stepping: false,          // Mutex to prevent overlapping step animations
-    load(trace),              // Reverse and store trace
-    next(),                   // Pop next event (returns undefined when empty)
-    clear(),                  // Reset trace to null
-    play(),                   // Process events while status === "playing"
-    step(),                   // Process single event with mutex guard
-};
-```
-
-**Exports:**
-- `init({ shortcutsContainer })` - Initialize module
-- `enter()` - Activate game mode (enable shortcuts)
-- `exit()` - Deactivate game mode (disable shortcuts, reset playback)
-- `selectLevel(level)` - Store code, load level, reset playback
-- `getLevel()` - Returns current level
-- `getStatus()` - Returns playback status
-- `enterIdle({ resetBoard? })` - Reset to idle state
-- `enterPlaying({ trace? })` - Start/resume playback
-- `enterPaused({ trace? })` - Pause playback
-
-**Internal sections:**
-- **Grid rendering** - `loadLevel()` (creates grid via `createGrid()`)
-- **Code storage** - `levelKey()` helper, uses `app.code.get()`/`app.code.set()`
-- **Language switching** - `switchLanguage()` stores/loads code via `app.code`
-- **State machine** - `enterState()`, `BUTTON_HANDLERS` table, `submitAndEnter()`
-- **Playback** - `processEvent()`, `moveAnimated()`, `highlightLine()`
-- **Worker** - `initWorker()`, `getCode()`, `execute()`, calls `app.setReady()` when ready
-- **Shortcuts** - Game-mode shortcuts (play/pause, step, reset, run-code, help)
-
-### grid.js Structure
-
-Unified grid rendering for all contexts (game, editor, thumbnails). Factory function returns an object with direct access to DOM elements:
-
-```javascript
-const grid = createGrid(container, nRows, nCols, level);
-// Returns:
-{
-    container,              // The grid container element
-    tiles,                  // Array of tile elements (direct access, no DOM queries)
-    pig,                    // The pig element
-    nRows,
-    nCols,
-    getCell(row, col),      // Returns tiles[row * nCols + col]
-    placePig(row, col, dir) // Moves pig to cell, sets sprite
-}
-```
-
-**Key design decisions:**
-- Tiles stored in array eliminates DOM queries and avoids selector collisions (e.g., `#comparison-tile` inside HUD also has `.tile` class)
-- Single `createGrid()` handles all contexts — game grid, editor grid, sidebar thumbnails
-- Pig element created dynamically, positioned via `placePig()`
-- CSS variables `--rows` and `--cols` set on container for grid layout
-
-**Exports:**
-- `createGrid(container, nRows, nCols, level?)` - Factory function
-- `TILE_CLASSES` - Character-to-class mapping (`.`, `r`, `g`, `b`, `R`, `G`, `B`)
-
-### Infinite Loop Detection
-
-Student code that runs too long is detected and handled gracefully. The key insight is that we trace **every line of student code**, not just calls to svinesti functions like `move()`. This catches all infinite loops, including `while True: x = 1` that never interacts with the game.
-
-**Python-side detection (svinesti.py):**
-- Uses `sys.settrace(line_tracer)` to intercept every line executed in `submitted_code()`
-- Each line increments `state.op_count`
-- When count exceeds `MAX_OPS` (10,000), traces gameover with `reason: "timeout"` and raises `GracefulExit`
-- No JS-side timeout needed — Python controls termination completely
-
-**JS-side handling (game.js `submitAndEnter()`):**
-- Detects `reason: "timeout"` in last trace event
-- Shows error in code output with pulsing red flash animation
-- Shows notification linking to `help/infinite-loop.html`
-- Truncates trace to last 100 events for replay
-- Plays timeout animation (grid wobble + pig ragdoll) immediately
-
-**Why this design (vs. JS timeout):**
-- Catches ALL infinite loops, not just ones calling game functions
-- Python controls termination, so trace is complete up to the cutoff
-- We can replay the last N operations to show WHERE the loop is stuck
-- No race conditions between timeout and normal completion
-
-### Promise-Based Playback (Web Animations API)
-
-The playback system uses the **Web Animations API** with async/await to coordinate animations sequentially. This provides clear control flow and ensures animations complete before continuing.
-
-**How it works:**
-
-1. `playback.play()` loops while `status === "playing"`, calling `processEvent()` for each trace event
-2. `playback.step()` processes a single event with a mutex guard (`stepping` flag) to prevent overlapping animations
-3. `processEvent()` highlights the line (from `msg.lineno`), then handles the event type
-4. For animated events, it calls functions from `animations.js` which use the Web Animations API
-5. `await` pauses execution until the animation completes
-
-```
-playback.play() → processEvent() → animations.move() → processEvent() → ...
-```
-
-**Event types:**
-
-| Event | Implementation | Behavior |
-|-------|---------------|----------|
-| `lineExecuted` | `highlightLine()` + delay | Pause for `LINE_PAUSE_MULTIPLIER * animSpeed` |
-| `move` | `animations.walk()` + `animations.move()` | Sprite animation + translation |
-| `turn` | `animations.turn()` | Hop up → swap sprite → hop down |
-| `isColor` | `animations.hudFlash()` | Flash HUD, then continue |
-| `collected` | Remove `.target` class | Instant, no animation |
-| `gameover` | `animations.celebrate()` or `animations.lose()` | Win/lose animation, then `enterIdle()` |
-
-**Line number attachment (svinesti.py):**
-
-The Python `trace()` method attaches line numbers to events:
-- `lineExecuted` events are pushed to trace normally
-- Animated events (move, turn, isColor) pop the preceding `lineExecuted` and copy its `lineno`
-- Consequence events (collected, gameover) inherit `lineno` from the previous event
-
-This allows JS to highlight the correct line AS the animation plays, not before.
-
-**Abort handling (animations.js):**
-
-Animation functions are wrapped with `handleAbortException()`:
-- If animation is cancelled (user pauses/resets), `AbortError` is caught
-- Returns `animations.ABORT` constant instead of throwing
-- Callers check for `ABORT` to exit early (e.g., skip `movePigTo()` after cancelled move)
-
-**Keyframe definitions:**
-
-All keyframes are defined in `animations.js`:
-- `KEYFRAMES.WALK` - Object with keyframes for each direction (right, down, left, up)
-- `KEYFRAMES.HOP_UP` / `KEYFRAMES.HOP_DOWN` - Turn animation phases
-- `KEYFRAMES.HUD_FLASH` - Color comparison HUD fade in/out
-- `KEYFRAMES.CELEBRATE` - Win bounce animation
-- `KEYFRAMES.SHAKE` - Loss grid shake
-- `KEYFRAMES.NOTIFICATION` - Toast fade in/out
-- `KEYFRAMES.TIMEOUT_GRID` - Wobble with pulsing red glow
-- `KEYFRAMES.TIMEOUT_PIG` - Ragdoll motion in cell
-- `KEYFRAMES.FLASH` - Pulsing red inset glow (3 pulses)
-- `makeConfettiKeyframes(drift, rotation)` - Dynamic confetti fall (per-piece drift/rotation)
-
-**Pause behavior:**
-
-- **Pause during playback**: Current animation completes naturally, then chain stops (respects committed actions)
-- **Stop/Reset**: Cancels running animation immediately via `animation.cancel()` for clean visual state
-
-**Why this design:**
-
-- **Sequential code is actually sequential**: Turn animation logic is three lines in order, not scattered across listener
-- **No event listeners needed**: Promises tell us when animations finish
-- **Speed slider works instantly**: Duration recalculated fresh for each animation via `getAnimSpeed()`
-- **Pause/resume is simple**: Just check `status` before calling `play()` - no intervals or callbacks to manage
-- **Clean control flow**: Adding animations is just defining keyframes and calling `.animate()`
-- **Step mutex**: Prevents animation overlap when spam-clicking step button
-
-### Worker Architecture
-
-The web worker (`worker.js`) runs student code in Pyodide:
-
-```javascript
-// Initialization
-loadPyodide() → fetch svinesti.py → postMessage({ type: 'ready' })
-
-// Execution (each submission)
-handleMessage() {
-    isolatedNamespace = pyodide.globals.copy()  // Fresh namespace
-    runPython(engineCode, { globals: isolatedNamespace })
-    runPython(injectUserCode(level, code), { globals: isolatedNamespace })
-    postMessage({ type: 'execution-trace', trace })
-    isolatedNamespace.destroy()  // Cleanup
-}
-```
-
-**Key design decisions:**
-- **Isolated namespaces:** Each execution gets a fresh copy of globals, preventing student code from polluting subsequent runs
-- **No JS timeout:** Python's `MAX_OPS` handles infinite loops, giving us a complete trace up to the cutoff
-- **`cache: 'no-store'`:** Fetch svinesti.py without caching to avoid stale code during development
-
-### PigJatin Language (Java-like alternative)
-
-Located in `PigJatin/`:
-- **PigJatin.g4** - ANTLR4 grammar (if/else, while loops, int/boolean variables, expressions)
-- **PigJatin.js** - Transpilation entry point and test runner
-- **visitors.js** - Static analysis and Python code generation
-- **testcases.txt** - Tests using `#EXPECT <ERROR_TYPE> [name]` directives
-
-### Execution Flow
-
-1. User writes code in CodeMirror editor (Python or PigJatin)
-2. If PigJatin: transpiled to Python via ANTLR-generated parser
-3. Python code sent to web worker running Pyodide
-4. svinesti.py wraps user code in `submitted_code()` and executes with line tracing
-5. Execution generates trace of events (moves, turns, collections, game over)
-6. If operation count exceeds MAX_OPS, gameover with `reason: "timeout"` is traced
-7. Trace sent back to main thread for animated playback
-
-## Development
-
-### Running Locally
-
-Serve with any static HTTP server (required for module imports and fetch):
-```bash
-python -m http.server 8000
-```
-
-### Regenerating ANTLR Parser
-
-If `PigJatin.g4` is modified:
-```bash
-antlr4 -Dlanguage=JavaScript -visitor PigJatin/PigJatin.g4 -o PigJatin/antlr
-```
-
-### Testing PigJatin
-
-Tests run automatically on page load. Check browser console for results.
+| File | Purpose |
+|------|---------|
+| `app.js` | Central state: mode, levels, preferences, code storage. Exports `mode`, `prefs`, `levels`, `code` objects with `.get()`/`.set()` accessors |
+| `main.js` | App shell: help modal, sidebar, event handlers, initialization |
+| `game.js` | Game mode: code editor, playback state machine, worker communication |
+| `grid.js` | `createGrid()` factory for game/editor/thumbnails. Returns `{tiles[], pig, getCell(), placePig()}` |
+| `editor.js` | Level editor: state-driven with `render()` on every change |
+| `animations.js` | Web Animations API functions: walk, move, turn, hudFlash, celebrate, lose, timeout, notify, flash, confetti |
+| `community.js` | Community levels: fetching, sharing, Google server interaction |
+| `worker.js` | Pyodide web worker, isolated namespaces per execution |
+| `svinesti.py` | Python game engine with line tracing and infinite loop detection (MAX_OPS = 10,000) |
+| `shortcuts.js` | Keyboard shortcut factory with rebinding, persistence, enable/disable lifecycle |
+
+### Supporting Files
+
+- `levels.js` — Level definitions and `DEFAULT_LEVEL`
+- `names.js` — Random name generator and UID generator
+- `PigJatin/` — ANTLR4 grammar, transpiler, and tests
+- `css/` — Modular stylesheets (base, layout, header, sidebar, code-editor, game, help, splash)
+- `help/` — Static help pages (infinite-loop.html)
+- `appscript/` — Google Apps Script for community backend
 
 ## Level Format
 
@@ -372,248 +38,116 @@ Tests run automatically on page load. Check browser console for results.
     nRows: 7,
     nCols: 8,
     grid: ["......bB", ...],  // r,g,b = tiles; R,G,B = tiles with stars; . = empty
-    start: [6, 0],            // starting [row, col]
+    start: [6, 0],            // [row, col]
     dir: "right"              // "right" | "down" | "left" | "up"
 }
+// Saved levels add: id (UUID), uid (public sharing ID), originRow/originCol (for compact/expand)
 ```
 
-**Additional fields for saved levels:**
-```javascript
-{
-    id: "uuid",       // unique identifier for updates/deletes
-    originRow: 0,     // row offset from compacting (for re-expansion)
-    originCol: 0,     // col offset from compacting (for re-expansion)
-}
-```
+## Key Patterns
 
-## Data-Driven Mappings
+### Data-Driven Mappings
 
-Prefer lookup tables over conditionals. A mapping with a loop is cleaner than a chain of if-statements.
-
-**TILE_CLASSES** (grid.js) — Maps grid characters to CSS classes:
+Prefer lookup tables over conditionals:
 
 ```javascript
-const TILE_CLASSES = {
-    ".": "empty",
-    "r": "red",
-    "g": "green",
-    "b": "blue",
-    "R": "red target",
-    "G": "green target",
-    "B": "blue target",
-};
-```
+// grid.js
+const TILE_CLASSES = { ".": "empty", "r": "red", "g": "green", "b": "blue", "R": "red target", ... };
 
-Used when rendering the grid — one loop, no conditionals:
-
-```javascript
-for (const char of level.grid.join('')) {
-    tile.className = 'tile ' + TILE_CLASSES[char];
-}
-```
-
-**editor.js** uses the same pattern for color cycling and target toggling:
-
-```javascript
+// editor.js
 const COLOR_CYCLE = { '.': 'b', 'b': 'g', 'g': 'r', 'r': '.', 'B': 'G', 'G': 'R', 'R': '.' };
 const TARGET_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r' };
 ```
+
+### State Objects (app.js)
+
+Exports grouped accessors:
+- `mode.get()`, `mode.set()`, `mode.isEditor()`, `mode.isGame()`
+- `prefs.colorblind`, `prefs.communityConsent`, `prefs.playbackSpeed`, etc. (each has `.get()`/`.set()`)
+- `levels.builtIn()`, `levels.custom()`, `levels.save()`, `levels.update()`, `levels.delete()`, `levels.onChange()`
+- `code.get(levelKey, language)`, `code.set(levelKey, language, value)`
+
+Persistence via localStorage: `svinesti-custom-levels`, `svinesti-starred`, `svinesti-preferences`, `svinesti-code`
+
+### CSS Conventions
+
+- Tile colors use standalone classes: `.red`, `.green`, `.blue`, `.empty` (not `.tile-red`)
+- Pig sprites use standalone classes: `.pig-right`, `.pig-down`, `.pig-left`, `.pig-up`
+- `.tile` and `.pig` classes shared across game grid, editor grid, and sidebar thumbnails
+- All gameplay animations use Web Animations API; only splash screen uses CSS keyframes
+
+## Playback System
+
+### Event Types
+
+| Event | Behavior |
+|-------|----------|
+| `lineExecuted` | Highlight line + pause for `LINE_PAUSE_MULTIPLIER * animSpeed` |
+| `move` | Sprite walk animation + translation to adjacent cell |
+| `turn` | Hop up → swap sprite → hop down |
+| `isColor` | Flash color comparison HUD |
+| `collected` | Remove `.target` class (instant) |
+| `gameover` | Win: `celebrate()`. Lose: `lose()`. Timeout: `timeout()` |
+
+### Line Number Attachment
+
+Python's `trace()` method attaches `lineno` to events:
+- `lineExecuted` events are pushed normally
+- Animated events (move, turn, isColor) pop the preceding `lineExecuted` and copy its `lineno`
+- Consequence events (collected, gameover) inherit `lineno` from previous event
+
+This allows JS to highlight the correct line AS the animation plays.
+
+### Abort Handling
+
+Animation functions catch `AbortError` (from cancelled animations) and return `animations.ABORT` constant. Callers must check for `ABORT` to exit early — e.g., skip `movePigTo()` after a cancelled move animation.
+
+## Infinite Loop Detection
+
+Python-side only (no JS timeout). `svinesti.py` uses `sys.settrace()` to count every line executed in student code. When `op_count > MAX_OPS` (10,000), traces gameover with `reason: "timeout"` and raises `GracefulExit`. JS detects this, shows error notification, truncates trace to last 100 events for replay.
+
+## Worker Architecture
+
+Each execution gets `pyodide.globals.copy()` for a fresh namespace, preventing student code from polluting subsequent runs. Worker posts `"ready"` when Pyodide loads → `app.setReady()` → splash hides.
 
 ## Level Editor
 
-The level editor (`editor.js`) uses explicit state with the level format's character representation (`.rgbRGB`). A single `render()` function syncs state to DOM on every change.
+State-driven with `render()` on every change. The level format's character representation (`.rgbRGB`) IS the internal state.
 
-**State:**
-```javascript
-const state = {
-    cells: [],           // 1D array of chars: '.rgbRGB'
-    nRows, nCols,
-    pigIndex: 0,         // index into cells
-    pigDir: 'right',
-    cursor: 0,           // index (follows mouse or keyboard)
-    clipboard: null,     // char when in paint mode, null otherwise
-    paintHeld: false,    // spacebar held for continuous keyboard painting
-    isMouseDown: false,  // mouse button held for continuous mouse painting
-    isDraggingPig: false,
-    grid: null,          // grid object for DOM refs
-    editingLevelId: null, // ID of saved level being edited, null = new level
-    uid: null,           // Public UID for sharing
-};
+**Constraints:**
+- Cannot paint empty (`.`) onto the pig's tile — pig must stay on colored tile
+- Levels compact (trim empty rows/cols) on save, expand to 9×16 on edit
+
+**Keyboard:** `Space` (cycle color/rotate pig), `S` (toggle star), arrows (cursor), `P` (place pig), `C` (paint mode)
+
+**Mouse:** Left-click (cycle/rotate), right-click (toggle star), shift+click (enter paint mode), drag pig to move
+
+**Ghost preview:** CSS custom properties `--ghost-pig`, `--ghost-color`, `--ghost-star` control preview on cursor tile.
+
+## Community Levels
+
+Requires user consent before any Google server contact. Defense in depth: consent checked at both caller level and fetch level.
+
+`community.js` exports: `getLevels()`, `onChange(cb)`, `sendStar(uid, starred)`, `submitLevel(base64)`
+
+Levels stored in Google Sheet (base64-encoded JSON). Polling checks version number every 3 minutes.
+
+## Game Mode Shortcuts
+
+- `H` — Play / Pause
+- `J` — Step
+- `K` — Reset
+- `Ctrl+Enter` — Run code (non-rebindable)
+- `?` — Help (non-rebindable)
+
+Shortcuts managed by `shortcuts.js` factory. Each mode calls `enable()`/`disable()` on enter/exit.
+
+## Development
+
+```bash
+# Run locally (required for module imports)
+python -m http.server 8000
+
+# Regenerate ANTLR parser (if PigJatin.g4 modified)
+antlr4 -Dlanguage=JavaScript -visitor PigJatin/PigJatin.g4 -o PigJatin/antlr
 ```
-
-**Data-driven cycles:**
-```javascript
-const COLOR_CYCLE = { '.': 'b', 'b': 'g', 'g': 'r', 'r': '.', 'B': 'G', 'G': 'R', 'R': '.' };
-const TARGET_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r' };
-const DIR_CYCLE = { right: 'down', down: 'left', left: 'up', up: 'right' };
-```
-
-**Keyboard controls:**
-- **Space** — Cycle tile color or rotate pig (hold for continuous paint in paint mode)
-- **S** — Toggle target (star) on colored tiles
-- **Arrow keys** — Move cursor
-- **P** — Move pig to cursor
-- **C** — Enter/exit paint mode (copies current tile)
-
-**Mouse controls:**
-- **Left-click** — Cycle tile color or rotate pig
-- **Right-click** — Toggle target (or exit paint mode)
-- **Shift+click** — Copy tile to clipboard, enter paint mode
-- **Drag pig** — Move pig to new tile (ghost preview shows destination)
-- **Click-drag in paint mode** — Continuous painting
-
-**Paint mode constraints:**
-- Cannot paint empty (`.`) onto the pig's tile (pig must stay on colored tile)
-
-**Ghost preview:** When dragging pig or in paint mode, a ghost preview appears on the cursor tile via `::after` pseudo-element. CSS custom properties (`--ghost-pig`, `--ghost-color`, `--ghost-star`) control what's shown.
-
-**Colorblind mode:** Pig remains visible on patterned tiles via `--pig-bg` CSS variable layered on top of colorblind patterns.
-
-**Design:** State-driven with full re-render. The level format's character representation IS the internal state — no conversion needed. Mutations are trivial: update state, call `render()`. No pig element in editor; pig shown via `pig-{dir}` class on tile.
-
-### My Levels (Local Storage)
-
-User-created levels are saved to localStorage under key `'svinesti-custom-levels'`. The sidebar's "My Levels" tab displays these with delete buttons.
-
-**Saved level format:**
-```javascript
-{
-    id: "uuid",           // crypto.randomUUID() - internal storage ID
-    uid: "X7bK9f2A",      // public UID for sharing
-    name: "Brave Tiger",  // randomly generated two-word name
-    nRows, nCols, grid, start, dir,  // standard level fields
-    originRow: 2,         // row offset for re-expansion
-    originCol: 3,         // col offset for re-expansion
-}
-```
-
-**Compact/Expand cycle:**
-- `compact(level)` — Trims empty rows/cols, stores `originRow`/`originCol` to preserve original position
-- `expand(level)` — Restores to 9×16 canvas, placing content at stored origin
-
-This allows levels to be stored efficiently while maintaining their original canvas position when reloaded for editing.
-
-**Storage functions (app.js `levels` object):**
-- `levels.custom()` — Returns non-deleted levels
-- `levels.save(level)` — Appends new level
-- `levels.update(id, levelData)` — Updates existing level by ID
-- `levels.delete(id)` — Soft-deletes level (moves to trash)
-
-**Random name generator:** New levels get a randomly generated two-word name (e.g., "Brave Tiger") plus a UID. Click the dice button to regenerate. The name field is readonly.
-
-**Save flow:**
-1. User edits level (name auto-generated with UID, can regenerate via dice button)
-2. Click Save → validates level, compacts grid
-3. If `editingLevelId` is null: creates new level with UUID
-4. If `editingLevelId` exists: updates existing level
-5. app.js notifies subscribers via `onLevelsChange` callbacks
-
-**Sidebar behavior:**
-- In editor mode, only "My Levels" tab is visible (others hidden via CSS)
-- Delete button appears on hover (trash icon)
-- Registers callback via `app.levels.onChange()` for auto-refresh
-
-### Community Levels
-
-Students can share levels to a central community pool via Google Sheets. No teacher setup required.
-
-**Architecture:**
-- **community.js** — Owns community level data, handles fetching, submitting, polling. Exports `getLevels()`, `onChange(cb)`, `sendStar(uid, starred)`.
-- **Google Sheet** — Stores submissions (Timestamp | UID | Level | Stars)
-- **PropertiesService** — Stores version number for efficient polling
-- **Apps Script** — Single endpoint: GET returns levels, POST submits or stars
-
-**Consent system:**
-
-Community features require user consent before any Google server contact. Consent is stored via `app.prefs.communityConsent.get()`/`.set()`.
-
-- Toggle in Help menu under Settings enables/disables community features
-- Community tab shows privacy explanation until consent given
-- All server-contacting functions call `requireConsent()` which throws if consent missing
-- Defense in depth: consent checked at both caller level and fetch level
-
-**Sheet structure:**
-| Column | Contents |
-|--------|----------|
-| A (Timestamp) | Submission date |
-| B (UID) | Level unique ID (for starring lookup) |
-| C (Level) | Base64-encoded level JSON |
-| D (Stars) | Star count (integer) |
-
-**Submission flow (editor.js → community.js):**
-1. Click "Share to Community" → check consent, validate level (including DFS reachability)
-2. Show "Sharing..." notification immediately
-3. Call `community.submitLevel(base64)` which POSTs to Google
-4. Server validates, fixes name/UID if needed, appends to sheet, increments version
-5. Dispatch `'community-levels-updated'` event to trigger refresh
-
-**Fetch flow (community.js):**
-1. On page load: `community.preload()` fetches levels in background (if consent given)
-2. Community tab clicked → `community.showTab()` displays cached levels or consent request
-3. Parse response (`base64<TAB>stars` per line), add stars to level object
-4. Cache levels and version, display sorted by stars (descending)
-
-**Search and starring:**
-- Search field filters levels by name (case-insensitive)
-- Star button (golden apple) on each level thumbnail
-- Click to star/unstar; `app.levels.isStarred()`/`app.levels.setStarred()` track local state
-- Optimistic UI: sidebar handles optimistic update/revert, calls `community.sendStar()` for network
-
-**Polling (community.js):**
-- `community.refresh()` checks `?version` every 3 minutes (if consent given)
-- If version changed, fetches full list and updates UI
-- Also triggered by `'community-levels-updated'` event after submission
-
-**API endpoints:**
-- `GET ?version` — Returns version number (no sheet read, uses PropertiesService)
-- `GET` — Returns all levels (`base64<TAB>stars` per line)
-- `POST {level: base64}` — Validates, appends to sheet, increments version
-- `POST {action:'star', uid, starred}` — Increments or decrements star count
-
-**Setup scripts (appscript/):**
-- `main.gs` — API endpoints (doGet, doPost), level validation (DFS reachability)
-- `names.gs` — Name validation and generation
-
-## Sidebar Level List
-
-The sidebar is hidden by default with a green "LEVELS" pull-tab visible on the left edge (20% from top). Click the tab to open; click outside (or on the tab again) to close. Mode toggle clicks don't close the sidebar.
-
-The sidebar displays levels as visual thumbnails rather than text buttons. Each thumbnail shows:
-- Tile colors using the same `TILE_CLASSES` mapping
-- Pig element (same as game grid, created by `createGrid()`)
-- Apple icon for target tiles
-
-All grids (game, editor, thumbnails) use `createGrid()` with shared `.tile` and `.pig` classes.
-
-## Keyboard Shortcuts
-
-Shortcuts are managed by `shortcuts.js`, which exports a `createShortcuts(storageKey)` factory function. Each mode creates its own shortcuts instance and calls `enable()`/`disable()` on enter/exit.
-
-**Shortcut features:**
-- Rebindable keys (click the key display to rebind)
-- Per-shortcut enable/disable (click the row to toggle)
-- Master toggle to enable/disable all
-- Reset to defaults button
-- Persistence via localStorage
-- `rebindable: false` option for shortcuts that shouldn't be changed (shows lock icon)
-
-**Game mode shortcuts (managed by game.js):**
-- `H` - Play / Pause
-- `J` - Step
-- `K` - Reset
-- `Ctrl+Enter` - Run code (non-rebindable)
-- `?` - Help (non-rebindable)
-
-**Global shortcuts (always active):**
-- `?` - Toggle help modal (in editor mode)
-- `Escape` - Close help modal
-
-## Browser Quirks
-
-### Modifier key keydown timing
-
-When a modifier key (Ctrl, Alt, Shift, Meta) is pressed, browsers are inconsistent about when `keydown` fires:
-- Some browsers fire `keydown` immediately when the modifier alone is pressed
-- Others wait until a non-modifier key is also pressed
-
-This affects shortcut rebinding: if the user wants to bind `Ctrl+A`, some browsers would fire a `keydown` for `Control` alone before the user presses `A`. The shortcut system handles this by ignoring `keydown` events where `event.key` is a modifier name (`Control`, `Alt`, `Shift`, `Meta`).
