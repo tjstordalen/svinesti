@@ -6,7 +6,7 @@
 import * as app from './app.js';
 
 // Apps Script endpoint for community levels (GET to fetch, POST to submit)
-const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbwne7UEsOMM6Aa0WD5X2KdUx0eZX8QyZQ6FcWajARqaUa9Zs_ICcfJYCuVhrWXzgHjO7Q/exec';
+const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbxdJIZKtws3OOWncGuvnrDGd8crSCrzwSCfSErzvKrWA_07KNhHpftWtfow6xI3najmgw/exec';
 
 const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
 
@@ -46,20 +46,25 @@ function requireConsent() {
     if (!app.prefs.communityConsent.get()) throw new Error('Community features require consent');
 }
 
-async function fetchVersion() {
+// Conditional fetch: sends client version, server returns just version if current,
+// or version + data if update needed. Returns { version, levels } or { version } only.
+async function fetchConditional(clientVersion) {
     requireConsent();
-    const response = await fetch(`${COMMUNITY_URL}?version`);
+    const url = clientVersion != null ? `${COMMUNITY_URL}?v=${clientVersion}` : COMMUNITY_URL;
+    const response = await fetch(url);
     const text = await response.text();
     if (text.startsWith('Error:')) throw new Error(text);
-    return parseInt(text, 10);
-}
 
-async function fetchLevels() {
-    requireConsent();
-    const response = await fetch(COMMUNITY_URL);
-    const text = await response.text();
-    if (text.startsWith('Error:')) throw new Error(text);
-    return parse(text);
+    const newlineIndex = text.indexOf('\n');
+    if (newlineIndex === -1) {
+        // Just version — client is up to date
+        return { version: parseInt(text, 10) };
+    }
+
+    // Version + data
+    const version = parseInt(text.slice(0, newlineIndex), 10);
+    const levels = parse(text.slice(newlineIndex + 1));
+    return { version, levels };
 }
 
 function parse(text) {
@@ -98,8 +103,9 @@ export async function fetchIfNeeded() {
 
     state.loading = true;
     try {
-        state.version = await fetchVersion();
-        state.levels = await fetchLevels();
+        const result = await fetchConditional(null);
+        state.version = result.version;
+        state.levels = result.levels;
         notifyChange();
         return { levels: state.levels };
     } catch (e) {
@@ -116,10 +122,10 @@ export async function fetchIfNeeded() {
 export async function forceRefresh() {
     if (!app.prefs.communityConsent.get()) return false;
     try {
-        const newVersion = await fetchVersion();
-        if (newVersion === state.version) return false;
-        state.version = newVersion;
-        state.levels = await fetchLevels();
+        const result = await fetchConditional(state.version);
+        state.version = result.version;
+        if (!result.levels) return false;  // Up to date
+        state.levels = result.levels;
         notifyChange();
         return true;
     } catch (e) {
@@ -133,10 +139,10 @@ async function pollRefresh(onUpdate) {
     if (state.loading || state.levels === null) return;
 
     try {
-        const newVersion = await fetchVersion();
-        if (newVersion !== state.version) {
-            state.version = newVersion;
-            state.levels = await fetchLevels();
+        const result = await fetchConditional(state.version);
+        state.version = result.version;
+        if (result.levels) {
+            state.levels = result.levels;
             notifyChange();
             if (onUpdate) onUpdate();
         }
@@ -154,8 +160,9 @@ export async function preload() {
     if (state.loading || state.levels) return;
     state.loading = true;
     try {
-        state.version = await fetchVersion();
-        state.levels = await fetchLevels();
+        const result = await fetchConditional(null);
+        state.version = result.version;
+        state.levels = result.levels;
         notifyChange();
     } catch (e) {
         console.warn('Failed to preload community levels:', e);
