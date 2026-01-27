@@ -49,16 +49,6 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
     ui.splashScreen.style.display = "none";
 }
 
-// TODO: move this to validate? I guess it is not even possible to generate a level like this
-// at the moment. Maybe just remove from the standard levels and we're good
-// Prepare levels (convert uppercase start tiles to lowercase)
-for (let lvl of getBuiltInLevels()) {
-    const [r, c] = lvl.start;
-    const row = lvl.grid[r].split("");
-    row[c] = row[c].toLowerCase() || row[c];
-    lvl.grid[r] = row.join("");
-}
-
 // Initialize modules
 Game.init();
 Editor.init();
@@ -73,6 +63,7 @@ window.addEventListener('community-levels-updated', () => {
 });
 
 // Preload community levels and start polling
+// This does nothing if the user has not given cnsent
 community.preload();
 community.startPolling(() => sidebar.refreshActiveTab());
 
