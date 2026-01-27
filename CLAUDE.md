@@ -11,9 +11,10 @@ Svinesti is a browser-based educational programming game where students control 
 ### Core Files
 
 - **index.html** - Markup with CodeMirror editor, thumbnail-based level sidebar, and playback controls
-- **main.js** - App shell: help modal, sidebar, mode switching (see structure below)
+- **app.js** - Central state: mode, levels (built-in/custom/community), preferences, code storage, ready state (see structure below)
+- **main.js** - App shell: help modal, sidebar, event handlers (see structure below)
 - **game.js** - Game mode: code editor, playback, worker (see structure below)
-- **community.js** - Community levels: fetching, sharing, consent management, Google server interaction
+- **community.js** - Community levels: fetching, sharing, Google server interaction
 - **grid.js** - Unified grid rendering module (see structure below)
 - **animations.js** - All animation logic as direct exports (walk, move, turn, hudFlash, celebrate, lose, timeout, notify, flash, confetti), plus `pigSpriteUrl()` helper and `ABORT` constant
 - **editor.js** - Level editor module (DOM-based editing, serialization, enter/exit mode switching)
@@ -50,9 +51,53 @@ Static help content in `help/` directory:
 - **infinite-loop.html** - Explains infinite loops with side-by-side good/bad code examples
 - **help.css** - Standalone styles for help pages (can be viewed outside the app)
 
+### app.js Structure
+
+Central state and coordination. All persistent state lives here.
+
+**State:**
+```javascript
+let mode = 'game';           // 'game' | 'editor'
+let customLevels = [];       // User-created levels (persisted)
+let communityLevels = [];    // Cached from fetch
+let starred = new Set();     // UIDs of starred community levels
+let code = {};               // { [levelKey]: { python: '...', java: '...' } }
+let preferences = {
+    colorblind: false,
+    communityConsent: false,
+    showHelpOnStart: true,
+    playbackSpeed: 150,
+    editorFontSize: 16,
+};
+```
+
+**Exports:**
+
+| Category | Functions |
+|----------|-----------|
+| Init | `init()` |
+| Ready | `isReady()`, `onReady(callback)`, `setReady()` |
+| Mode | `getMode()`, `setMode(mode)`, `isEditorMode()`, `isGameMode()` |
+| Built-in levels | `getBuiltInLevels()` |
+| Custom levels | `getCustomLevels()`, `saveCustomLevel()`, `updateCustomLevel()`, `deleteCustomLevel()`, `getDeletedLevels()`, `restoreLevel()`, `emptyTrash()`, `onLevelsChange(callback)` |
+| Community levels | `getCommunityLevels()`, `setCommunityLevels(levels)` |
+| Starred | `isStarred(uid)`, `setStarred(uid, value)` |
+| Preferences | `isColorblind()`, `setColorblind()`, `hasCommunityConsent()`, `setCommunityConsent()`, `showHelpOnStart()`, `setShowHelpOnStart()`, `getPlaybackSpeed()`, `setPlaybackSpeed()`, `getEditorFontSize()`, `setEditorFontSize()` |
+| Code storage | `getCode(levelKey, language)`, `setCode(levelKey, language, value)` |
+
+**Persistence:** Four localStorage keys:
+- `svinesti-custom-levels` — custom level array
+- `svinesti-starred` — starred UID array
+- `svinesti-preferences` — preferences object
+- `svinesti-code` — code storage object
+
+**Ready state:** Worker posts `"ready"` when Pyodide loads → game.js calls `app.setReady()` → splash screen hides and `onReady` callbacks fire.
+
+**Level key convention:** Code storage uses `level.id` for custom levels (UUID), `level.name` for built-in levels.
+
 ### main.js Structure
 
-App shell. Orchestrates modes and global UI:
+App shell. Event handlers and initialization:
 
 ```javascript
 const help = {
@@ -64,9 +109,8 @@ const help = {
 
 Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
-- **Level list** - `populateLevelList(levelArray, { deletable? })` with optional delete buttons
-- **Initialize** - Game.init(), Editor.init(), community.init(), level list setup, URL import, Game.enter()
-- **Event handlers** - Sidebar pull-tab click, click-outside-to-close, help pane, mode toggle, settings toggles, global shortcuts, `'levels-updated'` and `'community-levels-updated'` listeners
+- **Initialize** - app.init(), Game.init(), Editor.init(), community.init(), sidebar.init(), URL import, Game.enter()
+- **Event handlers** - Sidebar pull-tab, help pane, mode toggle (calls `app.setMode()`), settings toggles (call app.js setters), `'community-levels-updated'` listener
 
 ### game.js Structure
 
@@ -105,10 +149,11 @@ const playback = {
 
 **Internal sections:**
 - **Grid rendering** - `loadLevel()` (creates grid via `createGrid()`)
-- **Code storage** - `storeCode()`, `loadCode()`, `switchLanguage()`
+- **Code storage** - `levelKey()` helper, uses `app.getCode()`/`app.setCode()`
+- **Language switching** - `switchLanguage()` stores/loads code via app.js
 - **State machine** - `enterState()`, `BUTTON_HANDLERS` table, `submitAndEnter()`
 - **Playback** - `processEvent()`, `moveAnimated()`, `highlightLine()`
-- **Worker** - `initWorker()`, `getCode()`, `execute()`, `hideSplashScreen()`
+- **Worker** - `initWorker()`, `getCode()`, `execute()`, calls `app.setReady()` when ready
 - **Shortcuts** - Game-mode shortcuts (play/pause, step, reset, run-code, help)
 
 ### grid.js Structure
@@ -423,11 +468,11 @@ User-created levels are saved to localStorage under key `'svinesti-custom-levels
 
 This allows levels to be stored efficiently while maintaining their original canvas position when reloaded for editing.
 
-**Storage functions:**
-- `getCustomLevels()` — Returns array from localStorage
-- `saveCustomLevel(level)` — Appends new level (with generated ID)
+**Storage functions (app.js):**
+- `getCustomLevels()` — Returns non-deleted levels
+- `saveCustomLevel(level)` — Appends new level
 - `updateCustomLevel(id, levelData)` — Updates existing level by ID
-- `deleteCustomLevel(id)` — Removes level by ID
+- `deleteCustomLevel(id)` — Soft-deletes level (moves to trash)
 
 **Random name generator:** New levels get a randomly generated two-word name (e.g., "Brave Tiger") plus a UID. Click the dice button to regenerate. The name field is readonly.
 
@@ -436,12 +481,12 @@ This allows levels to be stored efficiently while maintaining their original can
 2. Click Save → validates level, compacts grid
 3. If `editingLevelId` is null: creates new level with UUID
 4. If `editingLevelId` exists: updates existing level
-5. Dispatches `'levels-updated'` custom event to refresh sidebar
+5. app.js notifies subscribers via `onLevelsChange` callbacks
 
 **Sidebar behavior:**
 - In editor mode, only "My Levels" tab is visible (others hidden via CSS)
 - Delete button appears on hover (trash icon)
-- List auto-refreshes when `'levels-updated'` event fires
+- Registers callback via `app.onLevelsChange()` for auto-refresh
 
 ### Community Levels
 
@@ -455,7 +500,7 @@ Students can share levels to a central community pool via Google Sheets. No teac
 
 **Consent system:**
 
-Community features require user consent before any Google server contact. Consent is stored in localStorage (`svinesti-community-consent`).
+Community features require user consent before any Google server contact. Consent is stored via `app.hasCommunityConsent()`/`app.setCommunityConsent()`.
 
 - Toggle in Help menu under Settings enables/disables community features
 - Community tab shows privacy explanation until consent given
@@ -483,10 +528,10 @@ Community features require user consent before any Google server contact. Consen
 3. Parse response (`base64<TAB>stars` per line), add stars to level object
 4. Cache levels and version, display sorted by stars (descending)
 
-**Search and starring (community.js):**
+**Search and starring:**
 - Search field filters levels by name (case-insensitive)
 - Star button (golden apple) on each level thumbnail
-- Click to star/unstar; localStorage tracks user's starred levels
+- Click to star/unstar; `app.isStarred()`/`app.setStarred()` track state
 - Optimistic UI: count updates instantly, POST fires without awaiting response
 
 **Polling (community.js):**
