@@ -8,9 +8,8 @@ import { ui } from "./ui.js";
 import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
-import { levels } from "./levels.js";
 import { spin, notify } from "./animations.js";
-import { isEditorMode } from "./mode.js";
+import { isEditorMode, getBuiltInLevels } from "./app.js";
 
 // --- State ---
 
@@ -109,7 +108,7 @@ function populateLevelList(levelArray, { deletable = false, restorable = false, 
 
 export function showDefaultTab() {
     ui.levelList.innerHTML = '';
-    populateLevelList(levels);
+    populateLevelList(getBuiltInLevels());
 }
 
 export function showMyLevelsTab() {

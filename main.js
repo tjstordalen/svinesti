@@ -1,13 +1,15 @@
 // main.js - App shell (help pane, mode switching)
 
+import * as app from "./app.js";
 import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
-import { levels } from "./levels.js";
 import { ui } from "./ui.js";
-import { setMode, isEditorMode } from "./mode.js";
+import { setMode, isEditorMode, getBuiltInLevels } from "./app.js";
+
+app.init();
 
 const ENABLE_SPLASH_SCREEN = true;
 
@@ -50,7 +52,7 @@ if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
 // TODO: move this to validate? I guess it is not even possible to generate a level like this
 // at the moment. Maybe just remove from the standard levels and we're good
 // Prepare levels (convert uppercase start tiles to lowercase)
-for (let lvl of levels) {
+for (let lvl of getBuiltInLevels()) {
     const [r, c] = lvl.start;
     const row = lvl.grid[r].split("");
     row[c] = row[c].toLowerCase() || row[c];
