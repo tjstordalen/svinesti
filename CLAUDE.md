@@ -57,11 +57,10 @@ Central state and coordination. All persistent state lives here.
 
 **State:**
 ```javascript
-let mode = 'game';           // 'game' | 'editor'
+let currentMode = 'game';    // 'game' | 'editor'
 let customLevels = [];       // User-created levels (persisted)
-let communityLevels = [];    // Cached from fetch
 let starred = new Set();     // UIDs of starred community levels
-let code = {};               // { [levelKey]: { python: '...', java: '...' } }
+let codeStorage = {};        // { [levelKey]: { python: '...', java: '...' } }
 let preferences = {
     colorblind: false,
     communityConsent: false,
@@ -71,19 +70,45 @@ let preferences = {
 };
 ```
 
-**Exports:**
+**Exports:** Grouped into objects with consistent `.get()`/`.set()` accessors:
 
-| Category | Functions |
-|----------|-----------|
-| Init | `init()` |
-| Ready | `isReady()`, `onReady(callback)`, `setReady()` |
-| Mode | `getMode()`, `setMode(mode)`, `isEditorMode()`, `isGameMode()` |
-| Built-in levels | `getBuiltInLevels()` |
-| Custom levels | `getCustomLevels()`, `saveCustomLevel()`, `updateCustomLevel()`, `deleteCustomLevel()`, `getDeletedLevels()`, `restoreLevel()`, `emptyTrash()`, `onLevelsChange(callback)` |
-| Community levels | `getCommunityLevels()`, `setCommunityLevels(levels)` |
-| Starred | `isStarred(uid)`, `setStarred(uid, value)` |
-| Preferences | `isColorblind()`, `setColorblind()`, `hasCommunityConsent()`, `setCommunityConsent()`, `showHelpOnStart()`, `setShowHelpOnStart()`, `getPlaybackSpeed()`, `setPlaybackSpeed()`, `getEditorFontSize()`, `setEditorFontSize()` |
-| Code storage | `getCode(levelKey, language)`, `setCode(levelKey, language, value)` |
+```javascript
+// Mode
+mode.get()              // Returns 'game' | 'editor'
+mode.set(newMode)       // Switches mode, updates pane visibility
+mode.isEditor()         // Returns true if editor mode
+mode.isGame()           // Returns true if game mode
+
+// Preferences (each has .get() and .set())
+prefs.colorblind        // Also applies CSS class on set
+prefs.communityConsent
+prefs.showHelpOnStart
+prefs.playbackSpeed
+prefs.editorFontSize
+
+// Levels
+levels.builtIn()        // Returns built-in level array
+levels.custom()         // Returns non-deleted custom levels
+levels.save(level)      // Appends new level
+levels.update(id, data) // Updates existing level
+levels.delete(id)       // Soft-deletes (moves to trash)
+levels.deleted()        // Returns deleted levels
+levels.restore(id)      // Restores from trash
+levels.emptyTrash()     // Permanently deletes trashed levels
+levels.isStarred(uid)   // Check if community level is starred
+levels.setStarred(uid, value)  // Star/unstar community level
+levels.onChange(cb)     // Register callback for level changes
+
+// Code storage
+code.get(levelKey, language)        // Returns stored code or ''
+code.set(levelKey, language, value) // Stores code
+
+// Ready state (flat exports)
+isReady(), onReady(callback), setReady()
+
+// Init
+init()
+```
 
 **Persistence:** Four localStorage keys:
 - `svinesti-custom-levels` — custom level array
@@ -110,7 +135,7 @@ const help = {
 Sections:
 - **Help pane** - `help.enter()`, `help.exit()`
 - **Initialize** - app.init(), Game.init(), Editor.init(), community.init(), sidebar.init(), URL import, Game.enter()
-- **Event handlers** - Sidebar pull-tab, help pane, mode toggle (calls `app.setMode()`), settings toggles (call app.js setters), `'community-levels-updated'` listener
+- **Event handlers** - Sidebar pull-tab, help pane, mode toggle (calls `app.mode.set()`), settings toggles (call `app.prefs` setters), `'community-levels-updated'` listener
 
 ### game.js Structure
 
@@ -149,8 +174,8 @@ const playback = {
 
 **Internal sections:**
 - **Grid rendering** - `loadLevel()` (creates grid via `createGrid()`)
-- **Code storage** - `levelKey()` helper, uses `app.getCode()`/`app.setCode()`
-- **Language switching** - `switchLanguage()` stores/loads code via app.js
+- **Code storage** - `levelKey()` helper, uses `app.code.get()`/`app.code.set()`
+- **Language switching** - `switchLanguage()` stores/loads code via `app.code`
 - **State machine** - `enterState()`, `BUTTON_HANDLERS` table, `submitAndEnter()`
 - **Playback** - `processEvent()`, `moveAnimated()`, `highlightLine()`
 - **Worker** - `initWorker()`, `getCode()`, `execute()`, calls `app.setReady()` when ready
@@ -468,11 +493,11 @@ User-created levels are saved to localStorage under key `'svinesti-custom-levels
 
 This allows levels to be stored efficiently while maintaining their original canvas position when reloaded for editing.
 
-**Storage functions (app.js):**
-- `getCustomLevels()` — Returns non-deleted levels
-- `saveCustomLevel(level)` — Appends new level
-- `updateCustomLevel(id, levelData)` — Updates existing level by ID
-- `deleteCustomLevel(id)` — Soft-deletes level (moves to trash)
+**Storage functions (app.js `levels` object):**
+- `levels.custom()` — Returns non-deleted levels
+- `levels.save(level)` — Appends new level
+- `levels.update(id, levelData)` — Updates existing level by ID
+- `levels.delete(id)` — Soft-deletes level (moves to trash)
 
 **Random name generator:** New levels get a randomly generated two-word name (e.g., "Brave Tiger") plus a UID. Click the dice button to regenerate. The name field is readonly.
 
@@ -486,21 +511,21 @@ This allows levels to be stored efficiently while maintaining their original can
 **Sidebar behavior:**
 - In editor mode, only "My Levels" tab is visible (others hidden via CSS)
 - Delete button appears on hover (trash icon)
-- Registers callback via `app.onLevelsChange()` for auto-refresh
+- Registers callback via `app.levels.onChange()` for auto-refresh
 
 ### Community Levels
 
 Students can share levels to a central community pool via Google Sheets. No teacher setup required.
 
 **Architecture:**
-- **community.js** — All Google server interaction (fetching, submitting, starring)
+- **community.js** — Owns community level data, handles fetching, submitting, polling. Exports `getLevels()`, `onChange(cb)`, `sendStar(uid, starred)`.
 - **Google Sheet** — Stores submissions (Timestamp | UID | Level | Stars)
 - **PropertiesService** — Stores version number for efficient polling
 - **Apps Script** — Single endpoint: GET returns levels, POST submits or stars
 
 **Consent system:**
 
-Community features require user consent before any Google server contact. Consent is stored via `app.hasCommunityConsent()`/`app.setCommunityConsent()`.
+Community features require user consent before any Google server contact. Consent is stored via `app.prefs.communityConsent.get()`/`.set()`.
 
 - Toggle in Help menu under Settings enables/disables community features
 - Community tab shows privacy explanation until consent given
@@ -531,8 +556,8 @@ Community features require user consent before any Google server contact. Consen
 **Search and starring:**
 - Search field filters levels by name (case-insensitive)
 - Star button (golden apple) on each level thumbnail
-- Click to star/unstar; `app.isStarred()`/`app.setStarred()` track state
-- Optimistic UI: count updates instantly, POST fires without awaiting response
+- Click to star/unstar; `app.levels.isStarred()`/`app.levels.setStarred()` track local state
+- Optimistic UI: sidebar handles optimistic update/revert, calls `community.sendStar()` for network
 
 **Polling (community.js):**
 - `community.refresh()` checks `?version` every 3 minutes (if consent given)
