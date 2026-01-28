@@ -46,3 +46,13 @@ After clicking the button to enable community levels, the info message does not 
 
 BUG??? when typing ? in the code editor, it opes the help menu and surpresses the keystroke
 
+in animaitons.js, inline the pigspriteurl function into makeWalkKeyframes with a closure that captures the dir, and takes only the number 
+
+- I notice that the default keyboard shortcuts for the editor do not appear in config.js ? 
+
+- What do the storage keys STORAGE_KEY_EDITOR_EDIT/PAINT do ? I don't think we use them? 
+
+Never mind, I see it now. append SHORTCUTS or similar. 
+
+- I notice that the icon paths are not in the config file. Maybe they should be?
+
