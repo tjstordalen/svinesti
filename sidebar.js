@@ -1,7 +1,4 @@
 // sidebar.js - Sidebar level list rendering
-//
-// All tab rendering for Default, My Levels, Community, Trash.
-// Unified populateLevelList with options for delete/restore buttons.
 
 import { createGrid } from "./grid.js";
 import { ui } from "./ui.js";
@@ -11,121 +8,133 @@ import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
 import { mode, levels, prefs } from "./app.js";
 
-// --- State ---
+// --- Helpers ---
 
-const state = {
-    viewMode: localStorage.getItem('svinesti-community-view') || 'thumbnails',
-    searchQuery: '',
+const parser = new DOMParser();
+const html = (str) => parser.parseFromString(str, 'text/html').body.firstElementChild;
+
+const TYPE = {
+    DEFAULT: 'default',
+    CUSTOM: 'custom',
+    COMMUNITY: 'community',
+    TRASH: 'trash',
 };
 
-// --- Unified Level List ---
+// --- State ---
 
-function populateLevelList(levelArray, { deletable = false, restorable = false, append = false } = {}, container = null) {
-    const target = container || ui.levelList;
-    if (!container && !append) target.innerHTML = '';
+let searchQuery = '';
 
-    // Only allow delete in editor mode
-    const canDelete = deletable && mode.isEditor();
+// --- Level Card ---
 
-    for (const lvl of levelArray) {
-        const item = document.createElement('div');
-        item.className = 'sidebar-level-item';
+function makeLevelItemCard(level, type, onRefresh) {
+    const item = html(`
+        <div class="sidebar-level-item">
+            <div class="thumbnail-wrapper"><div class="grid"></div></div>
+            <div class="sidebar-level-name"></div>
+        </div>
+    `);
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'thumbnail-wrapper';
-        const grid = document.createElement('div');
-        createGrid(grid, lvl.nRows, lvl.nCols, lvl);
-        wrapper.appendChild(grid);
+    createGrid(item.querySelector('.grid'), level.nRows, level.nCols, level);
+    item.querySelector('.sidebar-level-name').textContent = level.name || 'Untitled';
 
-        const name = document.createElement('div');
-        name.className = 'sidebar-level-name';
-        name.textContent = lvl.name || 'Untitled';
+    const loadLevel = () => {
+        (mode.isEditor() ? Editor.load : Game.selectLevel)(level);
+        ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        ui.sidebar.classList.add('collapsed');
+    };
 
-        item.appendChild(wrapper);
-        item.appendChild(name);
+    switch (type) {
+        case TYPE.DEFAULT:
+            item.addEventListener('click', loadLevel);
+            break;
 
-        // Delete button (My Levels, editor mode only)
-        if (canDelete) {
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-level-btn';
-            deleteBtn.innerHTML = '<img src="icons/trash3-fill.svg" alt="" width="16" height="16">';
-            deleteBtn.title = 'Delete level';
+        case TYPE.CUSTOM:
+            item.addEventListener('click', loadLevel);
+            if (!mode.isEditor()) break;
+
+            const deleteBtn = html(`
+                <button class="delete-level-btn" title="Delete level">
+                    <img src="icons/trash3-fill.svg" alt="" width="16" height="16">
+                </button>
+            `);
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                levels.delete(lvl.id);
-                showMyLevelsTab();
+                levels.delete(level.id);
+                onRefresh?.();
             });
             item.appendChild(deleteBtn);
-        }
+            break;
 
-        // Restorable items (Trash) - special styling
-        if (restorable) {
-            item.classList.add('restorable');
-        }
+        case TYPE.COMMUNITY: {
+            item.addEventListener('click', loadLevel);
 
-        // Star button (Community)
-        if (lvl.stars !== undefined && lvl.uid) {
-            const starred = levels.isStarred(lvl.uid);
-            const starBtn = document.createElement('button');
-            starBtn.className = 'star-btn' + (starred ? ' starred' : '');
-            starBtn.innerHTML = `<img src="/img/golden-apple.png" alt=""><span>${lvl.stars}</span>`;
-            starBtn.title = starred ? 'Remove star' : 'Star this level';
+            const starred = levels.isStarred(level.uid);
+            const starBtn = html(`
+                <button class="star-btn${starred ? ' starred' : ''}" title="${starred ? 'Remove star' : 'Star this level'}">
+                    <img src="/img/golden-apple.png" alt=""><span>${level.stars || 0}</span>
+                </button>
+            `);
+
             starBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const wasStarred = levels.isStarred(lvl.uid);
+                const wasStarred = levels.isStarred(level.uid);
                 const newStarred = !wasStarred;
 
                 // Optimistic update
-                levels.setStarred(lvl.uid, newStarred);
-                lvl.stars += newStarred ? 1 : -1;
-                showCommunityLevels();
+                levels.setStarred(level.uid, newStarred);
+                level.stars += newStarred ? 1 : -1;
+                onRefresh?.();
 
-                community.sendStar(lvl.uid, newStarred).catch(() => {
-                    // Revert
-                    levels.setStarred(lvl.uid, wasStarred);
-                    lvl.stars += wasStarred ? 1 : -1;
-                    showCommunityLevels();
+                community.sendStar(level.uid, newStarred).catch(() => {
+                    // Revert on failure
+                    levels.setStarred(level.uid, wasStarred);
+                    level.stars += wasStarred ? 1 : -1;
+                    onRefresh?.();
                     const notif = document.querySelector('.community-header .notification');
                     if (notif) notify(notif, 'Could not reach server', true, 2000);
                 });
             });
             item.appendChild(starBtn);
+            break;
         }
 
-        target.appendChild(item);
+        case TYPE.TRASH:
+            item.classList.add('restorable');
+            item.addEventListener('click', () => {
+                levels.restore(level.id);
+                onRefresh?.();
+            });
+            break;
+    }
 
-        if (restorable && lvl.id) {
-            // Trash: clicking restores the level
-            item.addEventListener('click', () => {
-                levels.restore(lvl.id);
-                showTrashTab();
-            });
-        } else {
-            // Normal: clicking loads the level
-            item.addEventListener('click', () => {
-                if (mode.isEditor()) {
-                    Editor.load(lvl);
-                } else {
-                    Game.selectLevel(lvl);
-                }
-                ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
-                item.classList.add('selected');
-                ui.sidebar.classList.add('collapsed');
-            });
-        }
+    return item;
+}
+
+function renderLevels(levelArray, type, container = ui.levelList) {
+    const onRefresh = () => refreshActiveTab();
+    for (const level of levelArray) {
+        container.appendChild(makeLevelItemCard(level, type, onRefresh));
     }
 }
 
-// --- Tab Functions ---
+// --- Tabs ---
+
+const TAB_HANDLERS = {
+    'default': showDefaultTab,
+    'my-levels': showMyLevelsTab,
+    'community': showCommunityTab,
+    'trash': showTrashTab,
+};
 
 export function showDefaultTab() {
     ui.levelList.innerHTML = '';
-    populateLevelList(levels.builtIn());
+    renderLevels(levels.builtIn(), TYPE.DEFAULT);
 }
 
 export function showMyLevelsTab() {
     ui.levelList.innerHTML = '';
-    populateLevelList(levels.custom(), { deletable: true });
+    renderLevels(levels.custom(), TYPE.CUSTOM);
 }
 
 export function showTrashTab() {
@@ -133,35 +142,25 @@ export function showTrashTab() {
     ui.levelList.innerHTML = '';
 
     if (deleted.length === 0) {
-        const msg = document.createElement('div');
-        msg.className = 'community-message';
-        msg.textContent = 'Trash is empty';
-        ui.levelList.appendChild(msg);
+        ui.levelList.appendChild(html(`<div class="community-message">Trash is empty</div>`));
         return;
     }
 
-    const header = document.createElement('div');
-    header.className = 'trash-header';
-
-    const emptyBtn = document.createElement('button');
-    emptyBtn.className = 'btn empty-trash-btn';
-    emptyBtn.textContent = 'Empty Trash';
-    emptyBtn.addEventListener('click', () => {
+    const header = html(`
+        <div class="trash-header">
+            <button class="btn empty-trash-btn">Empty Trash</button>
+            <div class="trash-hint">Click a level to restore it</div>
+        </div>
+    `);
+    header.querySelector('.empty-trash-btn').addEventListener('click', () => {
         if (confirm('Permanently delete all levels in trash?')) {
             levels.emptyTrash();
             showTrashTab();
         }
     });
-    header.appendChild(emptyBtn);
-
-    const hint = document.createElement('div');
-    hint.className = 'trash-hint';
-    hint.textContent = 'Click a level to restore it';
-    header.appendChild(hint);
-
     ui.levelList.appendChild(header);
 
-    populateLevelList(deleted, { restorable: true, append: true });
+    renderLevels(deleted, TYPE.TRASH);
 }
 
 // --- Community Tab ---
@@ -173,18 +172,23 @@ export async function showCommunityTab() {
     }
 
     if (community.isLoading()) {
-        showCommunityLoading();
+        ui.levelList.innerHTML = '<div class="community-message">Loading community levels...</div>';
         return;
     }
 
     const result = await community.fetchIfNeeded();
     if (result.error) {
-        showCommunityError(result.error);
+        ui.levelList.innerHTML = `<div class="community-message"><span class="community-error">${result.error}</span></div>`;
         return;
     }
 
     if (result.levels.length === 0) {
-        showCommunityEmpty();
+        ui.levelList.innerHTML = `
+            <div class="community-message">
+                No community levels yet.<br>
+                Share your levels from the Level Creator!
+            </div>
+        `;
     } else {
         showCommunityLevels();
     }
@@ -193,58 +197,44 @@ export async function showCommunityTab() {
 function showCommunityLevels() {
     const communityLevels = community.getLevels();
     const sorted = [...communityLevels].sort((a, b) => (b.stars || 0) - (a.stars || 0));
-    const filtered = state.searchQuery
-        ? sorted.filter(l => l.name?.toLowerCase().includes(state.searchQuery))
+    const filtered = searchQuery
+        ? sorted.filter(l => l.name?.toLowerCase().includes(searchQuery))
         : sorted;
 
     ui.levelList.innerHTML = '';
 
-    // Header: search + view toggle + refresh
-    const header = document.createElement('div');
-    header.className = 'community-header';
+    // Header
+    const header = html(`
+        <div class="community-header">
+            <input type="text" class="community-search" placeholder="Search levels...">
+            <label class="toggle-switch" title="Toggle list view">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="community-view-label">Compact</span>
+            <button class="community-refresh-btn" title="Refresh levels">
+                <img src="icons/arrow-counterclockwise.svg" alt="">
+            </button>
+            <div class="notification"></div>
+        </div>
+    `);
 
-    const search = document.createElement('input');
-    search.type = 'text';
-    search.className = 'community-search';
-    search.placeholder = 'Search levels...';
-    search.value = state.searchQuery;
+    const search = header.querySelector('.community-search');
+    search.value = searchQuery;
     search.addEventListener('input', (e) => {
-        state.searchQuery = e.target.value.toLowerCase();
+        searchQuery = e.target.value.toLowerCase();
         showCommunityLevels();
     });
-    header.appendChild(search);
 
-    // View toggle
-    const toggleLabel = document.createElement('label');
-    toggleLabel.className = 'toggle-switch';
-    toggleLabel.title = 'Toggle list view';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.checked = state.viewMode === 'list';
-    toggleInput.addEventListener('change', () => {
-        state.viewMode = toggleInput.checked ? 'list' : 'thumbnails';
-        localStorage.setItem('svinesti-community-view', state.viewMode);
+    const toggle = header.querySelector('input[type="checkbox"]');
+    toggle.checked = prefs.communityViewMode.get() === 'list';
+    toggle.addEventListener('change', () => {
+        prefs.communityViewMode.set(toggle.checked ? 'list' : 'thumbnails');
         showCommunityLevels();
     });
-    const toggleSlider = document.createElement('span');
-    toggleSlider.className = 'toggle-slider';
-    toggleLabel.appendChild(toggleInput);
-    toggleLabel.appendChild(toggleSlider);
-    header.appendChild(toggleLabel);
 
-    const viewLabel = document.createElement('span');
-    viewLabel.className = 'community-view-label';
-    viewLabel.textContent = 'Compact';
-    header.appendChild(viewLabel);
-
-    const refreshBtn = document.createElement('button');
-    refreshBtn.className = 'community-refresh-btn';
-    refreshBtn.title = 'Refresh levels';
-    refreshBtn.innerHTML = '<img src="icons/arrow-counterclockwise.svg" alt="">';
-
-    const refreshNotification = document.createElement('div');
-    refreshNotification.className = 'notification';
-
+    const refreshBtn = header.querySelector('.community-refresh-btn');
+    const refreshNotif = header.querySelector('.notification');
     refreshBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         refreshBtn.disabled = true;
@@ -252,56 +242,28 @@ function showCommunityLevels() {
         community.forceRefresh().then((result) => {
             anim.cancel();
             if (result === true) showCommunityLevels();
-            else if (result === false) notify(refreshNotification, 'No new levels', false, 2000);
-            else notify(refreshNotification, 'Could not reach server', true, 2000);
+            else if (result === false) notify(refreshNotif, 'No new levels', false, 2000);
+            else notify(refreshNotif, 'Could not reach server', true, 2000);
         });
         setTimeout(() => refreshBtn.disabled = false, 30000);
     });
-    header.appendChild(refreshBtn);
-    header.appendChild(refreshNotification);
 
     ui.levelList.appendChild(header);
 
     // Levels
     if (filtered.length > 0) {
-        const container = document.createElement('div');
-        container.className = 'community-levels-container';
-        if (state.viewMode === 'list') container.classList.add('list-view');
-        populateLevelList(filtered, {}, container);
+        const container = html(`<div class="community-levels-container${prefs.communityViewMode.get() === 'list' ? ' list-view' : ''}"></div>`);
+        renderLevels(filtered, TYPE.COMMUNITY, container);
         ui.levelList.appendChild(container);
-    } else if (state.searchQuery) {
-        const msg = document.createElement('div');
-        msg.className = 'community-message';
-        msg.textContent = 'No levels match your search.';
-        ui.levelList.appendChild(msg);
+    } else if (searchQuery) {
+        ui.levelList.appendChild(html(`<div class="community-message">No levels match your search.</div>`));
     }
 
     // Re-focus search if actively searching
-    if (state.searchQuery) {
+    if (searchQuery) {
         search.focus();
         search.selectionStart = search.selectionEnd = search.value.length;
     }
-}
-
-function showCommunityLoading() {
-    ui.levelList.innerHTML = '<div class="community-message">Loading community levels...</div>';
-}
-
-function showCommunityEmpty() {
-    ui.levelList.innerHTML = `
-        <div class="community-message">
-            No community levels yet.<br>
-            Share your levels from the Level Creator!
-        </div>
-    `;
-}
-
-function showCommunityError(message) {
-    ui.levelList.innerHTML = `
-        <div class="community-message">
-            <span class="community-error">${message}</span>
-        </div>
-    `;
 }
 
 function showConsentRequest() {
@@ -333,22 +295,16 @@ export function init() {
         tab.addEventListener('click', () => {
             ui.sidebarTabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-            const tabName = tab.dataset.tab;
-            if (tabName === 'default') showDefaultTab();
-            else if (tabName === 'my-levels') showMyLevelsTab();
-            else if (tabName === 'community') showCommunityTab();
-            else if (tabName === 'trash') showTrashTab();
+            TAB_HANDLERS[tab.dataset.tab]?.();
         });
     });
 
-    levels.onChange(() => refreshActiveTab());
-    community.onChange(() => refreshActiveTab());
+    levels.onChange(refreshActiveTab);
+    community.onChange(refreshActiveTab);
 }
 
 export function refreshActiveTab() {
-    const activeTab = document.querySelector('.sidebar-tab.active');
-    const tabName = activeTab?.dataset.tab;
-    if (tabName === 'my-levels') showMyLevelsTab();
-    else if (tabName === 'trash') showTrashTab();
-    else if (tabName === 'community') showCommunityLevels();
+    const tabName = document.querySelector('.sidebar-tab.active')?.dataset.tab;
+    if (tabName === 'community') showCommunityLevels(); // Skip fetch, just re-render
+    else TAB_HANDLERS[tabName]?.();
 }
