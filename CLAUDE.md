@@ -29,7 +29,11 @@ Svinesti is a browser-based educational programming game where students control 
 - `levels.js` — Level definitions and `DEFAULT_LEVEL`
 - `names.js` — Random name generator and UID generator
 - `PigJatin/` — ANTLR4 grammar, transpiler, and tests
-- `css/` — Modular stylesheets (base, layout, header, sidebar, code-editor, game, help, splash)
+- `css/` — Modular stylesheets:
+  - `variables.css` — CSS custom properties (colors, sizing, typography) shared by app and wiki
+  - `base.css` — Reset, scrollbar, shared components (btn, toggle, kbd, notification)
+  - `wiki.css` — Document styles for standalone help pages
+  - `layout.css`, `header.css`, `sidebar.css`, `code-editor.css`, `game.css`, `help.css`, `splash.css`
 - `help/` — Static help pages (infinite-loop.html)
 - `appscript/` — Google Apps Script for community backend
 
