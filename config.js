@@ -5,19 +5,18 @@
 //
 // Organization:
 //   1. Timing / Animation
-//   2. Colors (JS-only; UI colors in base.css)
-//   3. Sizes / Layout
-//   4. Infinite Loop Detection
-//   5. Keyboard Shortcuts
-//   6. Storage Keys
-//   7. Game Mechanics
-//   8. Community
-//   9. External Dependencies
-//  10. Default Preferences
-//  11. Grid Defaults
-//  12. Feature Flags
-//  13. Text / Messages
-//  14. PigJatin Configuration
+//   2. Colors (JS-only; UI colors/sizes in CSS)
+//   3. Infinite Loop Detection
+//   4. Keyboard Shortcuts
+//   5. Storage Keys
+//   6. Game Mechanics
+//   7. Community
+//   8. External Dependencies
+//   9. Default Preferences
+//  10. Grid Defaults
+//  11. Feature Flags
+//  12. Text / Messages
+//  13. PigJatin Configuration
 
 // =============================================================================
 // 1. TIMING / ANIMATION
@@ -77,56 +76,7 @@ export const CONFETTI_COLORS = [
 ];
 
 // =============================================================================
-// 3. SIZES / LAYOUT
-// =============================================================================
-
-// Global layout
-export const HEADER_HEIGHT = 56;        // pixels
-export const SIDEBAR_WIDTH = 480;       // pixels
-export const BORDER_RADIUS = {
-    sm: 6,
-    md: 10,
-    lg: 16,
-};
-
-// Code editor panel
-export const CODE_SECTION_WIDTH = 480;      // pixels, default
-export const CODE_SECTION_MIN_WIDTH = 400;  // pixels
-export const CODE_SECTION_MAX_WIDTH = 560;  // pixels
-export const EDITOR_FONT_SIZE = 16;         // pixels
-export const BUTTON_WIDTH = 70;             // pixels
-export const CODE_OUTPUT_MIN_HEIGHT = 60;   // pixels
-
-// Game elements
-export const PIG_SPRITE_SIZE = 90;          // percent of tile
-export const TARGET_APPLE_SIZE = 40;        // percent of tile
-export const TARGET_APPLE_POSITION = 30;    // percent from top-left
-export const COMPARISON_TILE_SIZE = 32;     // pixels
-export const COLOR_HUD_MAX_WIDTH = 180;     // pixels
-export const COLOR_HUD_MARGIN = 8;          // pixels
-
-// Confetti piece sizes
-export const CONFETTI_SIZE = 10;            // pixels (square/circle)
-export const CONFETTI_RIBBON_WIDTH = 8;     // pixels
-export const CONFETTI_RIBBON_HEIGHT = 16;   // pixels
-
-// Splash screen
-export const SPLASH_PIG_WIDTH = 450;        // pixels
-export const SPLASH_PIG_HEIGHT = 225;       // pixels
-export const SPLASH_TITLE_SIZE = 5;         // rem
-export const SPLASH_SHADOW_WIDTH = 200;     // pixels
-export const SPLASH_SHADOW_HEIGHT = 40;     // pixels
-
-// Help modal
-export const HELP_MODAL_MAX_WIDTH = 1100;   // pixels
-export const HELP_MODAL_MAX_HEIGHT = 85;    // vh percent
-export const RESPONSIVE_BREAKPOINT = 900;   // pixels
-
-// Near-right-edge threshold for HUD positioning
-export const HUD_EDGE_THRESHOLD = 2;        // columns from right edge
-
-// =============================================================================
-// 4. INFINITE LOOP DETECTION
+// 3. INFINITE LOOP DETECTION
 // =============================================================================
 
 export const MAX_OPS = 10000;               // Operations before timeout
@@ -134,7 +84,7 @@ export const TIMEOUT_TRACE_REPLAY = 100;    // Events to replay on timeout
 export const TIMEOUT_NOTIFICATION_DURATION = 10000; // ms
 
 // =============================================================================
-// 5. KEYBOARD SHORTCUTS
+// 4. KEYBOARD SHORTCUTS
 // =============================================================================
 
 // Default key bindings
@@ -154,7 +104,7 @@ export const MODIFIER_KEYS = ['Control', 'Alt', 'Shift', 'Meta'];
 export const LOCK_SHAKE_DURATION = 300;
 
 // =============================================================================
-// 6. STORAGE KEYS
+// 5. STORAGE KEYS
 // =============================================================================
 
 export const STORAGE_KEY_SHORTCUTS = 'svinesti-game-shortcuts-v1';
@@ -166,7 +116,7 @@ export const STORAGE_KEY_EDITOR_EDIT = 'svinesti-editor-edit-v1';
 export const STORAGE_KEY_EDITOR_PAINT = 'svinesti-editor-paint-v1';
 
 // =============================================================================
-// 7. GAME MECHANICS
+// 6. GAME MECHANICS
 // =============================================================================
 
 // Turn direction constants (used by Python too)
@@ -177,7 +127,7 @@ export const TURN_RIGHT = 1;
 export const COLOR_CYCLE = ['empty', 'blue', 'green', 'red']; // wraps to empty
 
 // =============================================================================
-// 8. COMMUNITY
+// 7. COMMUNITY
 // =============================================================================
 
 // Community levels server endpoint (Google Apps Script)
@@ -186,7 +136,7 @@ export const COMMUNITY_REFRESH_INTERVAL = 3 * 60 * 1000;  // 3 minutes
 export const COMMUNITY_SHARE_TIMEOUT = 60000;             // Server response wait
 
 // =============================================================================
-// 9. EXTERNAL DEPENDENCIES
+// 8. EXTERNAL DEPENDENCIES
 // =============================================================================
 
 export const PYODIDE_CDN_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.js';
@@ -202,7 +152,7 @@ export const pigSpriteUrl = (dir, num = 1) => `url("${pigSpritePath(dir, num)}")
 export const TARGET_ICON_PATH = 'img/golden-apple.png';
 
 // =============================================================================
-// 10. DEFAULT PREFERENCES
+// 9. DEFAULT PREFERENCES
 // =============================================================================
 
 export const DEFAULT_PREFERENCES = {
@@ -215,21 +165,21 @@ export const DEFAULT_PREFERENCES = {
 };
 
 // =============================================================================
-// 11. GRID DEFAULTS
+// 10. GRID DEFAULTS
 // =============================================================================
 
 export const DEFAULT_GRID_ROWS = 9;
 export const DEFAULT_GRID_COLS = 16;
 
 // =============================================================================
-// 12. FEATURE FLAGS
+// 11. FEATURE FLAGS
 // =============================================================================
 
 export const ENABLE_SPLASH_SCREEN = true;
 export const SVINESTI_PY_NO_CACHE = false;
 
 // =============================================================================
-// 13. TEXT / MESSAGES
+// 12. TEXT / MESSAGES
 // =============================================================================
 
 // Fallback names
@@ -273,7 +223,7 @@ export const SIDEBAR_NO_NEW_LEVELS = 'No new levels';
 export const SIDEBAR_ENABLE_COMMUNITY_FIRST = 'Enable Community Levels in Help menu first';
 
 // =============================================================================
-// 14. PIGJATIN CONFIGURATION
+// 13. PIGJATIN CONFIGURATION
 // =============================================================================
 
 // Allowed functions in PigJatin
