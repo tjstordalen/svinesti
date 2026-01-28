@@ -203,6 +203,14 @@
     border-radius: 0.25em;
     position: relative;
     font-size: 13px;
+    transition: transform 0.15s ease;
+    cursor: pointer;
+}
+
+.mini-tile:hover {
+    transform: scale(3);
+    transition-delay: 100ms;
+	z-index: 1000;
 }
 
 /* Shortcut toggle controls */
