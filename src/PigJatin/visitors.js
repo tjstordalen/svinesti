@@ -367,19 +367,18 @@ export class TranspilationVisitor extends PigJatinVisitor {
 	}
 
 	visitExprVariable(ctx) {
-		return `(${ctx.id.text})`
+		return ctx.id.text;
 	}
 
 	visitExprBinaryOp(ctx) {
 		let op = ctx.bop.text;
-		if (op === "||") op = " or ";
-		if (op === "&&") op = " and ";
-		if (op === "/" ) op = " // ";
-
+		if (op === "||") op = "or";
+		if (op === "&&") op = "and";
+		if (op === "/" ) op = "//";
 
 		const left  = this.visit(ctx.expr(0));
 		const right = this.visit(ctx.expr(1));
-		return `${left} ${op} ${right}`
+		return `(${left} ${op} ${right})`;
 	}
 
 	visitExprParenthesized(ctx) {
@@ -387,20 +386,17 @@ export class TranspilationVisitor extends PigJatinVisitor {
 	}
 
 	visitExprNegation(ctx) {
-		const expr = this.visit(ctx.expr(0));
-		return " - ( " + expr + " ) ";
+		return `-(${this.visit(ctx.expr(0))})`;
 	}
 
 	visitExprLiteral(ctx) {
-		// The parser guarantees that the literal is a correctly parsed boolean or integer
 		const literal = ctx.literal.text;
-		if		(literal === "true" ) return "True";
-		else if (literal === "false") return "False";
-		else return literal;
+		if (literal === "true")  return "True";
+		if (literal === "false") return "False";
+		return literal;
 	}
 
 	visitExprFunctionCall(ctx) {
-		const fn = ctx.funcName.text;
-		return ` (${fn}) `;
+		return ctx.funcName.text;
 	}
 }
