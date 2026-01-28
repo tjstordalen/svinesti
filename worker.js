@@ -1,13 +1,16 @@
 // Web Worker that runs student code in Pyodide (Python in WebAssembly).
 // Loads once, then executes each submission in an isolated namespace.
 
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.js");
+import { MSG } from './constants.js';
+
+const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.mjs";
 
 let pyodide = null;
 let engineCode = null;
 
 async function init() {
 	console.time("[worker] loadPyodide");
+	const { loadPyodide } = await import(PYODIDE_URL);
 	pyodide = await loadPyodide();
 	console.timeEnd("[worker] loadPyodide");
 
@@ -24,7 +27,7 @@ async function init() {
 	console.timeEnd("[worker] fetch svinesti.py");
 
 	console.log("[worker] ready");
-	self.postMessage({ type: 'ready' });
+	self.postMessage({ type: MSG.READY });
 	self.onmessage = handleMessage;
 }
 
@@ -38,7 +41,7 @@ async function handleMessage(event) {
 
 	    const codeIsEmpty = event.data.code.replace(/\s+/g, '').length === 0; 
 		if (codeIsEmpty) {
-			self.postMessage({ type: "execution-failed", errorMessage: "No program was provided" });
+			self.postMessage({ type: MSG.FAILED, errorMessage: "No program was provided" });
 			return
 		}
 
@@ -48,12 +51,12 @@ async function handleMessage(event) {
 
 		const result = pyodide.runPython(userCode, { globals: isolatedNamespace });
 		self.postMessage({
-			type: "execution-trace",
+			type: MSG.TRACE,
 			trace: result.toJs({ dict_converter: Object.fromEntries })
 		});
 	} catch (e) {
 		console.error("[worker] Execution failed:", e);
-		self.postMessage({ type: "execution-failed", errorMessage: e.message });
+		self.postMessage({ type: MSG.FAILED, errorMessage: e.message });
 	} finally {
 		if (isolatedNamespace) {
 			isolatedNamespace.destroy();

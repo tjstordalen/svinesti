@@ -11,6 +11,7 @@ Svinesti is a browser-based educational programming game where students control 
 | File | Purpose |
 |------|---------|
 | `app.js` | Central state: mode, levels, preferences, code, starred, ready. Each export object encapsulates its own state and persistence |
+| `constants.js` | Internal contracts: strings that must match across JS/Python (directions, event types, worker messages, modes) |
 | `main.js` | App shell: help modal, sidebar, event handlers, initialization |
 | `game.js` | Game mode: code editor, playback state machine, worker communication |
 | `grid.js` | `createGrid()` factory for game/editor/thumbnails. Returns `{tiles[], pig, getCell(), placePig()}` |
@@ -52,12 +53,12 @@ Svinesti is a browser-based educational programming game where students control 
 Prefer lookup tables over conditionals:
 
 ```javascript
-// grid.js
+// constants.js - shared across files
 const TILE_CLASSES = { ".": "empty", "r": "red", "g": "green", "b": "blue", "R": "red target", ... };
 
-// editor.js
+// editor.js - local mappings derived from constants where possible
+const DIR_CYCLE = Object.fromEntries(DIRECTIONS.map((d, i) => [d, DIRECTIONS[(i + 1) % 4]]));
 const COLOR_CYCLE = { '.': 'b', 'b': 'g', 'g': 'r', 'r': '.', 'B': 'G', 'G': 'R', 'R': '.' };
-const TARGET_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r' };
 ```
 
 ### State Objects (app.js)
@@ -112,7 +113,7 @@ Python-side only (no JS timeout). `svinesti.py` uses `sys.settrace()` to count e
 
 ## Worker Architecture
 
-Each execution gets `pyodide.globals.copy()` for a fresh namespace, preventing student code from polluting subsequent runs. Worker posts `"ready"` when Pyodide loads → `app.ready.set()` → splash hides.
+Module worker (`{ type: "module" }`) that imports from `constants.js`. Each execution gets `pyodide.globals.copy()` for a fresh namespace, preventing student code from polluting subsequent runs. Worker posts `MSG.READY` when Pyodide loads → `app.ready.set()` → splash hides.
 
 ## Level Editor
 

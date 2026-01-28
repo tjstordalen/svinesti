@@ -1,15 +1,6 @@
 // grid.js - Unified grid rendering
 
-// Map grid characters to CSS classes
-export const TILE_CLASSES = {
-    ".": "empty",
-    "r": "red",
-    "g": "green",
-    "b": "blue",
-    "R": "red target",
-    "G": "green target",
-    "B": "blue target",
-};
+import { TILE_CLASSES } from './constants.js';
 
 /**
  * Create a grid with tiles and a pig element.

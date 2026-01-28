@@ -6,6 +6,7 @@ import * as Game from "./game.js";
 import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
 import { ui } from "./ui.js";
+import { MODE } from "./constants.js";
 
 app.init();
 
@@ -118,7 +119,7 @@ if (app.prefs.showHelpOnStart.get()) {
 // Mode toggle
 ui.modePlay.onclick = () => {
     Editor.exit();
-    app.mode.set('game');
+    app.mode.set(MODE.GAME);
     ui.modePlay.classList.add("active");
     ui.modeEdit.classList.remove("active");
     // Switch away from Trash tab (not visible in play mode)
@@ -133,7 +134,7 @@ ui.modePlay.onclick = () => {
 
 ui.modeEdit.onclick = () => {
     Game.exit();
-    app.mode.set('editor');
+    app.mode.set(MODE.EDITOR);
     ui.modePlay.classList.remove("active");
     ui.modeEdit.classList.add("active");
     // Switch to My Levels tab

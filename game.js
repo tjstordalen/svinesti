@@ -6,6 +6,7 @@ import * as Shortcuts from "./shortcuts.js";
 import * as app from "./app.js";
 import { createGrid } from "./grid.js";
 import { ui } from "./ui.js";
+import { EVENT, MSG, STATUS, REASON } from "./constants.js";
 
 // --- State ---
 
@@ -18,7 +19,7 @@ const state = {
     grid: null,
 
     // Playback
-    status: "idle",       // "idle" | "playing" | "paused"
+    status: STATUS.IDLE,
 
     // Worker
     worker: null,
@@ -42,7 +43,7 @@ const playback = {
     },
 
     async play() {
-        while (state.status === "playing") {
+        while (state.status === STATUS.PLAYING) {
             const msg = this.next();
             if (msg === undefined) return;
 
@@ -149,7 +150,7 @@ async function submitAndEnter(enterFn) {
 
     // Check if trace ends with timeout - show notification and animation immediately
     const lastEvent = trace[trace.length - 1];
-    if (lastEvent?.reason === "timeout") {
+    if (lastEvent?.reason === REASON.TIMEOUT) {
         ui.codeOutput.textContent =
             "Infinite loop detected after 10,000 operations.\n" +
             "Replaying the last part to show where it got stuck.";
@@ -177,17 +178,17 @@ async function submitAndEnter(enterFn) {
 }
 
 const BUTTON_HANDLERS = {
-    idle: {
+    [STATUS.IDLE]: {
         btn1: () => submitAndEnter(enterPlaying),
         btn2: () => submitAndEnter(enterPaused),
         btn3: () => enterIdle(),
     },
-    playing: {
+    [STATUS.PLAYING]: {
         btn1: () => enterPaused(),
         btn2: () => { enterPaused(); playback.step(); },
         btn3: () => enterIdle(),
     },
-    paused: {
+    [STATUS.PAUSED]: {
         btn1: () => enterPlaying(),
         btn2: () => playback.step(),
         btn3: () => enterIdle(),
@@ -211,7 +212,7 @@ function enterState(status, { trace = null, resetBoard = true } = {}) {
     }
 
     // Idle-specific resets
-    if (status === "idle") {
+    if (status === STATUS.IDLE) {
         playback.clear();
         removeEditorHighlight();
         if (resetBoard && state.grid) {
@@ -222,29 +223,31 @@ function enterState(status, { trace = null, resetBoard = true } = {}) {
 
     // UI
     ui.playbackToolbar.className = "playback-toolbar " + status;
-    ui.editor.setOption("readOnly", status === "playing" ? "nocursor" : false);
+    ui.editor.setOption("readOnly", status === STATUS.PLAYING ? "nocursor" : false);
 
     // Buttons
     wireButtons(status);
 
     // Start playback chain
-    if (status === "playing") {
+    if (status === STATUS.PLAYING) {
         playback.play();
     }
 }
 
-export const enterIdle = (opts) => enterState("idle", opts);
-export const enterPlaying = (opts) => enterState("playing", opts);
-export const enterPaused = (opts) => enterState("paused", opts);
+export const enterIdle = (opts) => enterState(STATUS.IDLE, opts);
+export const enterPlaying = (opts) => enterState(STATUS.PLAYING, opts);
+export const enterPaused = (opts) => enterState(STATUS.PAUSED, opts);
 
 // --- Playback ---
 
-const DIRECTION_DELTAS = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
+// Direction deltas for animation [dx, dy] (screen coordinates)
+// Note: DIR_DELTAS uses [row, col] for grid logic; this uses [x, y] for animation
+const ANIM_DELTAS = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] };
 
 async function moveAnimated(dir, toRow, toCol) {
     const pig = state.grid.pig;
     const p = pig.parentElement; // this is a tile
-    const [mx, my] = DIRECTION_DELTAS[dir];
+    const [mx, my] = ANIM_DELTAS[dir];
     const [dx, dy] = [mx * p.offsetWidth, my * p.offsetHeight];
 
     if (await animations.move(pig, dx, dy, getAnimSpeed()) === animations.ABORT) return animations.ABORT;
@@ -260,44 +263,44 @@ async function processEvent(msg) {
     }
 
     switch (msg.type) {
-        case "lineExecuted":
-            // Standalone line (loops, assignments) - add brief pause for to "animate". 
+        case EVENT.LINE_EXECUTED:
+            // Standalone line (loops, assignments) - add brief pause for to "animate".
             await new Promise(r => setTimeout(r, getAnimSpeed() * LINE_PAUSE_MULTIPLIER));
             break;
 
-        case "move":
+        case EVENT.MOVE:
 			// moves the legs
             animations.walk(pig, msg.dir, getAnimSpeed());
-			// CLAUDO: these checks against animations.ABORT don't matter. I think the only relevant one is 
-			// CLAUDO: the one in the moveAnimated function. 
+			// CLAUDO: these checks against animations.ABORT don't matter. I think the only relevant one is
+			// CLAUDO: the one in the moveAnimated function.
 			// moves the pig
             if (await moveAnimated(msg.dir, msg.pos[0], msg.pos[1]) === animations.ABORT) return;
             break;
 
-        case "turn":
+        case EVENT.TURN:
             if (await animations.turn(pig, msg.dir, getAnimSpeed()) === animations.ABORT) return;
             break;
 
-        case "isColor":
+        case EVENT.IS_COLOR:
             ui.comparisonTile.className = 'tile ' + msg.color.toLowerCase();
             ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
             if (await animations.hudFlash(ui.colorComparisonHud, getAnimSpeed()) === animations.ABORT) return;
             break;
 
-        case "collected":
+        case EVENT.COLLECTED:
             const [r, c] = msg.pos;
-			// CLAUDO: rename the class target to "apple" accross all files, perhaps? 
+			// CLAUDO: rename the class target to "apple" accross all files, perhaps?
             state.grid.tiles[r * state.grid.nCols + c].classList.remove("target");
             break;
 
-        case "gameover":
+        case EVENT.GAMEOVER:
             // We do not play the timeout animation here, as we start that
 			// immediately when a timeout is noticed. See submitAndEnter()
             if (msg.win) {
                 animations.celebrate(pig);
             }
 			// CLAUDO why not check against loss explicitly? I don't renember the msg.reason string but you can find it
-			else if (msg.reason !== "timeout") {
+			else if (msg.reason !== REASON.TIMEOUT) {
                 const gridWrapper = document.getElementById('grid-wrapper');
                 animations.lose(pig, gridWrapper);
             }
@@ -308,13 +311,13 @@ async function processEvent(msg) {
 
 function applyEventSilent(msg) {
     switch (msg.type) {
-        case 'move':
+        case EVENT.MOVE:
             state.grid.movePigTo(msg.pos[0], msg.pos[1]);
             break;
-        case 'turn':
+        case EVENT.TURN:
             state.grid.pig.className = 'pig pig-' + msg.dir;
             break;
-        case 'collected':
+        case EVENT.COLLECTED:
             const [r, c] = msg.pos;
             state.grid.tiles[r * state.grid.nCols + c].classList.remove('target');
             break;
@@ -330,17 +333,16 @@ function resolveExecution(result) {
 
 function initWorker() {
     enterIdle();
-// CLAUDO: scan all the files and determine if there are any magic strings we should rather use constants for. 
-    state.worker = new Worker("worker.js");
+    state.worker = new Worker("worker.js", { type: "module" });
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
-            case "ready":
+            case MSG.READY:
                 app.ready.set();
                 break;
-            case "execution-trace":
+            case MSG.TRACE:
                 resolveExecution(data.trace);
                 break;
-            case "execution-failed":
+            case MSG.FAILED:
                 ui.codeOutput.textContent = data.errorMessage;
                 ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
                 animations.flash(ui.codeOutput);
@@ -397,21 +399,21 @@ function attachEventHandlers() {
         if (state.level) {
             app.code.set(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
         }
-        if (state.status === "paused") {
+        if (state.status === STATUS.PAUSED) {
             enterIdle();
         }
     });
 
     // Editor interaction during playback - auto-pause
     ui.editor.on("mousedown", (cm, event) => {
-        if (cm.getOption("readOnly") && state.status === "playing") {
+        if (cm.getOption("readOnly") && state.status === STATUS.PLAYING) {
             enterPaused();
             animations.notify(ui.gameNotification, "Paused to edit code");
         }
     });
 
     ui.editor.on("keydown", (cm, event) => {
-        if (cm.getOption("readOnly") && state.status === "playing") {
+        if (cm.getOption("readOnly") && state.status === STATUS.PLAYING) {
             enterPaused();
             animations.notify(ui.gameNotification, "Paused to edit code");
         }

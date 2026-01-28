@@ -11,10 +11,9 @@
 //   5. Keyboard Shortcuts
 //   6. Storage Keys
 //   7. Game Mechanics
-//   8. Default Level (Editor)
-//   9. External Dependencies
-//  10. Feature Flags
-//  11. Text / Messages
+//   8. External Dependencies
+//   9. Feature Flags
+//  10. Text / Messages
 
 // =============================================================================
 // 1. TIMING / ANIMATION
@@ -187,57 +186,15 @@ export const STORAGE_KEY_CUSTOM_LEVELS = 'svinesti-custom-levels';
 // 7. GAME MECHANICS
 // =============================================================================
 
-// Direction system
-export const DIR_NAMES = ['right', 'down', 'left', 'up'];
-export const DIR_VECTORS = [
-    [0, 1],   // right: row stays, col increases
-    [1, 0],   // down: row increases, col stays
-    [0, -1],  // left: row stays, col decreases
-    [-1, 0],  // up: row decreases, col stays
-];
+// Turn direction constants (used by Python too)
 export const TURN_LEFT = -1;
 export const TURN_RIGHT = 1;
 
 // Editor click cycling order
 export const COLOR_CYCLE = ['empty', 'blue', 'green', 'red']; // wraps to empty
-export const PIG_DIR_CYCLE = ['right', 'down', 'left', 'up']; // wraps to right
-
-// Tile character mapping (grid format)
-export const TILE_CHAR_TO_CLASS = {
-    '.': 'empty',
-    'r': 'red',
-    'g': 'green',
-    'b': 'blue',
-    'R': 'red target',
-    'G': 'green target',
-    'B': 'blue target',
-};
 
 // =============================================================================
-// 8. DEFAULT LEVEL (Editor)
-// =============================================================================
-
-export const DEFAULT_LEVEL = {
-    name: 'New Level',
-    nRows: 9,
-    nCols: 16,
-    grid: [
-        '................',
-        '................',
-        '................',
-        '................',
-        '................',
-        '................',
-        '................',
-        '................',
-        'b...............',
-    ],
-    start: [8, 0],
-    dir: 'right',
-};
-
-// =============================================================================
-// 9. EXTERNAL DEPENDENCIES
+// 8. EXTERNAL DEPENDENCIES
 // =============================================================================
 
 export const PYODIDE_CDN_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.js';
@@ -251,14 +208,14 @@ export const pigSpriteUrl = (dir, num = 1) => `url("${pigSpritePath(dir, num)}")
 export const TARGET_ICON_PATH = 'img/golden-apple.png';
 
 // =============================================================================
-// 10. FEATURE FLAGS
+// 9. FEATURE FLAGS
 // =============================================================================
 
 export const ENABLE_SPLASH_SCREEN = true;
 export const SVINESTI_PY_NO_CACHE = true;  // Use cache: 'no-store' for dev
 
 // =============================================================================
-// 11. TEXT / MESSAGES
+// 10. TEXT / MESSAGES
 // =============================================================================
 
 // Fallback names

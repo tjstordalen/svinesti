@@ -7,18 +7,12 @@ import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
 import { mode, levels, prefs, starred } from "./app.js";
+import { TAB } from "./constants.js";
 
 // --- Helpers ---
 
 const parser = new DOMParser();
 const html = (str) => parser.parseFromString(str, 'text/html').body.firstElementChild;
-
-const TYPE = {
-    DEFAULT: 'default',
-    CUSTOM: 'custom',
-    COMMUNITY: 'community',
-    TRASH: 'trash',
-};
 
 // --- State ---
 
@@ -45,11 +39,11 @@ function makeLevelItemCard(level, type, onRefresh) {
     };
 
     switch (type) {
-        case TYPE.DEFAULT:
+        case TAB.DEFAULT:
             item.addEventListener('click', loadLevel);
             break;
 
-        case TYPE.CUSTOM:
+        case TAB.CUSTOM:
             item.addEventListener('click', loadLevel);
             if (!mode.isEditor()) break;
 
@@ -66,7 +60,7 @@ function makeLevelItemCard(level, type, onRefresh) {
             item.appendChild(deleteBtn);
             break;
 
-        case TYPE.COMMUNITY: {
+        case TAB.COMMUNITY: {
             item.addEventListener('click', loadLevel);
 
             const isStarred = starred.is(level.uid);
@@ -99,7 +93,7 @@ function makeLevelItemCard(level, type, onRefresh) {
             break;
         }
 
-        case TYPE.TRASH:
+        case TAB.TRASH:
             item.classList.add('restorable');
             item.addEventListener('click', () => {
                 levels.restore(level.id);
@@ -129,12 +123,12 @@ const TAB_HANDLERS = {
 
 export function showDefaultTab() {
     ui.levelList.innerHTML = '';
-    renderLevels(levels.builtIn(), TYPE.DEFAULT);
+    renderLevels(levels.builtIn(), TAB.DEFAULT);
 }
 
 export function showMyLevelsTab() {
     ui.levelList.innerHTML = '';
-    renderLevels(levels.custom(), TYPE.CUSTOM);
+    renderLevels(levels.custom(), TAB.CUSTOM);
 }
 
 export function showTrashTab() {
@@ -160,7 +154,7 @@ export function showTrashTab() {
     });
     ui.levelList.appendChild(header);
 
-    renderLevels(deleted, TYPE.TRASH);
+    renderLevels(deleted, TAB.TRASH);
 }
 
 // --- Community Tab ---
@@ -253,7 +247,7 @@ function showCommunityLevels() {
     // Levels
     if (filtered.length > 0) {
         const container = html(`<div class="community-levels-container${prefs.communityViewMode.get() === 'list' ? ' list-view' : ''}"></div>`);
-        renderLevels(filtered, TYPE.COMMUNITY, container);
+        renderLevels(filtered, TAB.COMMUNITY, container);
         ui.levelList.appendChild(container);
     } else if (searchQuery) {
         ui.levelList.appendChild(html(`<div class="community-message">No levels match your search.</div>`));

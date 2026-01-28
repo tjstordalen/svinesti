@@ -1,6 +1,12 @@
 import sys
 import json
 
+# Contract: The strings in this file must match constants.js. If you change:
+# - DIR_NAMES = ["right", "down", "left", "up"]
+# - Event types: "move", "turn", "lineExecuted", "isColor", "collected", "gameover"
+# - Reason: "timeout"
+# You must also update constants.js.
+
 # Svinesti is an educational programming game where students control a pig on a
 # grid of colored squares. Some squares have stars. The goal is to write code
 # that walks the pig over all stars to collect them. Students use move(),

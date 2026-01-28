@@ -2,6 +2,7 @@
 
 import { ui } from './ui.js';
 import { levels as builtInLevels } from './levels.js';
+import { MODE } from './constants.js';
 
 const CUSTOM_LEVELS_KEY = 'svinesti-custom-levels';
 const STARRED_KEY = 'svinesti-starred';
@@ -25,7 +26,7 @@ export function init() {
 // --- Mode ---
 
 export const mode = {
-    _current: 'game',
+    _current: MODE.GAME,
 
     get() {
         return this._current;
@@ -33,9 +34,9 @@ export const mode = {
 
     set(newMode) {
         this._current = newMode;
-        document.body.classList.toggle('editor-mode', newMode === 'editor');
+        document.body.classList.toggle('editor-mode', newMode === MODE.EDITOR);
 
-        if (newMode === 'editor') {
+        if (newMode === MODE.EDITOR) {
             ui.playPane.setAttribute('hidden', '');
             ui.editorPane.removeAttribute('hidden');
         } else {
@@ -45,11 +46,11 @@ export const mode = {
     },
 
     isEditor() {
-        return this._current === 'editor';
+        return this._current === MODE.EDITOR;
     },
 
     isGame() {
-        return this._current === 'game';
+        return this._current === MODE.GAME;
     },
 };
 

@@ -4,7 +4,8 @@
 // A single render() function syncs state to DOM on every change.
 
 import { DEFAULT_LEVEL } from "./levels.js";
-import { createGrid, TILE_CLASSES } from "./grid.js";
+import { createGrid } from "./grid.js";
+import { TILE_CLASSES, DIRECTIONS } from "./constants.js";
 import { ui } from "./ui.js";
 import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
@@ -30,11 +31,15 @@ const TARGET_CYCLE = {
     '.': 'B', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R', 'R': 'r'
 };
 
-// Pig rotation (clockwise)
-const DIR_CYCLE = { right: 'down', down: 'left', left: 'up', up: 'right' };
+// Pig rotation (clockwise) - derived from DIRECTIONS order
+const DIR_CYCLE = Object.fromEntries(DIRECTIONS.map((d, i) => [d, DIRECTIONS[(i + 1) % 4]]));
 
-// For ghost rendering
-const CHAR_TO_COLOR = { '.': 'empty', 'r': 'red', 'g': 'green', 'b': 'blue' };
+// For ghost rendering - derived from TILE_CLASSES
+const CHAR_TO_COLOR = Object.fromEntries(
+    Object.entries(TILE_CLASSES)
+        .filter(([ch]) => ch === ch.toLowerCase())
+        .map(([ch, cls]) => [ch, cls.split(' ')[0]])
+);
 
 // --- State ---
 
