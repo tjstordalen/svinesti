@@ -1,7 +1,6 @@
 // main.js - App shell (help pane, mode switching)
 
 import * as app from "./app.js";
-import * as PigJatin from "./PigJatin/PigJatin.js";
 import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
@@ -62,7 +61,7 @@ window.addEventListener('community-levels-updated', () => {
 });
 
 // Preload community levels and start polling
-// This does nothing if the user has not given cnsent
+// This does nothing if the user has not given consent
 community.preload();
 community.startPolling(() => sidebar.refreshActiveTab());
 
@@ -158,5 +157,3 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Run PigJatin tests
-PigJatin.loadTestCases("./PigJatin/testcases.txt").then(PigJatin.runTests);
