@@ -5,13 +5,41 @@ import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as app from "./app.js";
 import { createGrid } from "./grid.js";
-import { ui } from "./ui.js";
 import { EVENT, MSG, STATUS, REASON } from "./constants.js";
 import {
     LINE_PAUSE_MULTIPLIER, TIMEOUT_TRACE_REPLAY, TIMEOUT_NOTIFICATION_DURATION,
     INFINITE_LOOP_OUTPUT_MESSAGE, INFINITE_LOOP_NOTIFICATION_HTML,
     NOTIFICATION_PAUSED_TO_EDIT,
 } from "./config.js";
+
+// --- DOM References ---
+
+const $ = id => document.getElementById(id);
+const grid = $('grid');
+const codeOutput = $('code-output');
+const btn1 = $('btn1');
+const btn2 = $('btn2');
+const btn3 = $('btn3');
+const speedSlider = $('playback-speed');
+const fontSizeSlider = $('editor-font-size-slider');
+const langPython = $('select-lang-python');
+const langJava = $('select-lang-java');
+const colorComparisonHud = $('color-comparison-hud');
+const comparisonTile = $('comparison-tile');
+const comparisonAnswer = $('comparison-answer');
+const playbackToolbar = document.querySelector('.playback-toolbar');
+const gameNotification = $('game-notification');
+const gameShortcutsContainer = $('game-shortcuts-container');
+const helpButton = $('help-button');
+
+const editor = CodeMirror.fromTextArea($('code-input'), {
+    lineNumbers: true,
+    lineWrapping: true,
+    mode: "python",
+    theme: "default",
+    indentUnit: 4,
+    tabSize: 4,
+});
 
 // --- State ---
 
@@ -86,31 +114,31 @@ function selectedLanguage() {
 }
 
 function getAnimSpeed() {
-    return ui.speedSlider.max - ui.speedSlider.value;
+    return speedSlider.max - speedSlider.value;
 }
 
 
 function removeEditorHighlight() {
-    for (let i = 0; i < ui.editor.lineCount(); i++) {
-        ui.editor.removeLineClass(i, "background", "highlighted-line");
+    for (let i = 0; i < editor.lineCount(); i++) {
+        editor.removeLineClass(i, "background", "highlighted-line");
     }
 }
 
 function highlightLine(lineno) {
 	removeEditorHighlight();
 	// line numbers are zero indexed
-	ui.editor.addLineClass(lineno - 1, "background", "highlighted-line");
+	editor.addLineClass(lineno - 1, "background", "highlighted-line");
 }
 
 // --- Grid rendering ---
 
 function loadLevel(level) {
     if (level === null) return;
-    state.grid = createGrid(ui.grid, level.nRows, level.nCols, level);
+    state.grid = createGrid(grid, level.nRows, level.nCols, level);
 
 	// the color comparison hud only appears when playing the game. 
 	// not in the level editor or in the thumbnail viewer
-    state.grid.pig.appendChild(ui.colorComparisonHud);
+    state.grid.pig.appendChild(colorComparisonHud);
 }
 
 // --- Code storage ---
@@ -126,18 +154,18 @@ function switchLanguage(newLang) {
     if (currentLang === newLang) return;
 
     if (state.level) {
-        app.code.set(levelKey(state.level), currentLang, ui.editor.getValue());
+        app.code.set(levelKey(state.level), currentLang, editor.getValue());
     }
 
-    ui.langPython.classList.toggle('active', newLang === 'python');
-    ui.langJava.classList.toggle('active', newLang === 'java');
+    langPython.classList.toggle('active', newLang === 'python');
+    langJava.classList.toggle('active', newLang === 'java');
 
     if (state.level) {
-        ui.editor.setValue(app.code.get(levelKey(state.level), newLang));
+        editor.setValue(app.code.get(levelKey(state.level), newLang));
     }
     const mode = newLang === "java" ? "text/x-java" : "python";
-    ui.editor.setOption("mode", mode);
-    ui.editor.setOption("indentUnit", 4);
+    editor.setOption("mode", mode);
+    editor.setOption("indentUnit", 4);
 }
 
 // --- State machine ---
@@ -145,7 +173,7 @@ function switchLanguage(newLang) {
 // what the program is currently doing
 
 async function submitAndEnter(enterFn) {
-    ui.codeOutput.textContent = "";
+    codeOutput.textContent = "";
     const code = getCode();
     if (code === null) return;
     let trace = await execute(code);
@@ -154,10 +182,10 @@ async function submitAndEnter(enterFn) {
     // Check if trace ends with timeout - show notification and animation immediately
     const lastEvent = trace[trace.length - 1];
     if (lastEvent?.reason === REASON.TIMEOUT) {
-        ui.codeOutput.textContent = INFINITE_LOOP_OUTPUT_MESSAGE;
-        animations.flash(ui.codeOutput);
-        ui.gameNotification.innerHTML = INFINITE_LOOP_NOTIFICATION_HTML;
-        animations.notify(ui.gameNotification, null, false, TIMEOUT_NOTIFICATION_DURATION, "light");
+        codeOutput.textContent = INFINITE_LOOP_OUTPUT_MESSAGE;
+        animations.flash(codeOutput);
+        gameNotification.innerHTML = INFINITE_LOOP_NOTIFICATION_HTML;
+        animations.notify(gameNotification, null, false, TIMEOUT_NOTIFICATION_DURATION, "light");
 
         const discarded = trace.slice(0, -TIMEOUT_TRACE_REPLAY);
         const kept = trace.slice(-TIMEOUT_TRACE_REPLAY);
@@ -198,9 +226,9 @@ const BUTTON_HANDLERS = {
 
 function wireButtons(status) {
     const h = BUTTON_HANDLERS[status];
-    ui.btn1.onclick = h.btn1;
-    ui.btn2.onclick = h.btn2;
-    ui.btn3.onclick = h.btn3;
+    btn1.onclick = h.btn1;
+    btn2.onclick = h.btn2;
+    btn3.onclick = h.btn3;
 }
 
 function enterState(status, { trace = null, resetBoard = true } = {}) {
@@ -223,8 +251,8 @@ function enterState(status, { trace = null, resetBoard = true } = {}) {
     }
 
     // UI
-    ui.playbackToolbar.className = "playback-toolbar " + status;
-    ui.editor.setOption("readOnly", status === STATUS.PLAYING ? "nocursor" : false);
+    playbackToolbar.className = "playback-toolbar " + status;
+    editor.setOption("readOnly", status === STATUS.PLAYING ? "nocursor" : false);
 
     // Buttons
     wireButtons(status);
@@ -283,9 +311,9 @@ async function processEvent(msg) {
             break;
 
         case EVENT.IS_COLOR:
-            ui.comparisonTile.className = 'tile ' + msg.color.toLowerCase();
-            ui.comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
-            if (await animations.hudFlash(ui.colorComparisonHud, getAnimSpeed()) === animations.ABORT) return;
+            comparisonTile.className = 'tile ' + msg.color.toLowerCase();
+            comparisonAnswer.textContent = msg.result ? 'yes' : 'no';
+            if (await animations.hudFlash(colorComparisonHud, getAnimSpeed()) === animations.ABORT) return;
             break;
 
         case EVENT.COLLECTED:
@@ -344,9 +372,9 @@ function initWorker() {
                 resolveExecution(data.trace);
                 break;
             case MSG.FAILED:
-                ui.codeOutput.textContent = data.errorMessage;
-                ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
-                animations.flash(ui.codeOutput);
+                codeOutput.textContent = data.errorMessage;
+                codeOutput.scrollTop = codeOutput.scrollHeight;
+                animations.flash(codeOutput);
                 resolveExecution(null);
                 break;
         }
@@ -356,14 +384,14 @@ function initWorker() {
 // --- Code submission ---
 
 function getCode() {
-    const program = ui.editor.getValue();
+    const program = editor.getValue();
     if (selectedLanguage() !== "java") return program;
 
     const [success, error, code] = PigJatin.generatePythonCode(program);
     if (!success) {
-        ui.codeOutput.textContent = error.msg;
-        ui.codeOutput.scrollTop = ui.codeOutput.scrollHeight;
-        animations.flash(ui.codeOutput);
+        codeOutput.textContent = error.msg;
+        codeOutput.scrollTop = codeOutput.scrollHeight;
+        animations.flash(codeOutput);
         return null;
     }
     return code;
@@ -383,22 +411,22 @@ function execute(code) {
 
 function attachEventHandlers() {
     // Font size
-    ui.fontSizeSlider.addEventListener("input", (e) => {
+    fontSizeSlider.addEventListener("input", (e) => {
         const size = parseInt(e.target.value, 10);
-        ui.editor.getWrapperElement().style.fontSize = size + "px";
+        editor.getWrapperElement().style.fontSize = size + "px";
         app.prefs.editorFontSize.set(size);
     });
 
     // Playback speed
-    ui.speedSlider.addEventListener("input", () => {
+    speedSlider.addEventListener("input", () => {
         app.prefs.playbackSpeed.set(getAnimSpeed());
     });
 
     // Editor change - save updated code, and auto-reset if editing during pause
 	// (because the trace that we have in memory becomes invalidated when you modify the code)
-    ui.editor.on("change", () => {
+    editor.on("change", () => {
         if (state.level) {
-            app.code.set(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
+            app.code.set(levelKey(state.level), selectedLanguage(), editor.getValue());
         }
         if (state.status === STATUS.PAUSED) {
             enterIdle();
@@ -406,29 +434,29 @@ function attachEventHandlers() {
     });
 
     // Editor interaction during playback - auto-pause
-    ui.editor.on("mousedown", (cm, event) => {
+    editor.on("mousedown", (cm, event) => {
         if (cm.getOption("readOnly") && state.status === STATUS.PLAYING) {
             enterPaused();
-            animations.notify(ui.gameNotification, NOTIFICATION_PAUSED_TO_EDIT);
+            animations.notify(gameNotification, NOTIFICATION_PAUSED_TO_EDIT);
         }
     });
 
-    ui.editor.on("keydown", (cm, event) => {
+    editor.on("keydown", (cm, event) => {
         if (cm.getOption("readOnly") && state.status === STATUS.PLAYING) {
             enterPaused();
-            animations.notify(ui.gameNotification, NOTIFICATION_PAUSED_TO_EDIT);
+            animations.notify(gameNotification, NOTIFICATION_PAUSED_TO_EDIT);
         }
     });
 
     // Language buttons
-    ui.langPython.onclick = () => switchLanguage('python');
-    ui.langJava.onclick = () => switchLanguage('java');
+    langPython.onclick = () => switchLanguage('python');
+    langJava.onclick = () => switchLanguage('java');
 }
 
 // --- Shortcuts (internal) ---
 
 const unlessFocused = (fn) => () => {
-    if (ui.editor.hasFocus()) return false;
+    if (editor.hasFocus()) return false;
     fn();
 };
 
@@ -436,32 +464,32 @@ function registerShortcuts() {
     shortcuts.register({
         id:     "play-pause",
         name:   "Play / Pause",
-        action: unlessFocused(() => ui.btn1.click()),
+        action: unlessFocused(() => btn1.click()),
         key:    "h",
     });
     shortcuts.register({
         id:     "step",
         name:   "Step",
-        action: unlessFocused(() => ui.btn2.click()),
+        action: unlessFocused(() => btn2.click()),
         key:    "j",
     });
     shortcuts.register({
         id:     "reset",
         name:   "Reset",
-        action: unlessFocused(() => ui.btn3.click()),
+        action: unlessFocused(() => btn3.click()),
         key:    "k",
     });
     shortcuts.register({
         id:         "run-code",
         name:       "Run code",
-        action:     () => { ui.editor.getInputField().blur(); submitAndEnter(enterPlaying); },
+        action:     () => { editor.getInputField().blur(); submitAndEnter(enterPlaying); },
         key:        "ctrl+enter",
         rebindable: false,
     });
     shortcuts.register({
         id:         "help",
         name:       "Help",
-        action:     () => ui.helpButton.click(),
+        action:     () => helpButton.click(),
         key:        "?",
         rebindable: false,
     });
@@ -471,16 +499,16 @@ function registerShortcuts() {
 
 export function init() {
     // Initialize sliders from preferences
-    ui.fontSizeSlider.value = app.prefs.editorFontSize.get();
-    ui.editor.getWrapperElement().style.fontSize = app.prefs.editorFontSize.get() + "px";
-    ui.speedSlider.value = ui.speedSlider.max - app.prefs.playbackSpeed.get();
+    fontSizeSlider.value = app.prefs.editorFontSize.get();
+    editor.getWrapperElement().style.fontSize = app.prefs.editorFontSize.get() + "px";
+    speedSlider.value = speedSlider.max - app.prefs.playbackSpeed.get();
 
     // Attach event handlers
     attachEventHandlers();
 
     // Register and initialize shortcuts
     registerShortcuts();
-    shortcuts.init(ui.gameShortcutsContainer);
+    shortcuts.init(gameShortcutsContainer);
 
     // Initialize worker (triggers app.ready.set() when Pyodide loads)
     initWorker();
@@ -497,12 +525,12 @@ export function exit() {
 
 export function selectLevel(level) {
     if (state.level) {
-        app.code.set(levelKey(state.level), selectedLanguage(), ui.editor.getValue());
+        app.code.set(levelKey(state.level), selectedLanguage(), editor.getValue());
     }
     state.level = level;
-    ui.editor.setValue(app.code.get(levelKey(level), selectedLanguage()));
+    editor.setValue(app.code.get(levelKey(level), selectedLanguage()));
     loadLevel(level);
-    ui.codeOutput.textContent = "";
+    codeOutput.textContent = "";
     enterIdle();
 }
 

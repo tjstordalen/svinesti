@@ -1,13 +1,19 @@
 // app.js - Central app state and coordination
 
-import { ui } from './ui.js';
 import { levels as builtInLevels } from './levels.js';
 import { MODE } from './constants.js';
 import {
     STORAGE_KEY_CUSTOM_LEVELS, STORAGE_KEY_STARRED,
     STORAGE_KEY_PREFERENCES, STORAGE_KEY_CODE,
-    DEFAULT_PREFERENCES, SPLASH_FADE_DURATION,
+    DEFAULT_PREFERENCES, SPLASH_FADE_DURATION, ENABLE_SPLASH_SCREEN,
 } from './config.js';
+
+// --- DOM References ---
+
+const $ = id => document.getElementById(id);
+const splashScreen = $('splash-screen');
+const playPane = $('play-pane');
+const editorPane = $('editor-pane');
 
 let initialized = false;
 
@@ -37,11 +43,11 @@ export const mode = {
         document.body.classList.toggle('editor-mode', newMode === MODE.EDITOR);
 
         if (newMode === MODE.EDITOR) {
-            ui.playPane.setAttribute('hidden', '');
-            ui.editorPane.removeAttribute('hidden');
+            playPane.setAttribute('hidden', '');
+            editorPane.removeAttribute('hidden');
         } else {
-            ui.editorPane.setAttribute('hidden', '');
-            ui.playPane.removeAttribute('hidden');
+            editorPane.setAttribute('hidden', '');
+            playPane.removeAttribute('hidden');
         }
     },
 
@@ -235,10 +241,14 @@ export const ready = {
     },
 
     _hideSplash() {
-        if (!ui.splashScreen) return;
-        ui.splashScreen.classList.add("fade-out");
+        if (!splashScreen) return;
+        if (!ENABLE_SPLASH_SCREEN) {
+            splashScreen.style.display = "none";
+            return;
+        }
+        splashScreen.classList.add("fade-out");
         setTimeout(() => {
-            ui.splashScreen.style.display = "none";
+            splashScreen.style.display = "none";
         }, SPLASH_FADE_DURATION);
     },
 };

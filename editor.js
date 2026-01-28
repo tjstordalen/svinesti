@@ -6,7 +6,6 @@
 import { DEFAULT_LEVEL } from "./levels.js";
 import { createGrid } from "./grid.js";
 import { TILE_CLASSES, DIRECTIONS } from "./constants.js";
-import { ui } from "./ui.js";
 import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as community from "./community.js";
@@ -17,6 +16,18 @@ import {
     COMMUNITY_SHARE_TIMEOUT, NOTIFICATION_LINK_COPIED,
     SIDEBAR_ENABLE_COMMUNITY_FIRST, DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS,
 } from "./config.js";
+
+// --- DOM References ---
+
+const $ = id => document.getElementById(id);
+const editorGrid = $('editor-grid');
+const editorLevelName = $('editor-level-name');
+const editorNameReset = $('editor-name-reset');
+const editorShare = $('editor-share');
+const editorShareCommunity = $('editor-share-community');
+const editorNotification = $('editor-notification');
+const editorEditShortcuts = $('editor-edit-shortcuts');
+const editorPaintShortcuts = $('editor-paint-shortcuts');
 
 // --- Shortcuts ---
 
@@ -77,8 +88,8 @@ function render() {
         if (i === state.pigIndex) tile.classList.add('pig-' + state.pigDir);
     });
 
-    const g = ui.editorGrid.style;
-    ui.editorGrid.classList.remove('ghost-red', 'ghost-green', 'ghost-blue');
+    const g = editorGrid.style;
+    editorGrid.classList.remove('ghost-red', 'ghost-green', 'ghost-blue');
     if (state.isDraggingPig && state.cursor !== state.pigIndex) {
         g.setProperty('--ghost-pig', `url(/pigs/${state.pigDir}-1.png)`);
         g.setProperty('--ghost-color', 'transparent');
@@ -86,7 +97,7 @@ function render() {
     } else if (state.clipboard) {
         g.removeProperty('--ghost-pig');
         const color = CHAR_TO_COLOR[state.clipboard.toLowerCase()];
-        if (color !== 'empty') ui.editorGrid.classList.add('ghost-' + color);
+        if (color !== 'empty') editorGrid.classList.add('ghost-' + color);
         g.setProperty('--ghost-color', `var(--tile-${color})`);
         g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(/img/golden-apple.png)' : 'none');
         g.setProperty('--ghost-visible', 'visible');
@@ -205,9 +216,9 @@ function load(level) {
     state.uid = level.uid || null;
 
     if (level.name) {
-        ui.editorLevelName.value = level.name;
+        editorLevelName.value = level.name;
     } else {
-        ui.editorLevelName.value = generateLevelName();
+        editorLevelName.value = generateLevelName();
         state.uid = generateUID();
     }
 
@@ -223,7 +234,7 @@ function load(level) {
         expandedLevel.grid.push(cells.slice(r * canvasCols, (r + 1) * canvasCols).join(''));
     }
 
-    state.grid = createGrid(ui.editorGrid, canvasRows, canvasCols, expandedLevel);
+    state.grid = createGrid(editorGrid, canvasRows, canvasCols, expandedLevel);
     state.grid.tiles.forEach((tile, i) => tile.index = i);
     state.grid.pig.remove();
     render();
@@ -333,25 +344,25 @@ function registerShortcuts() {
     editShortcuts.register({
         id:     "move-up",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
         key:    "arrowup",
     });
     editShortcuts.register({
         id:     "move-down",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
         key:    "arrowdown",
     });
     editShortcuts.register({
         id:     "move-left",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
         key:    "arrowleft",
     });
     editShortcuts.register({
         id:     "move-right",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
         key:    "arrowright",
     });
     editShortcuts.register({
@@ -377,25 +388,25 @@ function registerShortcuts() {
     paintShortcuts.register({
         id:     "move-up",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
         key:    "arrowup",
     });
     paintShortcuts.register({
         id:     "move-down",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
         key:    "arrowdown",
     });
     paintShortcuts.register({
         id:     "move-left",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
         key:    "arrowleft",
     });
     paintShortcuts.register({
         id:     "move-right",
         name:   "Move cursor",
-        action: () => { ui.editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
+        action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
         key:    "arrowright",
     });
     paintShortcuts.register({
@@ -425,7 +436,7 @@ function handleMouseDown(e) {
     if (i === null) return;
 
     e.preventDefault();
-    ui.editorGrid.classList.remove('keyboard-nav');
+    editorGrid.classList.remove('keyboard-nav');
     state.cursor = i;
 
     if (e.button === 2) {
@@ -548,13 +559,13 @@ async function handleShareClick() {
     const level = serialize();
     const error = validate(level);
     if (error) {
-        animations.notify(ui.editorNotification, error, true);
+        animations.notify(editorNotification, error, true);
         return;
     }
     const url = exportToURL(compact(level));
     try {
         await navigator.clipboard.writeText(url);
-        animations.notify(ui.editorNotification, NOTIFICATION_LINK_COPIED);
+        animations.notify(editorNotification, NOTIFICATION_LINK_COPIED);
     } catch (e) {
         prompt('Copy this link to share your level:', url);
     }
@@ -562,44 +573,44 @@ async function handleShareClick() {
 
 async function handleShareCommunityClick() {
     if (!app.prefs.communityConsent.get()) {
-        animations.notify(ui.editorNotification, SIDEBAR_ENABLE_COMMUNITY_FIRST, true);
+        animations.notify(editorNotification, SIDEBAR_ENABLE_COMMUNITY_FIRST, true);
         return;
     }
 
     const level = serialize();
     const error = validate(level);
     if (error) {
-        animations.notify(ui.editorNotification, error, true);
+        animations.notify(editorNotification, error, true);
         return;
     }
 
     const compacted = compact(level);
-    compacted.name = ui.editorLevelName.value.trim();
+    compacted.name = editorLevelName.value.trim();
     compacted.uid = state.uid;
     const levelData = btoa(JSON.stringify(compacted));
 
-    animations.notify(ui.editorNotification, 'Sharing...', false, COMMUNITY_SHARE_TIMEOUT);
+    animations.notify(editorNotification, 'Sharing...', false, COMMUNITY_SHARE_TIMEOUT);
 
     try {
         const result = await community.submitLevel(levelData);
 
         if (result.error) {
-            animations.notify(ui.editorNotification, result.error, true);
+            animations.notify(editorNotification, result.error, true);
             return;
         }
 
-        animations.notify(ui.editorNotification, `Shared as "${result.name}"!`);
+        animations.notify(editorNotification, `Shared as "${result.name}"!`);
         window.dispatchEvent(new CustomEvent('community-levels-updated'));
     } catch (e) {
         console.error('Failed to share to community:', e);
-        animations.notify(ui.editorNotification, 'Failed to share. Try again.', true);
+        animations.notify(editorNotification, 'Failed to share. Try again.', true);
     }
 }
 
 function autosave() {
     const level = serialize();
     const compacted = compact(level);
-    compacted.name = ui.editorLevelName.value.trim() || 'Untitled';
+    compacted.name = editorLevelName.value.trim() || 'Untitled';
     compacted.uid = state.uid;
 
     if (state.editingLevelId) {
@@ -612,7 +623,7 @@ function autosave() {
 }
 
 function handleNameResetClick() {
-    ui.editorLevelName.value = generateLevelName();
+    editorLevelName.value = generateLevelName();
     state.uid = generateUID();
     autosave();
 }
@@ -621,8 +632,8 @@ function handleNameResetClick() {
 
 function init() {
     registerShortcuts();
-    editShortcuts.init(ui.editorEditShortcuts);
-    paintShortcuts.init(ui.editorPaintShortcuts);
+    editShortcuts.init(editorEditShortcuts);
+    paintShortcuts.init(editorPaintShortcuts);
 }
 
 function enter() {
@@ -631,12 +642,12 @@ function enter() {
     editShortcuts.enable();
     document.addEventListener('keyup', handleKeyUp);
     document.addEventListener('mouseup', handleMouseUp);
-    ui.editorGrid.addEventListener('mousedown', handleMouseDown);
-    ui.editorGrid.addEventListener('mousemove', handleMouseMove);
-    ui.editorGrid.addEventListener('contextmenu', handleContextMenu);
-    ui.editorShare.addEventListener('click', handleShareClick);
-    ui.editorShareCommunity.addEventListener('click', handleShareCommunityClick);
-    ui.editorNameReset.addEventListener('click', handleNameResetClick);
+    editorGrid.addEventListener('mousedown', handleMouseDown);
+    editorGrid.addEventListener('mousemove', handleMouseMove);
+    editorGrid.addEventListener('contextmenu', handleContextMenu);
+    editorShare.addEventListener('click', handleShareClick);
+    editorShareCommunity.addEventListener('click', handleShareCommunityClick);
+    editorNameReset.addEventListener('click', handleNameResetClick);
 }
 
 function exit() {
@@ -644,12 +655,12 @@ function exit() {
     paintShortcuts.disable();
     document.removeEventListener('keyup', handleKeyUp);
     document.removeEventListener('mouseup', handleMouseUp);
-    ui.editorGrid.removeEventListener('mousedown', handleMouseDown);
-    ui.editorGrid.removeEventListener('mousemove', handleMouseMove);
-    ui.editorGrid.removeEventListener('contextmenu', handleContextMenu);
-    ui.editorShare.removeEventListener('click', handleShareClick);
-    ui.editorShareCommunity.removeEventListener('click', handleShareCommunityClick);
-    ui.editorNameReset.removeEventListener('click', handleNameResetClick);
+    editorGrid.removeEventListener('mousedown', handleMouseDown);
+    editorGrid.removeEventListener('mousemove', handleMouseMove);
+    editorGrid.removeEventListener('contextmenu', handleContextMenu);
+    editorShare.removeEventListener('click', handleShareClick);
+    editorShareCommunity.removeEventListener('click', handleShareCommunityClick);
+    editorNameReset.removeEventListener('click', handleNameResetClick);
 }
 
 export { init, enter, exit, load, serialize, validate, importFromURL };

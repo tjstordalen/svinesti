@@ -5,9 +5,21 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
-import { ui } from "./ui.js";
 import { MODE } from "./constants.js";
-import { ENABLE_SPLASH_SCREEN } from "./config.js";
+
+// --- DOM References ---
+
+const $ = id => document.getElementById(id);
+const helpButton = $('help-button');
+const helpPane = $('help-modal');
+const helpClose = $('help-close');
+const helpOverlay = document.querySelector('.help-overlay');
+const modePlay = $('mode-play');
+const modeEdit = $('mode-edit');
+const colorblindToggle = $('colorblind-toggle');
+const communityConsentToggle = $('community-consent-toggle');
+const showHelpOnStartToggle = $('show-help-on-start-toggle');
+const levelList = $('level-list');
 
 app.init();
 
@@ -17,19 +29,22 @@ const help = {
     previousFocus: null,
 
     helpIsOpen() {
-        return ui.helpPane.classList.contains("show");
+        return helpPane.classList.contains("show");
     },
 
     enter() {
-        this.previousFocus = ui.editor.hasFocus()
-            ? ui.editor.getInputField()
-            : document.activeElement;
-        ui.helpPane.classList.add("show");
-        ui.helpPane.focus();
+        // Sync toggles with current pref values
+        colorblindToggle.checked = app.prefs.colorblind.get();
+        communityConsentToggle.checked = app.prefs.communityConsent.get();
+        showHelpOnStartToggle.checked = app.prefs.showHelpOnStart.get();
+
+        this.previousFocus = document.activeElement;
+        helpPane.classList.add("show");
+        helpPane.focus();
     },
 
     exit() {
-        ui.helpPane.classList.remove("show");
+        helpPane.classList.remove("show");
         this.previousFocus?.focus();
         this.previousFocus = null;
     },
@@ -41,11 +56,6 @@ const help = {
 };
 
 // --- Initialize ---
-
-// Hide splash screen if disabled
-if (!ENABLE_SPLASH_SCREEN && ui.splashScreen) {
-    ui.splashScreen.style.display = "none";
-}
 
 // Initialize modules
 Game.init();
@@ -70,7 +80,7 @@ const sharedLevel = Editor.importFromURL();
 if (sharedLevel) {
     Game.selectLevel(sharedLevel);
 } else {
-    ui.levelList.querySelector(".sidebar-level-item")?.click();
+    levelList.querySelector(".sidebar-level-item")?.click();
 }
 
 // Start in game mode
@@ -78,29 +88,19 @@ Game.enter();
 
 // --- Event handlers ---
 
-// Sidebar pull-tab and click-outside-to-close
-ui.sidebarPullTab.onclick = () => ui.sidebar.classList.toggle("collapsed");
-document.addEventListener('click', (e) => {
-    const isOutside = !ui.sidebar.contains(e.target);
-    const isModeToggle = e.target.closest('.mode-toggle');
-    if (isOutside && !isModeToggle) {
-        ui.sidebar.classList.add("collapsed");
-    }
-});
-
 // Help pane
-ui.helpButton.onclick = () => help.toggle();
-ui.helpClose.onclick = () => help.exit();
-ui.helpOverlay.onclick = () => help.exit();
+helpButton.onclick = () => help.toggle();
+helpClose.onclick = () => help.exit();
+helpOverlay.onclick = () => help.exit();
 
 // Colorblind mode toggle
-ui.colorblindToggle.checked = app.prefs.colorblind.get();
-ui.colorblindToggle.onchange = () => app.prefs.colorblind.set(ui.colorblindToggle.checked);
+colorblindToggle.checked = app.prefs.colorblind.get();
+colorblindToggle.onchange = () => app.prefs.colorblind.set(colorblindToggle.checked);
 
 // Community consent toggle
-ui.communityConsentToggle.checked = app.prefs.communityConsent.get();
-ui.communityConsentToggle.onchange = () => {
-    app.prefs.communityConsent.set(ui.communityConsentToggle.checked);
+communityConsentToggle.checked = app.prefs.communityConsent.get();
+communityConsentToggle.onchange = () => {
+    app.prefs.communityConsent.set(communityConsentToggle.checked);
     // Refresh community tab if active
     const activeTab = document.querySelector('.sidebar-tab.active');
     if (activeTab?.dataset.tab === 'community') {
@@ -109,49 +109,45 @@ ui.communityConsentToggle.onchange = () => {
 };
 
 // Show help on start toggle (default: true)
-ui.showHelpOnStartToggle.checked = app.prefs.showHelpOnStart.get();
-ui.showHelpOnStartToggle.onchange = () => app.prefs.showHelpOnStart.set(ui.showHelpOnStartToggle.checked);
+showHelpOnStartToggle.checked = app.prefs.showHelpOnStart.get();
+showHelpOnStartToggle.onchange = () => app.prefs.showHelpOnStart.set(showHelpOnStartToggle.checked);
 if (app.prefs.showHelpOnStart.get()) {
     help.enter();
 }
 
 // Mode toggle
-ui.modePlay.onclick = () => {
+modePlay.onclick = () => {
     Editor.exit();
     app.mode.set(MODE.GAME);
-    ui.modePlay.classList.add("active");
-    ui.modeEdit.classList.remove("active");
+    modePlay.classList.add("active");
+    modeEdit.classList.remove("active");
     // Switch away from Trash tab (not visible in play mode)
     const activeTab = document.querySelector('.sidebar-tab.active');
     if (activeTab?.dataset.tab === 'trash') {
-        ui.sidebarTabs.forEach(t => t.classList.remove('active'));
-        document.querySelector('[data-tab="default"]').classList.add('active');
-        sidebar.showDefaultTab();
+        sidebar.setActiveTab('default');
     }
     Game.enter();
 };
 
-ui.modeEdit.onclick = () => {
+modeEdit.onclick = () => {
     Game.exit();
     app.mode.set(MODE.EDITOR);
-    ui.modePlay.classList.remove("active");
-    ui.modeEdit.classList.add("active");
+    modePlay.classList.remove("active");
+    modeEdit.classList.add("active");
     // Switch to My Levels tab
-    ui.sidebarTabs.forEach(t => t.classList.remove('active'));
-    document.querySelector('[data-tab="my-levels"]').classList.add('active');
-    sidebar.showMyLevelsTab();
+    sidebar.setActiveTab('my-levels');
     Editor.enter();
 };
 
-// Global shortcuts (editor mode only - game mode uses shortcuts.js)
+// Global shortcuts
 document.addEventListener('keydown', (e) => {
-    // Help toggle - only in editor mode when not typing
-    if (e.key === '?' && app.mode.isEditor() && !ui.editor.hasFocus()) {
+    // Help toggle (global)
+    if (e.key === '?') {
         e.preventDefault();
-		help.toggle();
+        help.toggle();
     }
     // Escape closes help pane
-    if (e.key === 'Escape' && ui.helpPane.classList.contains('show')) {
+    if (e.key === 'Escape' && helpPane.classList.contains('show')) {
         e.preventDefault();
         help.exit();
     }

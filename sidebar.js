@@ -1,7 +1,6 @@
 // sidebar.js - Sidebar level list rendering
 
 import { createGrid } from "./grid.js";
-import { ui } from "./ui.js";
 import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
@@ -13,6 +12,14 @@ import {
     SIDEBAR_SEARCH_PLACEHOLDER, SIDEBAR_NO_MATCHES, SIDEBAR_SERVER_ERROR,
     SIDEBAR_NO_NEW_LEVELS,
 } from "./config.js";
+
+// --- DOM References ---
+
+const $ = id => document.getElementById(id);
+const sidebar = $('sidebar');
+const sidebarPullTab = document.querySelector('.sidebar-pull-tab');
+const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+const levelList = $('level-list');
 
 // --- Helpers ---
 
@@ -38,9 +45,9 @@ function makeLevelItemCard(level, type, onRefresh) {
 
     const loadLevel = () => {
         (mode.isEditor() ? Editor.load : Game.selectLevel)(level);
-        ui.levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
+        levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
         item.classList.add('selected');
-        ui.sidebar.classList.add('collapsed');
+        sidebar.classList.add('collapsed');
     };
 
     switch (type) {
@@ -110,7 +117,7 @@ function makeLevelItemCard(level, type, onRefresh) {
     return item;
 }
 
-function renderLevels(levelArray, type, container = ui.levelList) {
+function renderLevels(levelArray, type, container = levelList) {
     const onRefresh = () => refreshActiveTab();
     for (const level of levelArray) {
         container.appendChild(makeLevelItemCard(level, type, onRefresh));
@@ -127,21 +134,21 @@ const TAB_HANDLERS = {
 };
 
 export function showDefaultTab() {
-    ui.levelList.innerHTML = '';
+    levelList.innerHTML = '';
     renderLevels(levels.builtIn(), TAB.DEFAULT);
 }
 
 export function showMyLevelsTab() {
-    ui.levelList.innerHTML = '';
+    levelList.innerHTML = '';
     renderLevels(levels.custom(), TAB.CUSTOM);
 }
 
 export function showTrashTab() {
     const deleted = levels.deleted();
-    ui.levelList.innerHTML = '';
+    levelList.innerHTML = '';
 
     if (deleted.length === 0) {
-        ui.levelList.appendChild(html(`<div class="community-message">${SIDEBAR_TRASH_EMPTY}</div>`));
+        levelList.appendChild(html(`<div class="community-message">${SIDEBAR_TRASH_EMPTY}</div>`));
         return;
     }
 
@@ -157,7 +164,7 @@ export function showTrashTab() {
             showTrashTab();
         }
     });
-    ui.levelList.appendChild(header);
+    levelList.appendChild(header);
 
     renderLevels(deleted, TAB.TRASH);
 }
@@ -171,18 +178,18 @@ export async function showCommunityTab() {
     }
 
     if (community.isLoading()) {
-        ui.levelList.innerHTML = `<div class="community-message">${SIDEBAR_LOADING}</div>`;
+        levelList.innerHTML = `<div class="community-message">${SIDEBAR_LOADING}</div>`;
         return;
     }
 
     const result = await community.fetchIfNeeded();
     if (result.error) {
-        ui.levelList.innerHTML = `<div class="community-message"><span class="community-error">${result.error}</span></div>`;
+        levelList.innerHTML = `<div class="community-message"><span class="community-error">${result.error}</span></div>`;
         return;
     }
 
     if (result.levels.length === 0) {
-        ui.levelList.innerHTML = `<div class="community-message">${SIDEBAR_NO_COMMUNITY_LEVELS}</div>`;
+        levelList.innerHTML = `<div class="community-message">${SIDEBAR_NO_COMMUNITY_LEVELS}</div>`;
     } else {
         showCommunityLevels();
     }
@@ -195,7 +202,7 @@ function showCommunityLevels() {
         ? sorted.filter(l => l.name?.toLowerCase().includes(searchQuery))
         : sorted;
 
-    ui.levelList.innerHTML = '';
+    levelList.innerHTML = '';
 
     // Header
     const header = html(`
@@ -242,15 +249,15 @@ function showCommunityLevels() {
         setTimeout(() => refreshBtn.disabled = false, 30000);
     });
 
-    ui.levelList.appendChild(header);
+    levelList.appendChild(header);
 
     // Levels
     if (filtered.length > 0) {
         const container = html(`<div class="community-levels-container${prefs.communityViewMode.get() === 'list' ? ' list-view' : ''}"></div>`);
         renderLevels(filtered, TAB.COMMUNITY, container);
-        ui.levelList.appendChild(container);
+        levelList.appendChild(container);
     } else if (searchQuery) {
-        ui.levelList.appendChild(html(`<div class="community-message">${SIDEBAR_NO_MATCHES}</div>`));
+        levelList.appendChild(html(`<div class="community-message">${SIDEBAR_NO_MATCHES}</div>`));
     }
 
     // Re-focus search if actively searching
@@ -261,7 +268,7 @@ function showCommunityLevels() {
 }
 
 function showConsentRequest() {
-    ui.levelList.innerHTML = `
+    levelList.innerHTML = `
         <div class="community-consent">
             <h3>Community Levels</h3>
             <p>Community levels are stored on Google's servers. To browse and share levels, this app will contact Google.</p>
@@ -277,7 +284,6 @@ function showConsentRequest() {
     document.getElementById('community-consent-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         prefs.communityConsent.set(true);
-        ui.communityConsentToggle.checked = true;
         showCommunityTab();
     });
 }
@@ -285,16 +291,33 @@ function showConsentRequest() {
 // --- Init ---
 
 export function init() {
-    ui.sidebarTabs.forEach(tab => {
+    // Tab click handlers
+    sidebarTabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            ui.sidebarTabs.forEach(t => t.classList.remove('active'));
+            sidebarTabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             TAB_HANDLERS[tab.dataset.tab]?.();
         });
     });
 
+    // Collapse behavior
+    sidebarPullTab.onclick = () => sidebar.classList.toggle('collapsed');
+    document.addEventListener('click', (e) => {
+        const isOutside = !sidebar.contains(e.target);
+        const isModeToggle = e.target.closest('.mode-toggle');
+        if (isOutside && !isModeToggle) {
+            sidebar.classList.add('collapsed');
+        }
+    });
+
     levels.onChange(refreshActiveTab);
     community.onChange(refreshActiveTab);
+}
+
+export function setActiveTab(name) {
+    sidebarTabs.forEach(t => t.classList.remove('active'));
+    document.querySelector(`[data-tab="${name}"]`)?.classList.add('active');
+    TAB_HANDLERS[name]?.();
 }
 
 export function refreshActiveTab() {
