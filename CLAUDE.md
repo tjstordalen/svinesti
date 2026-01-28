@@ -19,6 +19,7 @@ Svinesti is a browser-based educational programming game where students control 
 | `community.js` | Community levels: fetching, sharing, Google server interaction |
 | `worker.js` | Pyodide web worker, isolated namespaces per execution |
 | `svinesti.py` | Python game engine with line tracing and infinite loop detection (MAX_OPS = 10,000) |
+| `sidebar.js` | Sidebar tabs: Default, My Levels, Community, Trash. Type-based card rendering with `makeLevelItemCard()` |
 | `shortcuts.js` | Keyboard shortcut factory with rebinding, persistence, enable/disable lifecycle |
 
 ### Supporting Files
