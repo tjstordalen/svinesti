@@ -252,7 +252,7 @@ export const DEFAULT_GRID_COLS = 16;
 // =============================================================================
 
 export const ENABLE_SPLASH_SCREEN = true;
-export const SVINESTI_PY_NO_CACHE = true;  // Use cache: 'no-store' for dev
+export const SVINESTI_PY_NO_CACHE = false;
 
 // =============================================================================
 // 13. TEXT / MESSAGES

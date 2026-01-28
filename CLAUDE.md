@@ -11,6 +11,7 @@ Svinesti is a browser-based educational programming game where students control 
 | File | Purpose |
 |------|---------|
 | `app.js` | Central state: mode, levels, preferences, code, starred, ready. Each export object encapsulates its own state and persistence |
+| `config.js` | Operator-tunable values: timing, colors, sizes, storage keys, CDN URLs, default preferences, messages, feature flags |
 | `constants.js` | Internal contracts: strings that must match across JS/Python (directions, event types, worker messages, modes) |
 | `main.js` | App shell: help modal, sidebar, event handlers, initialization |
 | `game.js` | Game mode: code editor, playback state machine, worker communication |
@@ -72,7 +73,7 @@ Each export object encapsulates its state (`_data`, `_storage`, etc.) and persis
 - `code` — `_storage`, `get(levelKey, language)`, `set(levelKey, language, value)`
 - `ready` — `_done`, `_callbacks`, `is()`, `on(cb)`, `set()`
 
-Persistence via localStorage: `svinesti-custom-levels`, `svinesti-starred`, `svinesti-preferences`, `svinesti-code`
+Persistence via localStorage (keys defined in `config.js`): custom-levels, starred, preferences, code, editor shortcuts
 
 ### CSS Conventions
 
