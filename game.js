@@ -335,7 +335,7 @@ function initWorker() {
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
             case "ready":
-                app.setReady();
+                app.ready.set();
                 break;
             case "execution-trace":
                 resolveExecution(data.trace);
@@ -479,7 +479,7 @@ export function init() {
     registerShortcuts();
     shortcuts.init(ui.gameShortcutsContainer);
 
-    // Initialize worker (triggers app.setReady() when Pyodide loads)
+    // Initialize worker (triggers app.ready.set() when Pyodide loads)
     initWorker();
 }
 
