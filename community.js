@@ -4,11 +4,7 @@
 // UI rendering moved to sidebar.js.
 
 import * as app from './app.js';
-
-// Apps Script endpoint for community levels (GET to fetch, POST to submit)
-const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbxdJIZKtws3OOWncGuvnrDGd8crSCrzwSCfSErzvKrWA_07KNhHpftWtfow6xI3najmgw/exec';
-
-const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
+import { COMMUNITY_URL, COMMUNITY_REFRESH_INTERVAL } from './config.js';
 
 // --- State ---
 
@@ -152,7 +148,7 @@ async function pollRefresh(onUpdate) {
 }
 
 export function startPolling(onUpdate) {
-    setInterval(() => pollRefresh(onUpdate), REFRESH_INTERVAL);
+    setInterval(() => pollRefresh(onUpdate), COMMUNITY_REFRESH_INTERVAL);
 }
 
 export async function preload() {

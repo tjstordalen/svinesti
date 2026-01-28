@@ -13,12 +13,14 @@
 //   - Async functions await animation.finished to sequence multi-part animations
 //   - handleAbortException wraps async functions to catch cancellation gracefully
 
-// --- Timing multipliers (relative to base animSpeed from UI slider) ---
-
-const MOVE_MULTIPLIER = 2;    // movement takes 2x base speed
-const TURN_MULTIPLIER = 1.5;  // turn takes 1.5x base speed
-const HUD_MULTIPLIER = 3;     // HUD flash takes 3x base speed
-const WALK_CYCLES = 2;        // number of walk sprite cycles during movement
+import {
+    MOVE_MULTIPLIER, TURN_MULTIPLIER, HUD_MULTIPLIER, WALK_CYCLES,
+    CELEBRATE_DURATION, LOSE_DURATION,
+    TIMEOUT_GRID_DURATION, TIMEOUT_GRID_ITERATIONS,
+    TIMEOUT_PIG_DURATION, TIMEOUT_PIG_ITERATIONS,
+    NOTIFY_DURATION_DEFAULT, FLASH_DURATION_DEFAULT, CONFETTI_CLEANUP_DELAY,
+    NOTIFY_COLOR_INFO, NOTIFY_COLOR_ERROR, CONFETTI_COLORS,
+} from './config.js';
 
 // --- Sprite helpers ---
 
@@ -258,7 +260,7 @@ async function hudFlashThrowsAbort(hud, animSpeed) {
 export function celebrate(pig) {
     confetti(document.getElementById('confetti-container'));
     pig.animate(KEYFRAMES.CELEBRATE, {
-        duration: 1500,
+        duration: CELEBRATE_DURATION,
         easing: 'ease-out'
     });
 }
@@ -278,7 +280,7 @@ const DIE_PARAMS = {
 export function lose(pig, gridWrapper) {
     if (gridWrapper) {
         gridWrapper.animate(KEYFRAMES.SHAKE, {
-            duration: 600,
+            duration: LOSE_DURATION,
             easing: 'ease-out'
         });
     }
@@ -288,7 +290,7 @@ export function lose(pig, gridWrapper) {
         { transform: 'rotate(0deg) translateX(0) translateY(0)' },
         { transform: `rotate(${rotation}deg) translateX(${dx}) translateY(${dy})` }
     ], {
-        duration: 600,
+        duration: LOSE_DURATION,
         easing: 'ease-out',
         fill: 'forwards'  // stay fallen
     });
@@ -301,20 +303,17 @@ export function lose(pig, gridWrapper) {
  */
 export function timeout(gridWrapper, pig) {
     gridWrapper.animate(KEYFRAMES.TIMEOUT_GRID, {
-        duration: 150,
-        iterations: 6
+        duration: TIMEOUT_GRID_DURATION,
+        iterations: TIMEOUT_GRID_ITERATIONS
     });
     pig.animate(KEYFRAMES.TIMEOUT_PIG, {
-        duration: 180,
-        iterations: 5,
+        duration: TIMEOUT_PIG_DURATION,
+        iterations: TIMEOUT_PIG_ITERATIONS,
         easing: 'ease-in-out'
     });
 }
 
 // --- Notification ---
-
-const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';   // sage green
-const NOTIFY_COLOR_ERROR = 'rgba(60, 60, 70, 0.95)';   // dark slate
 
 const NOTIFY_FADE_MS = 150;  // Fixed fade time regardless of duration
 
@@ -323,7 +322,7 @@ const NOTIFY_FADE_MS = 150;  // Fixed fade time regardless of duration
  * Cancels any existing animation on the element first.
  * @param {string} className - Optional CSS class for styling (e.g., "light")
  */
-export function notify(element, message, isError = false, duration = 2500, className = null) {
+export function notify(element, message, isError = false, duration = NOTIFY_DURATION_DEFAULT, className = null) {
     element.getAnimations().forEach(a => a.cancel());
     if (message !== null) {
         element.textContent = message;
@@ -354,7 +353,7 @@ export function notify(element, message, isError = false, duration = 2500, class
 /**
  * Flash - red glow that eases in and out.
  */
-export function flash(element, duration = 3000) {
+export function flash(element, duration = FLASH_DURATION_DEFAULT) {
     return element.animate(KEYFRAMES.FLASH, {
         duration,
         easing: 'ease-in-out',
@@ -375,11 +374,9 @@ export function spin(element, duration = 1500) {
 
 // --- Confetti ---
 
-const CONFETTI_COLORS = ['#FF8A8A', '#58E0B8', '#85D0FF', '#FFD700', '#FF6B6B', '#4ECDC4'];
-
 /**
  * Victory confetti - spawns 200 pieces that fall with random drift/rotation.
- * Auto-cleans up after 5 seconds.
+ * Auto-cleans up after configured delay.
  */
 export function confetti(container) {
     if (!container) return;
@@ -414,7 +411,7 @@ export function confetti(container) {
         container.appendChild(piece);
     }
 
-    setTimeout(() => { container.innerHTML = ''; }, 5000);
+    setTimeout(() => { container.innerHTML = ''; }, CONFETTI_CLEANUP_DELAY);
 }
 
 // --- Wrapped exports (catch AbortError gracefully) ---

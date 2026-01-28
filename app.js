@@ -3,11 +3,11 @@
 import { ui } from './ui.js';
 import { levels as builtInLevels } from './levels.js';
 import { MODE } from './constants.js';
-
-const CUSTOM_LEVELS_KEY = 'svinesti-custom-levels';
-const STARRED_KEY = 'svinesti-starred';
-const PREFERENCES_KEY = 'svinesti-preferences';
-const CODE_KEY = 'svinesti-code';
+import {
+    STORAGE_KEY_CUSTOM_LEVELS, STORAGE_KEY_STARRED,
+    STORAGE_KEY_PREFERENCES, STORAGE_KEY_CODE,
+    DEFAULT_PREFERENCES, SPLASH_FADE_DURATION,
+} from './config.js';
 
 let initialized = false;
 
@@ -64,22 +64,15 @@ function makePref(key, onSet) {
 }
 
 export const prefs = {
-    _data: {
-        colorblind: false,
-        communityConsent: false,
-        showHelpOnStart: true,
-        playbackSpeed: 150,
-        editorFontSize: 16,
-        communityViewMode: 'thumbnails',
-    },
+    _data: { ...DEFAULT_PREFERENCES },
 
     _load() {
-        const json = localStorage.getItem(PREFERENCES_KEY);
+        const json = localStorage.getItem(STORAGE_KEY_PREFERENCES);
         if (json) Object.assign(this._data, JSON.parse(json));
     },
 
     _persist() {
-        localStorage.setItem(PREFERENCES_KEY, JSON.stringify(this._data));
+        localStorage.setItem(STORAGE_KEY_PREFERENCES, JSON.stringify(this._data));
     },
 
     _apply() {
@@ -101,12 +94,12 @@ export const levels = {
     _callbacks: [],
 
     _load() {
-        const json = localStorage.getItem(CUSTOM_LEVELS_KEY);
+        const json = localStorage.getItem(STORAGE_KEY_CUSTOM_LEVELS);
         this._data = json ? JSON.parse(json) : [];
     },
 
     _persist() {
-        localStorage.setItem(CUSTOM_LEVELS_KEY, JSON.stringify(this._data));
+        localStorage.setItem(STORAGE_KEY_CUSTOM_LEVELS, JSON.stringify(this._data));
     },
 
     _notify() {
@@ -175,12 +168,12 @@ export const starred = {
     _uids: new Set(),
 
     _load() {
-        const json = localStorage.getItem(STARRED_KEY);
+        const json = localStorage.getItem(STORAGE_KEY_STARRED);
         this._uids = json ? new Set(JSON.parse(json)) : new Set();
     },
 
     _persist() {
-        localStorage.setItem(STARRED_KEY, JSON.stringify([...this._uids]));
+        localStorage.setItem(STORAGE_KEY_STARRED, JSON.stringify([...this._uids]));
     },
 
     is(uid) {
@@ -200,12 +193,12 @@ export const code = {
     _storage: {},
 
     _load() {
-        const json = localStorage.getItem(CODE_KEY);
+        const json = localStorage.getItem(STORAGE_KEY_CODE);
         this._storage = json ? JSON.parse(json) : {};
     },
 
     _persist() {
-        localStorage.setItem(CODE_KEY, JSON.stringify(this._storage));
+        localStorage.setItem(STORAGE_KEY_CODE, JSON.stringify(this._storage));
     },
 
     get(levelKey, language) {
@@ -220,8 +213,6 @@ export const code = {
 };
 
 // --- Ready State ---
-
-const SPLASH_FADE_MS = 500;
 
 export const ready = {
     _done: false,
@@ -248,6 +239,6 @@ export const ready = {
         ui.splashScreen.classList.add("fade-out");
         setTimeout(() => {
             ui.splashScreen.style.display = "none";
-        }, SPLASH_FADE_MS);
+        }, SPLASH_FADE_DURATION);
     },
 };

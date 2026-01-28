@@ -12,11 +12,16 @@ import * as Shortcuts from "./shortcuts.js";
 import * as community from "./community.js";
 import * as app from "./app.js";
 import { generateLevelName, generateUID } from "./names.js";
+import {
+    STORAGE_KEY_EDITOR_EDIT, STORAGE_KEY_EDITOR_PAINT,
+    COMMUNITY_SHARE_TIMEOUT, NOTIFICATION_LINK_COPIED,
+    SIDEBAR_ENABLE_COMMUNITY_FIRST, DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS,
+} from "./config.js";
 
 // --- Shortcuts ---
 
-const editShortcuts = Shortcuts.new('svinesti-editor-edit-v1');
-const paintShortcuts = Shortcuts.new('svinesti-editor-paint-v1');
+const editShortcuts = Shortcuts.new(STORAGE_KEY_EDITOR_EDIT);
+const paintShortcuts = Shortcuts.new(STORAGE_KEY_EDITOR_PAINT);
 
 // --- Constants ---
 
@@ -164,7 +169,7 @@ function moveCursor(direction) {
 
 // --- Load / Serialize ---
 
-function expand(level, canvasRows = DEFAULT_LEVEL.nRows, canvasCols = DEFAULT_LEVEL.nCols) {
+function expand(level, canvasRows = DEFAULT_GRID_ROWS, canvasCols = DEFAULT_GRID_COLS) {
     // Expand compacted level back to canvas size
     const { originRow = 0, originCol = 0 } = level;
 
@@ -549,7 +554,7 @@ async function handleShareClick() {
     const url = exportToURL(compact(level));
     try {
         await navigator.clipboard.writeText(url);
-        animations.notify(ui.editorNotification, 'Link copied to clipboard!');
+        animations.notify(ui.editorNotification, NOTIFICATION_LINK_COPIED);
     } catch (e) {
         prompt('Copy this link to share your level:', url);
     }
@@ -557,7 +562,7 @@ async function handleShareClick() {
 
 async function handleShareCommunityClick() {
     if (!app.prefs.communityConsent.get()) {
-        animations.notify(ui.editorNotification, 'Enable Community Levels in Help menu first', true);
+        animations.notify(ui.editorNotification, SIDEBAR_ENABLE_COMMUNITY_FIRST, true);
         return;
     }
 
@@ -573,7 +578,7 @@ async function handleShareCommunityClick() {
     compacted.uid = state.uid;
     const levelData = btoa(JSON.stringify(compacted));
 
-    animations.notify(ui.editorNotification, 'Sharing...', false, 60000);
+    animations.notify(ui.editorNotification, 'Sharing...', false, COMMUNITY_SHARE_TIMEOUT);
 
     try {
         const result = await community.submitLevel(levelData);

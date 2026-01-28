@@ -2,15 +2,14 @@
 // Loads once, then executes each submission in an isolated namespace.
 
 import { MSG } from './constants.js';
-
-const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.mjs";
+import { PYODIDE_WORKER_URL, SVINESTI_PY_NO_CACHE } from './config.js';
 
 let pyodide = null;
 let engineCode = null;
 
 async function init() {
 	console.time("[worker] loadPyodide");
-	const { loadPyodide } = await import(PYODIDE_URL);
+	const { loadPyodide } = await import(PYODIDE_WORKER_URL);
 	pyodide = await loadPyodide();
 	console.timeEnd("[worker] loadPyodide");
 
@@ -18,8 +17,8 @@ async function init() {
 	pyodide.setStderr({ batched: (text) => console.error("[py stderr]", text) });
 
 	console.time("[worker] fetch svinesti.py");
-	// no-store: avoid stale code during development
-	const response = await fetch("./svinesti.py", { cache: 'no-store' });
+	const fetchOptions = SVINESTI_PY_NO_CACHE ? { cache: 'no-store' } : {};
+	const response = await fetch("./svinesti.py", fetchOptions);
 	if (!response.ok) {
 		throw new Error(`Failed to fetch svinesti.py: ${response.status}`);
 	}

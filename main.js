@@ -7,10 +7,9 @@ import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
 import { ui } from "./ui.js";
 import { MODE } from "./constants.js";
+import { ENABLE_SPLASH_SCREEN } from "./config.js";
 
 app.init();
-
-const ENABLE_SPLASH_SCREEN = true;
 
 // --- Help pane ---
 

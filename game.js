@@ -7,6 +7,11 @@ import * as app from "./app.js";
 import { createGrid } from "./grid.js";
 import { ui } from "./ui.js";
 import { EVENT, MSG, STATUS, REASON } from "./constants.js";
+import {
+    LINE_PAUSE_MULTIPLIER, TIMEOUT_TRACE_REPLAY, TIMEOUT_NOTIFICATION_DURATION,
+    INFINITE_LOOP_OUTPUT_MESSAGE, INFINITE_LOOP_NOTIFICATION_HTML,
+    NOTIFICATION_PAUSED_TO_EDIT,
+} from "./config.js";
 
 // --- State ---
 
@@ -75,8 +80,6 @@ const playback = {
 const shortcuts = Shortcuts.new('svinesti-game-shortcuts-v1');
 
 // --- Utilities ---
-
-const LINE_PAUSE_MULTIPLIER = 1.5;
 
 function selectedLanguage() {
     return document.querySelector('.lang-btn.active').dataset.lang;
@@ -151,15 +154,13 @@ async function submitAndEnter(enterFn) {
     // Check if trace ends with timeout - show notification and animation immediately
     const lastEvent = trace[trace.length - 1];
     if (lastEvent?.reason === REASON.TIMEOUT) {
-        ui.codeOutput.textContent =
-            "Infinite loop detected after 10,000 operations.\n" +
-            "Replaying the last part to show where it got stuck.";
+        ui.codeOutput.textContent = INFINITE_LOOP_OUTPUT_MESSAGE;
         animations.flash(ui.codeOutput);
-        ui.gameNotification.innerHTML = 'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
-        animations.notify(ui.gameNotification, null, false, 10000, "light");
+        ui.gameNotification.innerHTML = INFINITE_LOOP_NOTIFICATION_HTML;
+        animations.notify(ui.gameNotification, null, false, TIMEOUT_NOTIFICATION_DURATION, "light");
 
-        const discarded = trace.slice(0, -100);
-        const kept = trace.slice(-100);
+        const discarded = trace.slice(0, -TIMEOUT_TRACE_REPLAY);
+        const kept = trace.slice(-TIMEOUT_TRACE_REPLAY);
 
         // Set up grid and fast-forward to where tail begins
         loadLevel(state.level);
@@ -408,14 +409,14 @@ function attachEventHandlers() {
     ui.editor.on("mousedown", (cm, event) => {
         if (cm.getOption("readOnly") && state.status === STATUS.PLAYING) {
             enterPaused();
-            animations.notify(ui.gameNotification, "Paused to edit code");
+            animations.notify(ui.gameNotification, NOTIFICATION_PAUSED_TO_EDIT);
         }
     });
 
     ui.editor.on("keydown", (cm, event) => {
         if (cm.getOption("readOnly") && state.status === STATUS.PLAYING) {
             enterPaused();
-            animations.notify(ui.gameNotification, "Paused to edit code");
+            animations.notify(ui.gameNotification, NOTIFICATION_PAUSED_TO_EDIT);
         }
     });
 

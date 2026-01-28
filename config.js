@@ -11,9 +11,13 @@
 //   5. Keyboard Shortcuts
 //   6. Storage Keys
 //   7. Game Mechanics
-//   8. External Dependencies
-//   9. Feature Flags
-//  10. Text / Messages
+//   8. Community
+//   9. External Dependencies
+//  10. Default Preferences
+//  11. Grid Defaults
+//  12. Feature Flags
+//  13. Text / Messages
+//  14. PigJatin Configuration
 
 // =============================================================================
 // 1. TIMING / ANIMATION
@@ -181,6 +185,11 @@ export const LOCK_SHAKE_DURATION = 300;
 
 export const STORAGE_KEY_SHORTCUTS = 'svinesti-game-shortcuts-v1';
 export const STORAGE_KEY_CUSTOM_LEVELS = 'svinesti-custom-levels';
+export const STORAGE_KEY_STARRED = 'svinesti-starred';
+export const STORAGE_KEY_PREFERENCES = 'svinesti-preferences';
+export const STORAGE_KEY_CODE = 'svinesti-code';
+export const STORAGE_KEY_EDITOR_EDIT = 'svinesti-editor-edit-v1';
+export const STORAGE_KEY_EDITOR_PAINT = 'svinesti-editor-paint-v1';
 
 // =============================================================================
 // 7. GAME MECHANICS
@@ -194,10 +203,21 @@ export const TURN_RIGHT = 1;
 export const COLOR_CYCLE = ['empty', 'blue', 'green', 'red']; // wraps to empty
 
 // =============================================================================
-// 8. EXTERNAL DEPENDENCIES
+// 8. COMMUNITY
+// =============================================================================
+
+// Community levels server endpoint (Google Apps Script)
+export const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbxdJIZKtws3OOWncGuvnrDGd8crSCrzwSCfSErzvKrWA_07KNhHpftWtfow6xI3najmgw/exec';
+export const COMMUNITY_REFRESH_INTERVAL = 3 * 60 * 1000;  // 3 minutes
+export const COMMUNITY_SHARE_TIMEOUT = 60000;             // Server response wait
+
+// =============================================================================
+// 9. EXTERNAL DEPENDENCIES
 // =============================================================================
 
 export const PYODIDE_CDN_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.js';
+export const PYODIDE_WORKER_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.mjs';
+export const ANTLR_CDN_URL = 'https://cdn.jsdelivr.net/npm/antlr4@4.13.2/+esm';
 
 // Sprite path pattern: use pigSpritePath(dir, num) to generate
 export const PIG_SPRITE_DIR = 'pigs';
@@ -208,14 +228,34 @@ export const pigSpriteUrl = (dir, num = 1) => `url("${pigSpritePath(dir, num)}")
 export const TARGET_ICON_PATH = 'img/golden-apple.png';
 
 // =============================================================================
-// 9. FEATURE FLAGS
+// 10. DEFAULT PREFERENCES
+// =============================================================================
+
+export const DEFAULT_PREFERENCES = {
+    colorblind: false,
+    communityConsent: false,
+    showHelpOnStart: true,
+    playbackSpeed: 150,
+    editorFontSize: 16,
+    communityViewMode: 'thumbnails',
+};
+
+// =============================================================================
+// 11. GRID DEFAULTS
+// =============================================================================
+
+export const DEFAULT_GRID_ROWS = 9;
+export const DEFAULT_GRID_COLS = 16;
+
+// =============================================================================
+// 12. FEATURE FLAGS
 // =============================================================================
 
 export const ENABLE_SPLASH_SCREEN = true;
 export const SVINESTI_PY_NO_CACHE = true;  // Use cache: 'no-store' for dev
 
 // =============================================================================
-// 10. TEXT / MESSAGES
+// 13. TEXT / MESSAGES
 // =============================================================================
 
 // Fallback names
@@ -248,8 +288,18 @@ export const NOTIFICATION_PAUSED_TO_EDIT = 'Paused to edit code';
 export const NOTIFICATION_LINK_COPIED = 'Link copied to clipboard!';
 export const NOTIFICATION_LEVEL_SAVED = 'Level saved!';
 
+// Sidebar messages
+export const SIDEBAR_LOADING = 'Loading community levels...';
+export const SIDEBAR_TRASH_EMPTY = 'Trash is empty';
+export const SIDEBAR_NO_COMMUNITY_LEVELS = 'No community levels yet.<br>Share your levels from the Level Creator!';
+export const SIDEBAR_SEARCH_PLACEHOLDER = 'Search levels...';
+export const SIDEBAR_NO_MATCHES = 'No levels match your search.';
+export const SIDEBAR_SERVER_ERROR = 'Could not reach server';
+export const SIDEBAR_NO_NEW_LEVELS = 'No new levels';
+export const SIDEBAR_ENABLE_COMMUNITY_FIRST = 'Enable Community Levels in Help menu first';
+
 // =============================================================================
-// PigJatin Configuration
+// 14. PIGJATIN CONFIGURATION
 // =============================================================================
 
 // Allowed functions in PigJatin

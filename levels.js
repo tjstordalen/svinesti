@@ -1,19 +1,12 @@
-// Empty 9x16 grid for new levels in editor
+import { DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS } from './config.js';
+
+// Empty grid for new levels in editor
 export const DEFAULT_LEVEL = {
-    nRows: 9,
-    nCols: 16,
-    grid: [
-        "................",
-        "................",
-        "................",
-        "................",
-        "................",
-        "................",
-        "................",
-        "................",
-        "b...............",
-    ],
-    start: [8, 0],
+    nRows: DEFAULT_GRID_ROWS,
+    nCols: DEFAULT_GRID_COLS,
+    grid: Array(DEFAULT_GRID_ROWS - 1).fill('.'.repeat(DEFAULT_GRID_COLS))
+        .concat(['b' + '.'.repeat(DEFAULT_GRID_COLS - 1)]),
+    start: [DEFAULT_GRID_ROWS - 1, 0],
     dir: "right",
 };
 

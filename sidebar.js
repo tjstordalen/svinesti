@@ -8,6 +8,11 @@ import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
 import { mode, levels, prefs, starred } from "./app.js";
 import { TAB } from "./constants.js";
+import {
+    SIDEBAR_LOADING, SIDEBAR_TRASH_EMPTY, SIDEBAR_NO_COMMUNITY_LEVELS,
+    SIDEBAR_SEARCH_PLACEHOLDER, SIDEBAR_NO_MATCHES, SIDEBAR_SERVER_ERROR,
+    SIDEBAR_NO_NEW_LEVELS,
+} from "./config.js";
 
 // --- Helpers ---
 
@@ -86,7 +91,7 @@ function makeLevelItemCard(level, type, onRefresh) {
                     level.stars += wasStarred ? 1 : -1;
                     onRefresh?.();
                     const notif = document.querySelector('.community-header .notification');
-                    if (notif) notify(notif, 'Could not reach server', true, 2000);
+                    if (notif) notify(notif, SIDEBAR_SERVER_ERROR, true, 2000);
                 });
             });
             item.appendChild(starBtn);
@@ -136,7 +141,7 @@ export function showTrashTab() {
     ui.levelList.innerHTML = '';
 
     if (deleted.length === 0) {
-        ui.levelList.appendChild(html(`<div class="community-message">Trash is empty</div>`));
+        ui.levelList.appendChild(html(`<div class="community-message">${SIDEBAR_TRASH_EMPTY}</div>`));
         return;
     }
 
@@ -166,7 +171,7 @@ export async function showCommunityTab() {
     }
 
     if (community.isLoading()) {
-        ui.levelList.innerHTML = '<div class="community-message">Loading community levels...</div>';
+        ui.levelList.innerHTML = `<div class="community-message">${SIDEBAR_LOADING}</div>`;
         return;
     }
 
@@ -177,12 +182,7 @@ export async function showCommunityTab() {
     }
 
     if (result.levels.length === 0) {
-        ui.levelList.innerHTML = `
-            <div class="community-message">
-                No community levels yet.<br>
-                Share your levels from the Level Creator!
-            </div>
-        `;
+        ui.levelList.innerHTML = `<div class="community-message">${SIDEBAR_NO_COMMUNITY_LEVELS}</div>`;
     } else {
         showCommunityLevels();
     }
@@ -200,7 +200,7 @@ function showCommunityLevels() {
     // Header
     const header = html(`
         <div class="community-header">
-            <input type="text" class="community-search" placeholder="Search levels...">
+            <input type="text" class="community-search" placeholder="${SIDEBAR_SEARCH_PLACEHOLDER}">
             <label class="toggle-switch" title="Toggle list view">
                 <input type="checkbox">
                 <span class="toggle-slider"></span>
@@ -236,8 +236,8 @@ function showCommunityLevels() {
         community.forceRefresh().then((result) => {
             anim.cancel();
             if (result === true) showCommunityLevels();
-            else if (result === false) notify(refreshNotif, 'No new levels', false, 2000);
-            else notify(refreshNotif, 'Could not reach server', true, 2000);
+            else if (result === false) notify(refreshNotif, SIDEBAR_NO_NEW_LEVELS, false, 2000);
+            else notify(refreshNotif, SIDEBAR_SERVER_ERROR, true, 2000);
         });
         setTimeout(() => refreshBtn.disabled = false, 30000);
     });
@@ -250,7 +250,7 @@ function showCommunityLevels() {
         renderLevels(filtered, TAB.COMMUNITY, container);
         ui.levelList.appendChild(container);
     } else if (searchQuery) {
-        ui.levelList.appendChild(html(`<div class="community-message">No levels match your search.</div>`));
+        ui.levelList.appendChild(html(`<div class="community-message">${SIDEBAR_NO_MATCHES}</div>`));
     }
 
     // Re-focus search if actively searching
