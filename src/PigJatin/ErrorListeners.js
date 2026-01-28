@@ -1,5 +1,5 @@
-import { ErrorListener, BailErrorStrategy} from 'antlr4';
-import { ERRORS, ERROR_TYPES } from "./errors.js";
+import { ErrorListener } from 'antlr4';
+import { ERRORS } from "./errors.js";
 
 export class SyntaxErrorListener extends ErrorListener {
 
@@ -50,8 +50,8 @@ export class SyntaxErrorListener extends ErrorListener {
 		}
 
 		const errorMarker = " ".repeat(charPositionInLine) + "^";
-		const message = `Syntax error on line ${line}\n${this.programLines[line-1]}\n${errorMarker}\n${explanation}`
-		this.error = {msg: message, line:line, type: ERROR_TYPES.SYNTAX_ERROR, posInLine: charPositionInLine};
+		const message = `Syntax error on line ${line}\n${this.programLines[line-1]}\n${errorMarker}\n${explanation}`;
+		this.error = ERRORS.syntaxError(line, message);
     }
 }
 

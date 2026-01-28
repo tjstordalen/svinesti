@@ -105,6 +105,14 @@ export const ERRORS = {
 		return err;
 	},
 
+	syntaxError: (line, message) => {
+		const err = {};
+		err.line = line;
+		err.msg = message;
+		err.type = ERROR_TYPES.SYNTAX_ERROR;
+		return err;
+	},
+
 	unrecognizedTokenError: (lineNumber, lineText, positionInLine) => {
 		const err = {};
 		err.line = lineNumber;
