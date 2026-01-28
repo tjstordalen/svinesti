@@ -10,7 +10,7 @@ Svinesti is a browser-based educational programming game where students control 
 
 | File | Purpose |
 |------|---------|
-| `app.js` | Central state: mode, levels, preferences, code storage. Exports `mode`, `prefs`, `levels`, `code` objects with `.get()`/`.set()` accessors |
+| `app.js` | Central state: mode, levels, preferences, code, starred, ready. Each export object encapsulates its own state and persistence |
 | `main.js` | App shell: help modal, sidebar, event handlers, initialization |
 | `game.js` | Game mode: code editor, playback state machine, worker communication |
 | `grid.js` | `createGrid()` factory for game/editor/thumbnails. Returns `{tiles[], pig, getCell(), placePig()}` |
@@ -62,11 +62,14 @@ const TARGET_CYCLE = { '.': '.', 'b': 'B', 'B': 'b', 'g': 'G', 'G': 'g', 'r': 'R
 
 ### State Objects (app.js)
 
-Exports grouped accessors:
-- `mode.get()`, `mode.set()`, `mode.isEditor()`, `mode.isGame()`
-- `prefs.colorblind`, `prefs.communityConsent`, `prefs.playbackSpeed`, etc. (each has `.get()`/`.set()`)
-- `levels.builtIn()`, `levels.custom()`, `levels.save()`, `levels.update()`, `levels.delete()`, `levels.onChange()`
-- `code.get(levelKey, language)`, `code.set(levelKey, language, value)`
+Each export object encapsulates its state (`_data`, `_storage`, etc.) and persistence (`_load()`, `_persist()`). The `init()` function calls `_load()` on each.
+
+- `mode` — `_current`, `get()`, `set()`, `isEditor()`, `isGame()`
+- `prefs` — `_data`, individual prefs like `colorblind.get()`/`.set()`
+- `levels` — `_data`, `_callbacks`, `builtIn()`, `custom()`, `save()`, `update()`, `delete()`, `onChange()`
+- `starred` — `_uids`, `is(uid)`, `set(uid, value)` (community level stars)
+- `code` — `_storage`, `get(levelKey, language)`, `set(levelKey, language, value)`
+- `ready` — `_done`, `_callbacks`, `is()`, `on(cb)`, `set()`
 
 Persistence via localStorage: `svinesti-custom-levels`, `svinesti-starred`, `svinesti-preferences`, `svinesti-code`
 
@@ -109,7 +112,7 @@ Python-side only (no JS timeout). `svinesti.py` uses `sys.settrace()` to count e
 
 ## Worker Architecture
 
-Each execution gets `pyodide.globals.copy()` for a fresh namespace, preventing student code from polluting subsequent runs. Worker posts `"ready"` when Pyodide loads → `app.setReady()` → splash hides.
+Each execution gets `pyodide.globals.copy()` for a fresh namespace, preventing student code from polluting subsequent runs. Worker posts `"ready"` when Pyodide loads → `app.ready.set()` → splash hides.
 
 ## Level Editor
 
