@@ -6,36 +6,48 @@ Svinesti is a browser-based educational programming game where students control 
 
 ## Architecture
 
+### Directory Structure
+
+```
+src/                    JS modules and transpiler
+  ├── PigJatin/         ANTLR4 grammar, transpiler, and tests
+  └── appscript/        Google Apps Script for community backend
+assets/
+  ├── css/              Modular stylesheets
+  ├── icons/            SVG icons
+  ├── img/              Game images (golden apple)
+  └── pigs/             Pig sprite PNGs
+python/
+  ├── worker.js         Pyodide web worker
+  └── svinesti.py       Python game engine
+```
+
 ### Core Files
 
 | File | Purpose |
 |------|---------|
-| `app.js` | Central state: mode, levels, preferences, code, starred, ready. Each export object encapsulates its own state and persistence |
-| `config.js` | Operator-tunable values: timing, colors, sizes, storage keys, CDN URLs, default preferences, messages, feature flags |
-| `constants.js` | Internal contracts: strings that must match across JS/Python (directions, event types, worker messages, modes) |
-| `main.js` | App shell: help modal, sidebar, event handlers, initialization |
-| `game.js` | Game mode: code editor, playback state machine, worker communication |
-| `grid.js` | `createGrid()` factory for game/editor/thumbnails. Returns `{tiles[], pig, getCell(), placePig()}` |
-| `editor.js` | Level editor: state-driven with `render()` on every change |
-| `animations.js` | Web Animations API functions: walk, move, turn, hudFlash, celebrate, lose, timeout, notify, flash, confetti |
-| `community.js` | Community levels: fetching, sharing, Google server interaction |
-| `worker.js` | Pyodide web worker, isolated namespaces per execution |
-| `svinesti.py` | Python game engine with line tracing and infinite loop detection (MAX_OPS = 10,000) |
-| `sidebar.js` | Sidebar tabs: Default, My Levels, Community, Trash. Type-based card rendering with `makeLevelItemCard()` |
-| `shortcuts.js` | Keyboard shortcut factory with rebinding, persistence, enable/disable lifecycle |
+| `src/app.js` | Central state: mode, levels, preferences, code, starred, ready. Each export object encapsulates its own state and persistence |
+| `src/config.js` | Operator-tunable values: timing, colors, sizes, storage keys, CDN URLs, default preferences, messages, feature flags |
+| `src/constants.js` | Internal contracts: strings that must match across JS/Python (directions, event types, worker messages, modes) |
+| `src/main.js` | App shell: help modal, sidebar, event handlers, initialization |
+| `src/game.js` | Game mode: code editor, playback state machine, worker communication |
+| `src/grid.js` | `createGrid()` factory for game/editor/thumbnails. Returns `{tiles[], pig, getCell(), placePig()}` |
+| `src/editor.js` | Level editor: state-driven with `render()` on every change |
+| `src/animations.js` | Web Animations API functions: walk, move, turn, hudFlash, celebrate, lose, timeout, notify, flash, confetti |
+| `src/community.js` | Community levels: fetching, sharing, Google server interaction |
+| `python/worker.js` | Pyodide web worker, isolated namespaces per execution |
+| `python/svinesti.py` | Python game engine with line tracing and infinite loop detection (MAX_OPS = 10,000) |
+| `src/sidebar.js` | Sidebar tabs: Default, My Levels, Community, Trash. Type-based card rendering with `makeLevelItemCard()` |
+| `src/shortcuts.js` | Keyboard shortcut factory with rebinding, persistence, enable/disable lifecycle |
 
 ### Supporting Files
 
-- `levels.js` — Level definitions and `DEFAULT_LEVEL`
-- `names.js` — Random name generator and UID generator
-- `PigJatin/` — ANTLR4 grammar, transpiler, and tests
-- `css/` — Modular stylesheets:
-  - `variables.css` — CSS custom properties (colors, sizing, typography) shared by app and wiki
-  - `base.css` — Reset, scrollbar, shared components (btn, toggle, kbd, notification)
-  - `wiki.css` — Document styles for standalone help pages
-  - `layout.css`, `header.css`, `sidebar.css`, `code-editor.css`, `game.css`, `help.css`, `splash.css`
-- `help/` — Static help pages (infinite-loop.html)
-- `appscript/` — Google Apps Script for community backend
+- `src/levels.js` — Level definitions and `DEFAULT_LEVEL`
+- `src/names.js` — Random name generator and UID generator
+- `assets/css/variables.css` — CSS custom properties (colors, sizing, typography) shared by app and wiki
+- `assets/css/base.css` — Reset, scrollbar, shared components (btn, toggle, kbd, notification)
+- `assets/css/wiki.css` — Document styles for standalone help pages
+- `infinite-loop.html` — Help page for infinite loop errors
 
 ## Level Format
 
@@ -118,7 +130,7 @@ Python-side only (no JS timeout). `svinesti.py` uses `sys.settrace()` to count e
 
 ## Worker Architecture
 
-Module worker (`{ type: "module" }`) that imports from `constants.js`. Each execution gets `pyodide.globals.copy()` for a fresh namespace, preventing student code from polluting subsequent runs. Worker posts `MSG.READY` when Pyodide loads → `app.ready.set()` → splash hides.
+Module worker (`{ type: "module" }`) that imports from `src/constants.js`. Each execution gets `pyodide.globals.copy()` for a fresh namespace, preventing student code from polluting subsequent runs. Worker posts `MSG.READY` when Pyodide loads → `app.ready.set()` → splash hides.
 
 ## Level Editor
 
@@ -159,5 +171,5 @@ Shortcuts managed by `shortcuts.js` factory. Each mode calls `enable()`/`disable
 python -m http.server 8000
 
 # Regenerate ANTLR parser (if PigJatin.g4 modified)
-antlr4 -Dlanguage=JavaScript -visitor PigJatin/PigJatin.g4 -o PigJatin/antlr
+antlr4 -Dlanguage=JavaScript -visitor src/PigJatin/PigJatin.g4 -o src/PigJatin/antlr
 ```

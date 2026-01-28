@@ -5,7 +5,7 @@
 //
 // Organization:
 //   1. Timing / Animation
-//   2. Colors (JS-only; UI colors in css/variables.css)
+//   2. Colors (JS-only; UI colors in assets/css/variables.css)
 //   3. Infinite Loop Detection
 //   4. Keyboard Shortcuts
 //   5. Storage Keys
@@ -68,7 +68,7 @@ export const CONFETTI_ROTATION_RANGE = [-360, 360];    // degrees
 // =============================================================================
 //
 // ┌─────────────────────────────────────────────────────────────────────────┐
-// │  To change the app's color scheme, edit: css/variables.css              │
+// │  To change the app's color scheme, edit: assets/css/variables.css              │
 // └─────────────────────────────────────────────────────────────────────────┘
 //
 // Only JS-specific colors that can't reference CSS variables are defined here.
@@ -179,7 +179,7 @@ export const PYODIDE_WORKER_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full
 export const ANTLR_CDN_URL = 'https://cdn.jsdelivr.net/npm/antlr4@4.13.2/+esm';
 
 // Icons (for JS-generated elements; HTML uses paths directly)
-const icon = (name) => `icons/${name}.svg`;
+const icon = (name) => `assets/icons/${name}.svg`;
 export const ICON = {
     TRASH:   icon('trash3-fill'),
     REFRESH: icon('arrow-counterclockwise'),
@@ -232,7 +232,7 @@ export const INFINITE_LOOP_OUTPUT_MESSAGE =
     'Infinite loop detected after 10,000 operations.\n' +
     'Replaying the last part to show where it got stuck.';
 export const INFINITE_LOOP_NOTIFICATION_HTML =
-    'Do you have an <a href="help/infinite-loop.html" target="_blank">infinite loop</a>?';
+    'Do you have an <a href="infinite-loop.html" target="_blank">infinite loop</a>?';
 
 // Validation error messages (editor)
 export const VALIDATION_ERRORS = {

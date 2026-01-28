@@ -26,7 +26,7 @@ import {
 
 /** Generates walk keyframes: cycles through 3 sprite frames (1→2→3→2→1) */
 function makeWalkKeyframes(dir) {
-    const sprite = (n) => `url("pigs/${dir}-${n}.png")`;
+    const sprite = (n) => `url("assets/pigs/${dir}-${n}.png")`;
     return [
         { backgroundImage: sprite(1) },
         { backgroundImage: sprite(2) },

@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Svinesti</title>
-    <link rel="stylesheet" href="css/variables.css">
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/header.css">
-    <link rel="stylesheet" href="css/sidebar.css">
-    <link rel="stylesheet" href="css/code-editor.css">
-    <link rel="stylesheet" href="css/game.css">
-    <link rel="stylesheet" href="css/help.css">
-    <link rel="stylesheet" href="css/splash.css">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/header.css">
+    <link rel="stylesheet" href="assets/css/sidebar.css">
+    <link rel="stylesheet" href="assets/css/code-editor.css">
+    <link rel="stylesheet" href="assets/css/game.css">
+    <link rel="stylesheet" href="assets/css/help.css">
+    <link rel="stylesheet" href="assets/css/splash.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.19/mode/python/python.min.js"></script>
@@ -20,18 +20,18 @@
 </head>
 <body>
     <!-- Preload all pig images -->
-    <link rel="preload" href="pigs/right-1.png" as="image">
-    <link rel="preload" href="pigs/right-2.png" as="image">
-    <link rel="preload" href="pigs/right-3.png" as="image">
-    <link rel="preload" href="pigs/down-1.png" as="image">
-    <link rel="preload" href="pigs/down-2.png" as="image">
-    <link rel="preload" href="pigs/down-3.png" as="image">
-    <link rel="preload" href="pigs/left-1.png" as="image">
-    <link rel="preload" href="pigs/left-2.png" as="image">
-    <link rel="preload" href="pigs/left-3.png" as="image">
-    <link rel="preload" href="pigs/up-1.png" as="image">
-    <link rel="preload" href="pigs/up-2.png" as="image">
-    <link rel="preload" href="pigs/up-3.png" as="image">
+    <link rel="preload" href="assets/pigs/right-1.png" as="image">
+    <link rel="preload" href="assets/pigs/right-2.png" as="image">
+    <link rel="preload" href="assets/pigs/right-3.png" as="image">
+    <link rel="preload" href="assets/pigs/down-1.png" as="image">
+    <link rel="preload" href="assets/pigs/down-2.png" as="image">
+    <link rel="preload" href="assets/pigs/down-3.png" as="image">
+    <link rel="preload" href="assets/pigs/left-1.png" as="image">
+    <link rel="preload" href="assets/pigs/left-2.png" as="image">
+    <link rel="preload" href="assets/pigs/left-3.png" as="image">
+    <link rel="preload" href="assets/pigs/up-1.png" as="image">
+    <link rel="preload" href="assets/pigs/up-2.png" as="image">
+    <link rel="preload" href="assets/pigs/up-3.png" as="image">
 
     <div id="splash-screen">
         <h1>Svinesti</h1>
@@ -50,7 +50,7 @@
         </div>
         <div class="header-spacer"></div>
         <button id="help-button" class="icon-btn" title="Help - Press ?">
-<img src="icons/question-circle.svg" alt="Help" width="24" height="24">
+<img src="assets/icons/question-circle.svg" alt="Help" width="24" height="24">
         </button>
     </header>
 
@@ -79,7 +79,7 @@
                     </div>
                     <div class="font-size-control">
                         <label for="editor-font-size-slider" title="Font Size">
-<img src="icons/font-size.svg" alt="Font Size" width="18" height="18">
+<img src="assets/icons/font-size.svg" alt="Font Size" width="18" height="18">
                         </label>
                         <input id="editor-font-size-slider" type="range" min="12" max="28" value="16" step="1">
                     </div>
@@ -92,14 +92,14 @@
                 <div class="playback-toolbar idle">
                     <div class="button-group">
                         <button id="btn1" class="btn btn-primary">
-<img class="icon-play" src="icons/play-fill.svg" alt="Play" width="24" height="24">
-                            <img class="icon-pause" src="icons/pause.svg" alt="Pause" width="24" height="24">
+<img class="icon-play" src="assets/icons/play-fill.svg" alt="Play" width="24" height="24">
+                            <img class="icon-pause" src="assets/icons/pause.svg" alt="Pause" width="24" height="24">
                         </button>
                         <button id="btn2" class="btn btn-secondary">
-                            <img src="icons/chevron-bar-right.svg" alt="Step" width="24" height="24">
+                            <img src="assets/icons/chevron-bar-right.svg" alt="Step" width="24" height="24">
                         </button>
                         <button id="btn3" class="btn btn-secondary">
-                            <img src="icons/arrow-counterclockwise.svg" alt="Reset" width="24" height="24">
+                            <img src="assets/icons/arrow-counterclockwise.svg" alt="Reset" width="24" height="24">
                         </button>
                     </div>
                     <div class="speed-control">
@@ -133,10 +133,10 @@
                     <div class="editor-name-container">
                         <input type="text" id="editor-level-name" class="editor-level-name" placeholder="Level name" maxlength="32" readonly>
                         <button id="editor-name-reset" class="editor-name-reset" title="Generate new name">
-                            <img src="icons/dice.svg" alt="Random" width="30" height="30">
+                            <img src="assets/icons/dice.svg" alt="Random" width="30" height="30">
                         </button>
                         <span class="editor-name-info" data-tooltip="Names are randomly generated for GDPR compliance and to prevent abuse.">
-                            <img src="icons/info-circle.svg" alt="Info" width="14" height="14">
+                            <img src="assets/icons/info-circle.svg" alt="Info" width="14" height="14">
                         </span>
                     </div>
                     <div class="editor-grid-container">
@@ -285,6 +285,6 @@ isBlue()</code></pre>
         }
     }
     </script>
-    <script type="module" src="main.js"></script>
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>

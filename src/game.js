@@ -354,7 +354,7 @@ function resolveExecution(result) {
 
 function initWorker() {
     enterIdle();
-    state.worker = new Worker("worker.js", { type: "module" });
+    state.worker = new Worker("python/worker.js", { type: "module" });
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
             case MSG.READY:

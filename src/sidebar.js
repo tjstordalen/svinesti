@@ -78,7 +78,7 @@ function makeLevelItemCard(level, type, onRefresh) {
             const isStarred = starred.is(level.uid);
             const starBtn = html(`
                 <button class="star-btn${isStarred ? ' starred' : ''}" title="${isStarred ? 'Remove star' : 'Star this level'}">
-                    <img src="/img/golden-apple.png" alt=""><span>${level.stars || 0}</span>
+                    <img src="/assets/img/golden-apple.png" alt=""><span>${level.stars || 0}</span>
                 </button>
             `);
 

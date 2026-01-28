@@ -92,7 +92,7 @@ function render() {
     const g = editorGrid.style;
     editorGrid.classList.remove('ghost-red', 'ghost-green', 'ghost-blue');
     if (state.isDraggingPig && state.cursor !== state.pigIndex) {
-        g.setProperty('--ghost-pig', `url(/pigs/${state.pigDir}-1.png)`);
+        g.setProperty('--ghost-pig', `url(/assets/pigs/${state.pigDir}-1.png)`);
         g.setProperty('--ghost-color', 'transparent');
         g.setProperty('--ghost-visible', 'visible');
     } else if (state.clipboard) {
@@ -100,7 +100,7 @@ function render() {
         const color = CHAR_TO_COLOR[state.clipboard.toLowerCase()];
         if (color !== 'empty') editorGrid.classList.add('ghost-' + color);
         g.setProperty('--ghost-color', `var(--tile-${color})`);
-        g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(/img/golden-apple.png)' : 'none');
+        g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(/assets/img/golden-apple.png)' : 'none');
         g.setProperty('--ghost-visible', 'visible');
     } else {
         g.removeProperty('--ghost-pig');
