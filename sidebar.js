@@ -6,7 +6,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { mode, levels, prefs } from "./app.js";
+import { mode, levels, prefs, starred } from "./app.js";
 
 // --- Helpers ---
 
@@ -69,26 +69,26 @@ function makeLevelItemCard(level, type, onRefresh) {
         case TYPE.COMMUNITY: {
             item.addEventListener('click', loadLevel);
 
-            const starred = levels.isStarred(level.uid);
+            const isStarred = starred.is(level.uid);
             const starBtn = html(`
-                <button class="star-btn${starred ? ' starred' : ''}" title="${starred ? 'Remove star' : 'Star this level'}">
+                <button class="star-btn${isStarred ? ' starred' : ''}" title="${isStarred ? 'Remove star' : 'Star this level'}">
                     <img src="/img/golden-apple.png" alt=""><span>${level.stars || 0}</span>
                 </button>
             `);
 
             starBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const wasStarred = levels.isStarred(level.uid);
+                const wasStarred = starred.is(level.uid);
                 const newStarred = !wasStarred;
 
                 // Optimistic update
-                levels.setStarred(level.uid, newStarred);
+                starred.set(level.uid, newStarred);
                 level.stars += newStarred ? 1 : -1;
                 onRefresh?.();
 
                 community.sendStar(level.uid, newStarred).catch(() => {
                     // Revert on failure
-                    levels.setStarred(level.uid, wasStarred);
+                    starred.set(level.uid, wasStarred);
                     level.stars += wasStarred ? 1 : -1;
                     onRefresh?.();
                     const notif = document.querySelector('.community-header .notification');

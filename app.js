@@ -13,7 +13,7 @@ let ready = false;
 const readyCallbacks = [];
 let currentMode = 'game';
 let customLevels = [];
-let starred = new Set();
+let starredUids = new Set();
 let codeStorage = {};
 let preferences = {
     colorblind: false,
@@ -63,11 +63,11 @@ function applyPreferences() {
 
 function loadStarred() {
     const json = localStorage.getItem(STARRED_KEY);
-    starred = json ? new Set(JSON.parse(json)) : new Set();
+    starredUids = json ? new Set(JSON.parse(json)) : new Set();
 }
 
 function persistStarred() {
-    localStorage.setItem(STARRED_KEY, JSON.stringify([...starred]));
+    localStorage.setItem(STARRED_KEY, JSON.stringify([...starredUids]));
 }
 
 function loadCustomLevels() {
@@ -184,18 +184,22 @@ export const levels = {
         notifyLevelsChange();
     },
 
-    isStarred(uid) {
-        return starred.has(uid);
-    },
-
-    setStarred(uid, value) {
-        if (value) starred.add(uid);
-        else starred.delete(uid);
-        persistStarred();
-    },
-
     onChange(callback) {
         levelChangeCallbacks.push(callback);
+    },
+};
+
+// --- Starred (community levels) ---
+
+export const starred = {
+    is(uid) {
+        return starredUids.has(uid);
+    },
+
+    set(uid, value) {
+        if (value) starredUids.add(uid);
+        else starredUids.delete(uid);
+        persistStarred();
     },
 };
 
