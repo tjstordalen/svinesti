@@ -1,0 +1,42 @@
+/*
+ * variables.css - CSS custom properties
+ * Shared by base.css (app) and wiki.css (help pages)
+ */
+
+:root {
+    /* Color palette - Soft Sage Green */
+    --color-header: #7eb09b;
+    --color-header-dark: #6a9985;
+    --color-interactive: #5a9178;
+    --color-interactive-light: #7eb09b;
+    --color-interactive-dark: #4a7a68;
+
+    /* Neutrals */
+    --color-bg: #f5f7fa;
+    --color-surface: #ffffff;
+    --color-border: #e1e5eb;
+    --color-text: #2d3748;
+    --color-text-muted: #718096;
+
+    /* Tile colors */
+    --tile-empty: #FAF7F2;
+    --tile-red: #FF8A8A;
+    --tile-green: #58E0B8;
+    --tile-blue: #85D0FF;
+
+    /* Sizing */
+    --header-height: 56px;
+    --sidebar-width: 480px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+
+    /* Typography */
+    --font-mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+}

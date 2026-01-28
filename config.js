@@ -5,7 +5,7 @@
 //
 // Organization:
 //   1. Timing / Animation
-//   2. Colors (JS-only; UI colors/sizes in CSS)
+//   2. Colors (JS-only; UI colors in css/variables.css)
 //   3. Infinite Loop Detection
 //   4. Keyboard Shortcuts
 //   5. Storage Keys
@@ -22,14 +22,23 @@
 // 1. TIMING / ANIMATION
 // =============================================================================
 
-// Gameplay animation multipliers (relative to speed slider value)
+// Gameplay animation multipliers. These are relative to the value on the slider
+// that ajudsts playback speed. Modify these values to speed up or slow down
+// animations across the board, or to change their speed relative to each other
+// (e.g., maybe turns take too long? Then reduce TURN_MULTIPLIER) 
 export const MOVE_MULTIPLIER = 2;       // Movement animation duration
 export const TURN_MULTIPLIER = 1.5;     // Turn animation duration
 export const HUD_MULTIPLIER = 3;        // Color comparison HUD duration
-export const WALK_CYCLES = 2;           // Sprite animation cycles per move
-export const LINE_PAUSE_MULTIPLIER = 1.5; // Delay multiplier for line highlight
+// The number of full cyclings of the walking sprites per move() event
+// Must be integer. The higher the number, the faster the pig will move
+// its legs. 
+export const WALK_CYCLES = 2;           
 
-// Fixed animation durations (milliseconds)
+// Delay multiplier for line highlight. Without this, unanimated code (e.g., 
+// x = x + 1) would zoom by in milliseconds. 
+export const LINE_PAUSE_MULTIPLIER = 1.5; 
+
+// Fixed animation durations (milliseconds) that do not depend on the speed slider.
 export const CELEBRATE_DURATION = 1500;
 export const LOSE_DURATION = 600;
 export const TIMEOUT_GRID_DURATION = 150;
@@ -57,9 +66,12 @@ export const CONFETTI_ROTATION_RANGE = [-360, 360];    // degrees
 // =============================================================================
 // 2. COLORS
 // =============================================================================
-
-// UI colors are defined as CSS variables in base.css (source of truth for styling).
-// Only JS-specific colors that can't use CSS variables are defined here.
+//
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │  To change the app's color scheme, edit: css/variables.css              │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
+// Only JS-specific colors that can't reference CSS variables are defined here.
 
 // Notification colors (used in JS animations)
 export const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';   // sage green
@@ -79,8 +91,9 @@ export const CONFETTI_COLORS = [
 // 3. INFINITE LOOP DETECTION
 // =============================================================================
 
-export const MAX_OPS = 10000;               // Operations before timeout
-export const TIMEOUT_TRACE_REPLAY = 100;    // Events to replay on timeout
+export const MAX_OPS = 10000; // NOTE: MUST BE MANUALLY UPDATED IN svinesti.py ALSO
+// We play the last TIMEOUT_TRACE_REPLAY events when an infinite loop is detected
+export const TIMEOUT_TRACE_REPLAY = 100; 
 export const TIMEOUT_NOTIFICATION_DURATION = 10000; // ms
 
 // =============================================================================

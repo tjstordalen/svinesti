@@ -1,50 +1,8 @@
 /*
  * base.css - Foundation styles
- * CSS variables, reset, body, scrollbar, notification utility
+ * Reset, scrollbar, shared components (btn, toggle, kbd, notification)
+ * Requires: variables.css
  */
-
-:root {
-    /* Grid CSS variables (set by JS) */
-    --grid-n-rows: 7;
-    --grid-n-cols: 8;
-
-    /* Color palette - Soft Sage Green */
-    --color-header: #7eb09b;
-    --color-header-dark: #6a9985;
-    --color-interactive: #5a9178;
-    --color-interactive-light: #7eb09b;
-    --color-interactive-dark: #4a7a68;
-    --btn-primary: #5a9178;
-
-    /* Neutrals */
-    --color-bg: #f5f7fa;
-    --color-surface: #ffffff;
-    --color-border: #e1e5eb;
-    --color-text: #2d3748;
-    --color-text-muted: #718096;
-
-    /* Tile colors */
-    --tile-empty: #FAF7F2;
-    --tile-red: #FF8A8A;
-    --tile-green: #58E0B8;
-    --tile-blue: #85D0FF;
-
-    /* Sizing */
-    --header-height: 56px;
-    --sidebar-width: 480px;
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-
-    /* Transitions */
-    --transition-fast: 150ms ease;
-    --transition-normal: 250ms ease;
-
-    /* Typography */
-    --font-mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
-}
 
 /* Reset & Base */
 *, *::before, *::after {
@@ -126,4 +84,120 @@ body {
 
 .notification.light a:hover {
     color: var(--color-interactive-dark);
+}
+
+/* Buttons */
+.btn {
+    position: relative;
+    padding: 10px 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    width: 70px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: var(--color-interactive);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--color-interactive-light);
+    box-shadow: 0 2px 8px rgba(90, 145, 120, 0.3);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--color-bg);
+    border-color: var(--color-interactive);
+    color: var(--color-interactive);
+}
+
+.btn-secondary:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-border);
+    border-radius: 20px;
+    transition: 0.2s;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--color-interactive);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(16px);
+}
+
+/* Keyboard Key */
+kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+kbd.arrow {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 0 6px;
 }

@@ -119,57 +119,6 @@
     gap: 8px;
 }
 
-.btn {
-    position: relative;
-    padding: 10px 0;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    width: 70px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.btn-primary {
-    background: var(--color-interactive);
-    color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-    background: var(--color-interactive-light);
-    box-shadow: 0 2px 8px rgba(90, 145, 120, 0.3);
-}
-
-.btn-primary:active:not(:disabled) {
-    transform: translateY(1px);
-}
-
-.btn-secondary {
-    background: var(--color-surface);
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: var(--color-bg);
-    border-color: var(--color-interactive);
-    color: var(--color-interactive);
-}
-
-.btn-secondary:active:not(:disabled) {
-    transform: translateY(1px);
-}
-
 /* Playback button icon visibility - state-based */
 /* Show play icon when idle or paused */
 .playback-toolbar.idle .icon-play,

@@ -1,0 +1,130 @@
+/*
+ * wiki.css - Document/article page styles
+ * For help pages and other standalone content pages
+ * Requires: variables.css
+ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: var(--color-header-dark);
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--color-interactive);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--color-interactive-dark);
+    text-decoration: underline;
+}
+
+/* Code blocks */
+pre {
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+}
+
+code {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--color-text);
+}
+
+/* Inline code */
+p code, li code {
+    background: var(--color-bg);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    border: 1px solid var(--color-border);
+}
+
+/* Lists */
+ul, ol {
+    margin-left: 2rem;
+    margin-bottom: 1rem;
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+/* Back link */
+.back-link {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.back-link:hover {
+    color: var(--color-interactive);
+}
+
+/* Side-by-side code examples */
+.code-side-by-side {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.code-side-by-side .code-column {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: calc(50% - 0.5rem);
+    display: flex;
+    flex-direction: column;
+}
+
+.code-side-by-side .code-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.code-side-by-side pre {
+    flex: 1;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .code-side-by-side {
+        flex-direction: column;
+    }
+
+    .code-side-by-side .code-column {
+        max-width: 100%;
+    }
+}
+
+/* Code comments (syntax highlighting) */
+.code-comment {
+    color: var(--color-text-muted);
+    font-style: italic;
+}

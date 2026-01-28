@@ -5,7 +5,7 @@
 
 /* Base grid styling - all contexts */
 .grid {
-    /* The variables --cols and --rows are set dynamically by javascrpit to control the grid size */
+    /* --cols and --rows are set dynamically by JS */
     display: grid;
     grid-template-columns: repeat(var(--cols), 1fr);
     grid-template-rows: repeat(var(--rows), 1fr);
@@ -299,24 +299,20 @@ body.colorblind-mode :is(.mini-tile, #comparison-tile).green {
 }
 
 
-/* Pig direction classes (pig element and ghost) */
+/* Pig direction classes */
 .pig-right,
 .pig-down,
 .pig-left,
-.pig-up,
-.editor-data-right,
-.editor-data-down,
-.editor-data-left,
-.editor-data-up {
+.pig-up {
     background-size: 90%;
     background-repeat: no-repeat;
     background-position: center;
 }
 
-.pig-right , .editor-data-right { --pig-bg: url('../pigs/right-1.png'); background-image: var(--pig-bg); }
-.pig-down  , .editor-data-down  { --pig-bg: url('../pigs/down-1.png'); background-image: var(--pig-bg); }
-.pig-left  , .editor-data-left  { --pig-bg: url('../pigs/left-1.png'); background-image: var(--pig-bg); }
-.pig-up    , .editor-data-up    { --pig-bg: url('../pigs/up-1.png'); background-image: var(--pig-bg); }
+.pig-right { --pig-bg: url('../pigs/right-1.png'); background-image: var(--pig-bg); }
+.pig-down  { --pig-bg: url('../pigs/down-1.png'); background-image: var(--pig-bg); }
+.pig-left  { --pig-bg: url('../pigs/left-1.png'); background-image: var(--pig-bg); }
+.pig-up    { --pig-bg: url('../pigs/up-1.png'); background-image: var(--pig-bg); }
 
 /* Color Comparison HUD */
 #color-comparison-hud {
