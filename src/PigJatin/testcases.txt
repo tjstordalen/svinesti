@@ -4599,3 +4599,46 @@ while (i < 3) {
     i = i + 1;
 }
 int result = temp;
+
+// ============================================================================
+// FIRST-ERROR-WINS: assignment errors must stop analysis
+// ============================================================================
+//
+// These test that when an assignment has an error (undeclared, out-of-scope,
+// type mismatch), analysis stops and a later error doesn't overwrite it.
+
+#EXPECT UNDECLARED_VARIABLE first_error_undeclared_then_illegal_fn
+x = 5;
+fly();
+
+#EXPECT UNDECLARED_VARIABLE first_error_undeclared_then_type
+x = 5;
+int y = true;
+
+#EXPECT UNDECLARED_VARIABLE first_error_undeclared_then_unused
+x = 5;
+isRed();
+
+#EXPECT OUT_OF_SCOPE first_error_scope_then_illegal_fn
+{
+    int x = 1;
+}
+x = 5;
+fly();
+
+#EXPECT OUT_OF_SCOPE first_error_scope_then_type
+{
+    int x = 1;
+}
+x = 5;
+int y = true;
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE first_error_type_then_illegal_fn
+int x = 0;
+x = true;
+fly();
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE first_error_type_then_undeclared
+int x = 0;
+x = true;
+y = 5;

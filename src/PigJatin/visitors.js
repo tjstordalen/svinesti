@@ -91,16 +91,16 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 		const type = this.getVarType(id, this.scopeStack);
 
 		if (!type) {
-			let err = {}
 			const hasBeenDiscarded = this.getVarType(id, this.abandonedScopes);
-			if (hasBeenDiscarded) err = ERRORS.outOfScope(ctx.start.line, id);
-			else err = ERRORS.undeclaredVariable(ctx.start.line, id);
-			this.error = err;
+			if (hasBeenDiscarded) this.error = ERRORS.outOfScope(ctx.start.line, id);
+			else this.error = ERRORS.undeclaredVariable(ctx.start.line, id);
+			return null;
 		}
-		else if (type !== exprType){
+		if (type !== exprType){
 			this.error = ERRORS.incorrectTypeInAssignment(ctx.start.line, id, type, exprType);
+			return null;
 		}
-		
+
 		return Type.VOID;
 	}
 
