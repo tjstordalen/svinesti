@@ -5,7 +5,14 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import * as sidebar from "./sidebar.js";
+import * as PigJatin from "./PigJatin/PigJatin.js";
 import { MODE } from "./constants.js";
+
+// Dev console: await runPigJatinTests()
+window.runPigJatinTests = async () => {
+    const cases = await PigJatin.loadTestCases("src/PigJatin/testcases.txt");
+    PigJatin.runTests(cases);
+};
 
 // --- DOM References ---
 

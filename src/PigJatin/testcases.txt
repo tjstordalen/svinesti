@@ -2736,3 +2736,1866 @@ boolean good = c >= 5; // check
 if (good) { move(); } // act
 }
 // done
+
+// ============================================================================
+// ELSE-BLOCK SEMANTIC ANALYSIS
+// ============================================================================
+//
+// These test cases verify that errors inside else blocks are detected.
+// Covers all semantic error types. Focuses on mistakes that beginner
+// programmers are likely to make.
+
+// --- UNDECLARED_VARIABLE in else blocks ---
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_simple
+if (isRed()) {
+    move();
+} else {
+    x = 5;
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_no_braces
+if (isRed()) move(); else count = count + 1;
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_forgot_to_declare
+if (isBlue()) {
+    move();
+} else {
+    result = 42;
+    move();
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_typo_variable
+int steps = 0;
+if (isRed()) {
+    steps = steps + 1;
+} else {
+    stepz = stepz + 1;
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_wrong_name
+boolean done = false;
+if (isGreen()) {
+    done = true;
+} else {
+    finished = true;
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_nested
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        y = 10;
+    }
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_deep_nest
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        if (isGreen()) {
+            move();
+        } else {
+            oops = 1;
+        }
+    }
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_in_while
+int i = 0;
+while (i < 5) {
+    if (isRed()) {
+        move();
+    } else {
+        counter = counter + 1;
+    }
+    i = i + 1;
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_assign_before_declare
+if (isRed()) {
+    move();
+} else {
+    total = 10;
+    int total = 10;
+}
+
+#EXPECT UNDECLARED_VARIABLE else_undeclared_used_only_in_else
+if (isBlue()) {
+    move();
+} else {
+    int a = missing + 1;
+}
+
+// --- OUT_OF_SCOPE in else blocks ---
+
+#EXPECT OUT_OF_SCOPE else_scope_leaked
+{
+    int temp = 5;
+}
+if (isRed()) {
+    move();
+} else {
+    int y = temp;
+}
+
+#EXPECT OUT_OF_SCOPE else_scope_from_then_block
+if (isRed()) {
+    int x = 1;
+} else {
+    int y = x;
+}
+
+#EXPECT OUT_OF_SCOPE else_scope_from_earlier_block
+{
+    boolean flag = true;
+}
+if (isBlue()) {
+    move();
+} else {
+    boolean copy = flag;
+}
+
+#EXPECT OUT_OF_SCOPE else_scope_from_while_body
+while (isGreen()) {
+    int counter = 0;
+}
+if (isRed()) {
+    move();
+} else {
+    int x = counter;
+}
+
+#EXPECT OUT_OF_SCOPE else_scope_from_inner_block
+if (isBlue()) {
+    move();
+} else {
+    {
+        int inner = 5;
+    }
+    int outer = inner;
+}
+
+#EXPECT OUT_OF_SCOPE else_scope_nested_else
+{
+    int val = 99;
+}
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        int x = val;
+    }
+}
+
+#EXPECT OUT_OF_SCOPE else_scope_var_from_then
+if (isRed()) {
+    int a = 10;
+} else {
+    int b = a + 1;
+}
+
+#EXPECT OUT_OF_SCOPE else_scope_var_from_if_block_in_while
+int i = 0;
+while (i < 3) {
+    if (isGreen()) {
+        int tmp = 1;
+    } else {
+        int x = tmp;
+    }
+    i = i + 1;
+}
+
+// --- INCORRECT_ASSIGNMENT_TYPE in else blocks ---
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_int_gets_bool
+int x = 0;
+if (isRed()) {
+    x = 1;
+} else {
+    x = true;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_bool_gets_int
+boolean flag = true;
+if (isBlue()) {
+    flag = false;
+} else {
+    flag = 42;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_int_gets_bool_expr
+int count = 0;
+if (isGreen()) {
+    count = count + 1;
+} else {
+    count = isRed();
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_bool_gets_arithmetic
+boolean ready = false;
+if (isRed()) {
+    ready = true;
+} else {
+    ready = 3 + 4;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_no_braces
+int x = 0;
+if (isBlue()) x = 1; else x = false;
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_declare_wrong
+if (isRed()) {
+    move();
+} else {
+    int x = true;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_declare_bool_gets_int
+if (isGreen()) {
+    move();
+} else {
+    boolean b = 5;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_nested
+if (isRed()) {
+    move();
+} else {
+    int x = 0;
+    if (isBlue()) {
+        x = 1;
+    } else {
+        x = false;
+    }
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_in_while
+int val = 0;
+int i = 0;
+while (i < 3) {
+    if (isRed()) {
+        val = val + 1;
+    } else {
+        val = true;
+    }
+    i = i + 1;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE else_type_confused_types
+boolean flag = true;
+if (isBlue()) {
+    flag = isRed();
+} else {
+    flag = 0;
+}
+
+// --- DUPLICATE_DECLARATION in else blocks ---
+
+#EXPECT DUPLICATE_DECLARATION else_dup_redeclare_outer
+int x = 1;
+if (isRed()) {
+    move();
+} else {
+    int x = 2;
+}
+
+#EXPECT DUPLICATE_DECLARATION else_dup_redeclare_bool
+boolean done = false;
+if (isBlue()) {
+    move();
+} else {
+    boolean done = true;
+}
+
+#EXPECT DUPLICATE_DECLARATION else_dup_same_name_diff_type
+int count = 0;
+if (isGreen()) {
+    move();
+} else {
+    boolean count = true;
+}
+
+#EXPECT DUPLICATE_DECLARATION else_dup_nested
+int x = 1;
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        int x = 3;
+    }
+}
+
+#EXPECT DUPLICATE_DECLARATION else_dup_in_while
+int total = 0;
+int i = 0;
+while (i < 3) {
+    if (isRed()) {
+        move();
+    } else {
+        int total = 1;
+    }
+    i = i + 1;
+}
+
+#EXPECT OK else_dup_declared_in_then
+if (isRed()) {
+    int x = 1;
+} else {
+    int x = 2;
+}
+
+#EXPECT DUPLICATE_DECLARATION else_dup_no_braces
+int a = 1;
+if (isBlue()) move(); else int a = 2;
+
+#EXPECT DUPLICATE_DECLARATION else_dup_deep
+int z = 0;
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        if (isGreen()) {
+            move();
+        } else {
+            int z = 99;
+        }
+    }
+}
+
+// --- NON_BOOLEAN_CONDITION in else blocks ---
+
+#EXPECT NON_BOOLEAN_CONDITION else_cond_int_in_if
+if (isRed()) {
+    move();
+} else {
+    if (5) {
+        move();
+    }
+}
+
+#EXPECT NON_BOOLEAN_CONDITION else_cond_int_in_while
+if (isRed()) {
+    move();
+} else {
+    while (1) {
+        move();
+    }
+}
+
+#EXPECT NON_BOOLEAN_CONDITION else_cond_arithmetic_expr
+if (isBlue()) {
+    move();
+} else {
+    if (3 + 4) {
+        turnLeft();
+    }
+}
+
+#EXPECT NON_BOOLEAN_CONDITION else_cond_variable_int
+int x = 5;
+if (isRed()) {
+    move();
+} else {
+    if (x) {
+        move();
+    }
+}
+
+#EXPECT NON_BOOLEAN_CONDITION else_cond_nested_while
+if (isGreen()) {
+    move();
+} else {
+    int n = 10;
+    while (n) {
+        move();
+    }
+}
+
+#EXPECT NON_BOOLEAN_CONDITION else_cond_int_while_in_deep_else
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        while (0) {
+            move();
+        }
+    }
+}
+
+#EXPECT NON_BOOLEAN_CONDITION else_cond_negation_of_int
+int x = 3;
+if (isRed()) {
+    move();
+} else {
+    if (x + 1) {
+        move();
+    }
+}
+
+// --- INVALID_ARGUMENT_TYPE in else blocks ---
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_add_bool
+if (isRed()) {
+    move();
+} else {
+    int x = 3 + true;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_subtract_bool
+if (isBlue()) {
+    move();
+} else {
+    int x = 5 - false;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_multiply_bool
+if (isGreen()) {
+    move();
+} else {
+    int x = 2 * true;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_and_with_int
+if (isRed()) {
+    move();
+} else {
+    boolean x = 5 && true;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_or_with_int
+if (isBlue()) {
+    move();
+} else {
+    boolean x = 1 || false;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_compare_mixed
+if (isGreen()) {
+    move();
+} else {
+    boolean x = 3 == true;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_less_than_bool
+if (isRed()) {
+    move();
+} else {
+    boolean x = true < false;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_modulo_bool
+if (isBlue()) {
+    move();
+} else {
+    int x = true % 2;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_negate_bool
+if (isRed()) {
+    move();
+} else {
+    int x = -true;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_not_int
+if (isBlue()) {
+    move();
+} else {
+    boolean x = !5;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_nested_bad_expr
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        int y = 1 + isRed();
+    }
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE else_type_complex_expr
+if (isGreen()) {
+    move();
+} else {
+    int a = 5;
+    boolean b = true;
+    int c = a + b;
+}
+
+// --- VOID_FUNCTION_IN_EXPRESSION in else blocks ---
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION else_void_move_in_expr
+if (isRed()) {
+    move();
+} else {
+    int x = 1 + move();
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION else_void_turnleft_in_expr
+if (isBlue()) {
+    move();
+} else {
+    int x = turnLeft() + 1;
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION else_void_turnright_in_expr
+if (isGreen()) {
+    move();
+} else {
+    int x = turnRight() * 2;
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION else_void_in_boolean
+if (isRed()) {
+    move();
+} else {
+    boolean x = move() == 1;
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION else_void_in_condition
+if (isBlue()) {
+    move();
+} else {
+    if (move()) {
+        turnLeft();
+    }
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION else_void_nested
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        boolean b = turnLeft() == turnRight();
+    }
+}
+
+// --- UNUSED_EXPRESSION_FUNCTION in else blocks ---
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION else_unused_isred
+if (isBlue()) {
+    move();
+} else {
+    isRed();
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION else_unused_isblue
+if (isRed()) {
+    move();
+} else {
+    isBlue();
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION else_unused_isgreen
+if (isRed()) {
+    move();
+} else {
+    isGreen();
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION else_unused_no_braces
+if (isRed()) move(); else isBlue();
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION else_unused_nested
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        isGreen();
+    }
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION else_unused_after_valid
+if (isRed()) {
+    move();
+} else {
+    move();
+    turnLeft();
+    isRed();
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION else_unused_in_while
+int i = 0;
+while (i < 3) {
+    if (isRed()) {
+        move();
+    } else {
+        isGreen();
+    }
+    i = i + 1;
+}
+
+// --- ILLEGAL_FUNCTION_NAME in else blocks ---
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_simple
+if (isRed()) {
+    move();
+} else {
+    fly();
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_jump
+if (isBlue()) {
+    move();
+} else {
+    jump();
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_typo_moove
+if (isRed()) {
+    move();
+} else {
+    moove();
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_typo_turnleft
+if (isGreen()) {
+    move();
+} else {
+    turnleft();
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_typo_Turnright
+if (isBlue()) {
+    move();
+} else {
+    TurnRight();
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_no_braces
+if (isRed()) move(); else run();
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_nested
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        move();
+    } else {
+        teleport();
+    }
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_in_while
+int i = 0;
+while (i < 5) {
+    if (isGreen()) {
+        move();
+    } else {
+        sprint();
+    }
+    i = i + 1;
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_capitalization
+if (isRed()) {
+    move();
+} else {
+    Move();
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME else_illegal_fn_isred_as_statement
+if (isBlue()) {
+    move();
+} else {
+    IsRed();
+}
+
+// --- OK cases: valid else blocks that must still pass ---
+
+#EXPECT OK else_ok_simple
+if (isRed()) {
+    move();
+} else {
+    turnLeft();
+}
+
+#EXPECT OK else_ok_no_braces
+if (isBlue()) move(); else turnRight();
+
+#EXPECT OK else_ok_nested
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        turnLeft();
+    } else {
+        turnRight();
+    }
+}
+
+#EXPECT OK else_ok_with_variables
+int x = 0;
+if (isRed()) {
+    x = 1;
+} else {
+    x = 2;
+}
+
+#EXPECT OK else_ok_declare_in_else
+if (isRed()) {
+    int x = 1;
+} else {
+    int y = 2;
+}
+
+#EXPECT OK else_ok_bool_in_else
+if (isGreen()) {
+    move();
+} else {
+    boolean blocked = isRed();
+    if (blocked) {
+        turnLeft();
+    }
+}
+
+#EXPECT OK else_ok_complex
+int steps = 0;
+boolean done = false;
+while (!done && steps < 10) {
+    if (isRed()) {
+        done = true;
+    } else {
+        move();
+        steps = steps + 1;
+        if (isBlue()) {
+            turnLeft();
+        } else {
+            turnRight();
+        }
+    }
+}
+
+#EXPECT OK else_ok_empty_blocks
+if (isRed()) {
+} else {
+}
+
+#EXPECT OK else_ok_scope_reuse_after_then
+if (isRed()) {
+    int x = 1;
+}
+int x = 2;
+
+#EXPECT OK else_ok_nested_three_levels
+if (isRed()) {
+    move();
+} else {
+    if (isBlue()) {
+        turnLeft();
+    } else {
+        if (isGreen()) {
+            turnRight();
+        } else {
+            move();
+            move();
+        }
+    }
+}
+
+// ============================================================================
+// GAP A: Nordic character identifiers (æøåÆØÅäöÄÖ)
+// ============================================================================
+
+// --- OK: basic declarations ---
+
+#EXPECT OK nordic_int_ae
+int æ = 5;
+
+#EXPECT OK nordic_int_oe
+int ø = 3;
+
+#EXPECT OK nordic_int_aa
+int å = 7;
+
+#EXPECT OK nordic_bool_ae
+boolean æ = true;
+
+#EXPECT OK nordic_bool_oe
+boolean ø = false;
+
+#EXPECT OK nordic_uppercase_AE
+int Æ = 1;
+
+#EXPECT OK nordic_uppercase_OE
+int Ø = 2;
+
+#EXPECT OK nordic_uppercase_AA
+int Å = 3;
+
+#EXPECT OK nordic_umlaut_ae
+int ä = 10;
+
+#EXPECT OK nordic_umlaut_oe
+int ö = 20;
+
+#EXPECT OK nordic_uppercase_umlaut_AE
+int Ä = 11;
+
+#EXPECT OK nordic_uppercase_umlaut_OE
+int Ö = 22;
+
+// --- OK: multi-char names ---
+
+#EXPECT OK nordic_multichar_start
+int ølCount = 0;
+
+#EXPECT OK nordic_multichar_start2
+int ålder = 25;
+
+#EXPECT OK nordic_multichar_middle
+int myÅlder = 30;
+
+#EXPECT OK nordic_multichar_end
+int countØ = 0;
+
+#EXPECT OK nordic_multichar_mixed
+int ærligÅpen = 1;
+
+#EXPECT OK nordic_all_nordic
+int æøå = 42;
+
+// --- OK: in expressions ---
+
+#EXPECT OK nordic_arithmetic
+int æ = 5;
+int ø = 3;
+int å = æ + ø;
+
+#EXPECT OK nordic_comparison
+int ä = 10;
+int ö = 20;
+boolean störst = ö > ä;
+
+#EXPECT OK nordic_in_condition
+int å = 5;
+if (å > 0) {
+    move();
+}
+
+#EXPECT OK nordic_in_while
+int ø = 3;
+while (ø > 0) {
+    move();
+    ø = ø - 1;
+}
+
+#EXPECT OK nordic_assignment
+int æ = 0;
+æ = æ + 1;
+æ = æ * 2;
+
+#EXPECT OK nordic_boolean_expr
+boolean ø = isRed();
+boolean å = isBlue();
+boolean æ = ø && å;
+
+#EXPECT OK nordic_complex_program
+int stæg = 0;
+boolean færdig = false;
+while (!færdig && stæg < 5) {
+    move();
+    stæg = stæg + 1;
+    if (isRed()) {
+        færdig = true;
+    }
+}
+
+// --- Error cases ---
+
+#EXPECT UNDECLARED_VARIABLE nordic_undeclared
+int å = æ + 1;
+
+#EXPECT UNDECLARED_VARIABLE nordic_typo
+int æ = 5;
+int ø = å + 1;
+
+#EXPECT DUPLICATE_DECLARATION nordic_duplicate
+int ø = 1;
+int ø = 2;
+
+#EXPECT DUPLICATE_DECLARATION nordic_duplicate_diff_type
+int æ = 1;
+boolean æ = true;
+
+#EXPECT OUT_OF_SCOPE nordic_out_of_scope
+{
+    int å = 5;
+}
+int ø = å;
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE nordic_wrong_type
+int ø = true;
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE nordic_wrong_type_assign
+boolean æ = false;
+æ = 42;
+
+#EXPECT INVALID_ARGUMENT_TYPE nordic_bad_expr
+int ø = 5;
+boolean å = true;
+int æ = ø + å;
+
+#EXPECT NON_BOOLEAN_CONDITION nordic_int_condition
+int å = 3;
+if (å) {
+    move();
+}
+
+// ============================================================================
+// GAP B: Empty program
+// ============================================================================
+
+#EXPECT OK empty_program_no_chars
+
+#EXPECT OK empty_program_whitespace_only
+
+
+#EXPECT OK empty_program_single_comment
+// just a comment
+
+#EXPECT OK empty_program_multiple_comments
+// first comment
+// second comment
+// third comment
+
+#EXPECT OK empty_program_comments_with_blanks
+// comment one
+
+// comment two
+
+// comment three
+
+// ============================================================================
+// GAP C: Empty statement (;)
+// ============================================================================
+
+#EXPECT OK empty_stmt_single
+;
+
+#EXPECT OK empty_stmt_multiple
+;;;
+
+#EXPECT OK empty_stmt_before_code
+;
+move();
+
+#EXPECT OK empty_stmt_after_code
+move();
+;
+
+#EXPECT OK empty_stmt_between_code
+move();
+;
+turnLeft();
+
+#EXPECT OK empty_stmt_as_if_body
+if (isRed()) ;
+
+#EXPECT OK empty_stmt_as_else_body
+if (isRed()) move(); else ;
+
+#EXPECT OK empty_stmt_as_while_body
+while (false) ;
+
+#EXPECT OK empty_stmt_inside_block
+{
+    ;
+    move();
+    ;
+}
+
+#EXPECT OK empty_stmt_mixed
+;
+int x = 0;
+;
+if (isRed()) {
+    ;
+    move();
+    ;
+}
+;
+while (x < 1) {
+    ;
+    x = x + 1;
+}
+;
+
+// ============================================================================
+// GAP D: Variable named like a function
+// ============================================================================
+
+// --- OK: declaring variables with function names ---
+
+#EXPECT OK varfn_int_move
+int move = 5;
+
+#EXPECT OK varfn_int_turnLeft
+int turnLeft = 3;
+
+#EXPECT OK varfn_int_turnRight
+int turnRight = 7;
+
+#EXPECT OK varfn_bool_isRed
+boolean isRed = true;
+
+#EXPECT OK varfn_bool_isBlue
+boolean isBlue = false;
+
+#EXPECT OK varfn_bool_isGreen
+boolean isGreen = true;
+
+// --- OK: function-named var coexists with function call ---
+
+#EXPECT OK varfn_declare_then_call_move
+int move = 5;
+move();
+
+#EXPECT OK varfn_declare_then_call_turnLeft
+int turnLeft = 3;
+turnLeft();
+
+#EXPECT OK varfn_declare_then_call_isRed
+boolean isRed = true;
+boolean check = isRed();
+
+#EXPECT OK varfn_use_in_arithmetic
+int move = 5;
+int turnLeft = 3;
+int sum = move + turnLeft;
+
+#EXPECT OK varfn_use_in_condition
+boolean isRed = false;
+if (!isRed) {
+    move();
+}
+
+#EXPECT OK varfn_assign_from_function
+boolean isRed = false;
+isRed = isRed();
+
+#EXPECT OK varfn_complex
+int move = 0;
+boolean isRed = false;
+while (move < 3) {
+    move();
+    move = move + 1;
+    if (isRed()) {
+        isRed = true;
+    }
+}
+
+// --- Error cases ---
+
+#EXPECT DUPLICATE_DECLARATION varfn_duplicate
+int move = 1;
+int move = 2;
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE varfn_wrong_type
+int isRed = true;
+
+#EXPECT UNDECLARED_VARIABLE varfn_undeclared_assign
+move = 5;
+
+// ============================================================================
+// GAP E: Braceless while body
+// ============================================================================
+
+// --- OK cases ---
+
+#EXPECT OK braceless_while_move
+while (isRed()) move();
+
+#EXPECT OK braceless_while_turnLeft
+while (isBlue()) turnLeft();
+
+#EXPECT OK braceless_while_turnRight
+while (isGreen()) turnRight();
+
+#EXPECT OK braceless_while_assignment
+int x = 0;
+while (x < 5) x = x + 1;
+
+#EXPECT OK braceless_while_declaration
+while (false) int x = 1;
+
+#EXPECT OK braceless_while_if_body
+int x = 0;
+while (x < 3) if (isRed()) x = x + 1; else x = x + 2;
+
+#EXPECT OK braceless_while_empty_stmt
+while (false) ;
+
+#EXPECT OK braceless_while_block
+int x = 0;
+while (x < 1) { x = x + 1; move(); }
+
+#EXPECT OK braceless_while_nested
+while (isRed()) while (isBlue()) move();
+
+// --- Error cases ---
+
+#EXPECT ILLEGAL_FUNCTION_NAME braceless_while_bad_fn
+while (isRed()) fly();
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION braceless_while_unused
+while (isRed()) isBlue();
+
+#EXPECT UNDECLARED_VARIABLE braceless_while_undeclared
+while (isRed()) x = x + 1;
+
+#EXPECT NON_BOOLEAN_CONDITION braceless_while_int_cond
+while (5) move();
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE braceless_while_type_err
+int x = 0;
+while (x < 5) x = true;
+
+#EXPECT INVALID_ARGUMENT_TYPE braceless_while_bad_expr
+while (isRed()) int x = 3 + true;
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION braceless_while_void
+while (isRed()) int x = move() + 1;
+
+// ============================================================================
+// GAP F: Division and modulo in valid programs
+// ============================================================================
+
+#EXPECT OK div_simple
+int x = 10 / 2;
+
+#EXPECT OK mod_simple
+int x = 10 % 3;
+
+#EXPECT OK div_with_vars
+int a = 20;
+int b = 4;
+int c = a / b;
+
+#EXPECT OK mod_with_vars
+int a = 17;
+int b = 5;
+int c = a % b;
+
+#EXPECT OK div_compound
+int a = 100;
+int b = 5;
+int c = 3;
+int d = a / b + c;
+
+#EXPECT OK mod_compound
+int a = 17;
+int b = 5;
+int c = 2;
+int d = a % b * c;
+
+#EXPECT OK div_in_comparison
+int a = 10;
+int b = 3;
+boolean big = a / b > 0;
+
+#EXPECT OK mod_in_condition
+int a = 10;
+if (a % 2 == 0) {
+    move();
+}
+
+#EXPECT OK div_chained
+int a = 100;
+int b = 5;
+int c = 2;
+int d = a / b / c;
+
+#EXPECT OK div_mod_mixed
+int a = 100;
+int b = 7;
+int c = 3;
+int d = a / b % c;
+
+#EXPECT OK div_in_while_condition
+int n = 16;
+while (n / 2 > 1) {
+    n = n / 2;
+    move();
+}
+
+#EXPECT OK mod_in_if_condition
+int step = 0;
+while (step < 6) {
+    if (step % 2 == 0) {
+        move();
+    } else {
+        turnLeft();
+    }
+    step = step + 1;
+}
+
+// ============================================================================
+// GAP G: != operator in valid programs
+// ============================================================================
+
+#EXPECT OK noteq_int
+boolean x = 1 != 2;
+
+#EXPECT OK noteq_bool
+boolean x = true != false;
+
+#EXPECT OK noteq_in_if
+int x = 5;
+if (x != 0) {
+    move();
+}
+
+#EXPECT OK noteq_in_while
+int x = 3;
+while (x != 0) {
+    move();
+    x = x - 1;
+}
+
+#EXPECT OK noteq_with_and
+int x = 5;
+int y = 3;
+boolean both = x != 0 && y != 0;
+
+#EXPECT OK noteq_with_or
+boolean a = isRed();
+boolean b = isBlue();
+if (a != b || a != false) {
+    move();
+}
+
+#EXPECT OK noteq_function_calls
+boolean x = isRed() != isBlue();
+
+#EXPECT OK noteq_with_arithmetic
+int a = 5;
+int b = 3;
+boolean x = a + 1 != b;
+
+#EXPECT OK noteq_result_used_later
+int x = 5;
+boolean nonzero = x != 0;
+if (nonzero) {
+    move();
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE noteq_mixed_types
+boolean x = 1 != true;
+
+// ============================================================================
+// GAP H: <= operator coverage
+// ============================================================================
+
+#EXPECT OK lte_simple
+boolean x = 1 <= 2;
+
+#EXPECT OK lte_in_if
+int x = 3;
+if (x <= 5) {
+    move();
+}
+
+#EXPECT OK lte_in_while
+int x = 0;
+while (x <= 3) {
+    move();
+    x = x + 1;
+}
+
+#EXPECT OK lte_with_vars
+int a = 5;
+int b = 10;
+boolean ok = a <= b;
+
+#EXPECT OK lte_chained_with_and
+int a = 1;
+int b = 2;
+int c = 3;
+boolean sorted = a <= b && b <= c;
+
+#EXPECT OK lte_with_arithmetic
+int a = 3;
+int b = 5;
+boolean ok = a + 1 <= b * 2;
+
+#EXPECT OK lte_equal_case
+int x = 5;
+if (x <= 5) {
+    move();
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE lte_bool_bool
+boolean x = true <= false;
+
+#EXPECT INVALID_ARGUMENT_TYPE lte_bool_int
+boolean x = true <= 5;
+
+// ============================================================================
+// GAP I: Deep nesting (3+ levels)
+// ============================================================================
+
+// --- OK cases ---
+
+#EXPECT OK deep_3_if
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            move();
+        }
+    }
+}
+
+#EXPECT OK deep_3_while
+int a = 0;
+int b = 0;
+int c = 0;
+while (a < 2) {
+    while (b < 2) {
+        while (c < 2) {
+            move();
+            c = c + 1;
+        }
+        b = b + 1;
+    }
+    a = a + 1;
+}
+
+#EXPECT OK deep_3_mixed_vars
+int x = 0;
+boolean found = false;
+while (x < 10 && !found) {
+    if (isRed()) {
+        if (isBlue()) {
+            found = true;
+            move();
+        } else {
+            turnLeft();
+        }
+    }
+    x = x + 1;
+}
+
+#EXPECT OK deep_4_nesting
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            while (isRed()) {
+                move();
+            }
+        }
+    }
+}
+
+#EXPECT OK deep_3_scope
+int x = 0;
+{
+    int y = 1;
+    {
+        int z = 2;
+        {
+            x = x + y + z;
+        }
+    }
+}
+
+// --- Error cases at depth 3 ---
+
+#EXPECT UNDECLARED_VARIABLE deep_undeclared
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            x = 5;
+        }
+    }
+}
+
+#EXPECT OUT_OF_SCOPE deep_scope
+{
+    int x = 1;
+}
+if (isRed()) {
+    if (isBlue()) {
+        int y = x;
+    }
+}
+
+#EXPECT OUT_OF_SCOPE deep_scope_sibling
+if (isRed()) {
+    {
+        int x = 1;
+    }
+    if (isBlue()) {
+        int y = x;
+    }
+}
+
+#EXPECT DUPLICATE_DECLARATION deep_duplicate
+int x = 1;
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            int x = 2;
+        }
+    }
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE deep_type
+int x = 0;
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            x = true;
+        }
+    }
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE deep_bad_expr
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            int x = 3 + true;
+        }
+    }
+}
+
+#EXPECT NON_BOOLEAN_CONDITION deep_int_condition
+if (isRed()) {
+    if (isBlue()) {
+        int x = 5;
+        if (x) {
+            move();
+        }
+    }
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION deep_void
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            int x = move() + 1;
+        }
+    }
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION deep_unused
+if (isRed()) {
+    if (isBlue()) {
+        if (isGreen()) {
+            isRed();
+        }
+    }
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME deep_bad_fn
+if (isRed()) {
+    while (isBlue()) {
+        if (isGreen()) {
+            fly();
+        }
+    }
+}
+
+// ============================================================================
+// GAP J: While-body semantic errors
+// ============================================================================
+
+#EXPECT UNDECLARED_VARIABLE while_body_undeclared
+while (isRed()) {
+    x = x + 1;
+}
+
+#EXPECT UNDECLARED_VARIABLE while_body_undeclared_nested
+int i = 0;
+while (i < 5) {
+    {
+        int y = oops + 1;
+    }
+    i = i + 1;
+}
+
+#EXPECT OUT_OF_SCOPE while_body_scope_from_before
+{
+    int val = 10;
+}
+int i = 0;
+while (i < 3) {
+    int x = val;
+    i = i + 1;
+}
+
+#EXPECT OUT_OF_SCOPE while_body_scope_from_block
+int i = 0;
+while (i < 3) {
+    {
+        int temp = 1;
+    }
+    int x = temp;
+    i = i + 1;
+}
+
+#EXPECT DUPLICATE_DECLARATION while_body_dup_outer
+int count = 0;
+while (count < 5) {
+    int count = 1;
+}
+
+#EXPECT DUPLICATE_DECLARATION while_body_dup_nested
+int x = 0;
+int i = 0;
+while (i < 3) {
+    if (isRed()) {
+        int x = 1;
+    }
+    i = i + 1;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE while_body_type
+int x = 0;
+int i = 0;
+while (i < 3) {
+    x = true;
+    i = i + 1;
+}
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE while_body_type_declare
+int i = 0;
+while (i < 3) {
+    boolean b = 42;
+    i = i + 1;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE while_body_bad_expr
+int i = 0;
+while (i < 5) {
+    int x = i + true;
+    i = i + 1;
+}
+
+#EXPECT INVALID_ARGUMENT_TYPE while_body_bad_and
+int i = 0;
+while (i < 3) {
+    boolean b = i && true;
+    i = i + 1;
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION while_body_void
+int i = 0;
+while (i < 3) {
+    int x = move() + 1;
+    i = i + 1;
+}
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION while_body_void_bool
+int i = 0;
+while (i < 3) {
+    boolean b = turnLeft() == turnRight();
+    i = i + 1;
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION while_body_unused
+int i = 0;
+while (i < 3) {
+    isRed();
+    i = i + 1;
+}
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION while_body_unused_after_code
+int i = 0;
+while (i < 3) {
+    move();
+    isBlue();
+    i = i + 1;
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME while_body_bad_fn
+int i = 0;
+while (i < 3) {
+    fly();
+    i = i + 1;
+}
+
+#EXPECT ILLEGAL_FUNCTION_NAME while_body_bad_fn_typo
+int i = 0;
+while (i < 5) {
+    moove();
+    i = i + 1;
+}
+
+#EXPECT NON_BOOLEAN_CONDITION while_body_nested_int_if
+int i = 0;
+while (i < 3) {
+    if (i) {
+        move();
+    }
+    i = i + 1;
+}
+
+#EXPECT NON_BOOLEAN_CONDITION while_body_nested_int_while
+int i = 0;
+while (i < 3) {
+    int n = 5;
+    while (n) {
+        move();
+    }
+    i = i + 1;
+}
+
+// ============================================================================
+// GAP K: Braceless if with semantic errors
+// ============================================================================
+
+// --- OK cases ---
+
+#EXPECT OK braceless_if_move
+if (isRed()) move();
+
+#EXPECT OK braceless_if_else
+if (isRed()) turnLeft(); else turnRight();
+
+#EXPECT OK braceless_if_declare
+if (false) int x = 5;
+
+#EXPECT OK braceless_if_assign
+int x = 0;
+if (isRed()) x = 1;
+
+#EXPECT OK braceless_if_nested
+if (isRed()) if (isBlue()) move();
+
+#EXPECT OK braceless_if_else_chain
+if (isRed()) move(); else if (isBlue()) turnLeft(); else turnRight();
+
+// --- Error cases ---
+
+#EXPECT ILLEGAL_FUNCTION_NAME braceless_if_bad_fn
+if (isRed()) fly();
+
+#EXPECT ILLEGAL_FUNCTION_NAME braceless_if_else_bad_fn
+if (isRed()) move(); else fly();
+
+#EXPECT UNUSED_EXPRESSION_FUNCTION braceless_if_unused
+if (isRed()) isBlue();
+
+#EXPECT UNDECLARED_VARIABLE braceless_if_undeclared
+if (isRed()) x = 5;
+
+#EXPECT UNDECLARED_VARIABLE braceless_if_undeclared_else
+if (isRed()) move(); else y = 10;
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE braceless_if_type
+int x = 0;
+if (isRed()) x = true;
+
+#EXPECT INCORRECT_ASSIGNMENT_TYPE braceless_if_type_else
+int x = 0;
+if (isRed()) x = 1; else x = false;
+
+#EXPECT VOID_FUNCTION_IN_EXPRESSION braceless_if_void_cond
+if (move()) turnLeft();
+
+#EXPECT NON_BOOLEAN_CONDITION braceless_if_int_cond
+if (5) move();
+
+#EXPECT NON_BOOLEAN_CONDITION braceless_if_arith_cond
+int x = 3;
+if (x + 1) move();
+
+#EXPECT INVALID_ARGUMENT_TYPE braceless_if_bad_expr
+if (isRed()) int x = 3 + true;
+
+#EXPECT DUPLICATE_DECLARATION braceless_if_dup
+int x = 1;
+if (isRed()) int x = 2;
+
+#EXPECT DUPLICATE_DECLARATION braceless_if_dup_else
+int x = 1;
+if (isRed()) move(); else int x = 2;
+
+// ============================================================================
+// GAP L: Inner scope modifies outer variable, outer reads after
+// ============================================================================
+
+// --- OK: core patterns ---
+
+#EXPECT OK scope_modify_in_block
+int x = 0;
+{
+    x = x + 1;
+}
+int y = x + 1;
+
+#EXPECT OK scope_modify_in_if
+int x = 0;
+if (isRed()) {
+    x = 1;
+}
+int result = x;
+
+#EXPECT OK scope_modify_in_while
+int x = 0;
+while (x < 5) {
+    x = x + 1;
+}
+move();
+
+#EXPECT OK scope_modify_in_if_and_else
+int x = 0;
+if (isRed()) {
+    x = 1;
+} else {
+    x = 2;
+}
+boolean positive = x > 0;
+
+#EXPECT OK scope_modify_nested_block
+int x = 0;
+{
+    {
+        x = 10;
+    }
+}
+boolean big = x > 5;
+
+#EXPECT OK scope_two_vars_if_else
+int a = 0;
+int b = 0;
+if (isRed()) {
+    a = 1;
+} else {
+    b = 1;
+}
+int total = a + b;
+
+// --- OK: common loop patterns ---
+
+#EXPECT OK scope_loop_counter
+int i = 0;
+while (i < 5) {
+    move();
+    i = i + 1;
+}
+
+#EXPECT OK scope_accumulator
+int sum = 0;
+int i = 0;
+while (i < 3) {
+    sum = sum + i;
+    i = i + 1;
+}
+boolean done = sum > 0;
+
+#EXPECT OK scope_flag_pattern
+boolean found = false;
+int i = 0;
+while (!found && i < 10) {
+    if (isRed()) {
+        found = true;
+    } else {
+        move();
+    }
+    i = i + 1;
+}
+
+#EXPECT OK scope_nested_modify
+int x = 0;
+int i = 0;
+while (i < 3) {
+    if (isRed()) {
+        x = x + 1;
+    } else {
+        x = x + 2;
+    }
+    i = i + 1;
+}
+boolean ok = x > 0;
+
+#EXPECT OK scope_bool_toggle
+boolean direction = true;
+int i = 0;
+while (i < 4) {
+    if (direction) {
+        move();
+    } else {
+        turnLeft();
+    }
+    direction = !direction;
+    i = i + 1;
+}
+
+#EXPECT OK scope_multiple_outer_vars
+int x = 0;
+int y = 0;
+boolean done = false;
+while (!done) {
+    x = x + 1;
+    y = y + 2;
+    if (x + y > 10) {
+        done = true;
+    }
+}
+
+// --- Negative cases: inner-declared vars don't leak ---
+
+#EXPECT OUT_OF_SCOPE scope_leak_from_if
+if (isRed()) {
+    int x = 1;
+}
+int y = x;
+
+#EXPECT OUT_OF_SCOPE scope_leak_from_while
+while (false) {
+    int x = 1;
+}
+int y = x;
+
+#EXPECT OUT_OF_SCOPE scope_leak_from_block
+{
+    int x = 1;
+}
+int y = x;
+
+#EXPECT OUT_OF_SCOPE scope_leak_from_nested
+{
+    {
+        int x = 1;
+    }
+    int y = x;
+}
+
+#EXPECT OUT_OF_SCOPE scope_leak_from_else
+if (isRed()) {
+    move();
+} else {
+    int x = 5;
+}
+int y = x;
+
+#EXPECT OUT_OF_SCOPE scope_leak_loop_body
+int i = 0;
+while (i < 3) {
+    int temp = i * 2;
+    i = i + 1;
+}
+int result = temp;

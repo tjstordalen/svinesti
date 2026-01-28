@@ -31,7 +31,7 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 	}
 	
 	visitProgram(ctx) {
-		for (let c of ctx.children) {
+		for (let c of ctx.children ?? []) {
 			const typeResult = this.visit(c);
 			const errorOccured = typeResult === null;
 			const errorMsgUnchanged = this.error === ERRORS.OK;
@@ -115,7 +115,7 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 		const thenBlock = this.visit(ctx.then);
 		if (!thenBlock) return null;
 
-		const elseBlock = ctx.else ? this.visit(ctx.else) : "not applicable";
+		const elseBlock = ctx.else_ ? this.visit(ctx.else_) : "not applicable";
 		if (!elseBlock) return null;
 
 	    return Type.VOID;
@@ -302,7 +302,7 @@ export class TranspilationVisitor extends PigJatinVisitor {
 	}
 
 	visitProgram(ctx) {
-		const program = ctx.children.flatMap(c => this.visit(c)).join("\n");
+		const program = (ctx.children ?? []).flatMap(c => this.visit(c)).join("\n");
 		const pythonMapping = `globals()["lineMapping"] = dict(${JSON.stringify(this.lineMapping)})\n` 
 		return pythonMapping + program; 
 	}
