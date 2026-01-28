@@ -30,7 +30,6 @@ const comparisonAnswer = $('comparison-answer');
 const playbackToolbar = document.querySelector('.playback-toolbar');
 const gameNotification = $('game-notification');
 const gameShortcutsContainer = $('game-shortcuts-container');
-const helpButton = $('help-button');
 
 const editor = CodeMirror.fromTextArea($('code-input'), {
     lineNumbers: true,
@@ -484,13 +483,6 @@ function registerShortcuts() {
         name:       "Run code",
         action:     () => { editor.getInputField().blur(); submitAndEnter(enterPlaying); },
         key:        "ctrl+enter",
-        rebindable: false,
-    });
-    shortcuts.register({
-        id:         "help",
-        name:       "Help",
-        action:     () => helpButton.click(),
-        key:        "?",
         rebindable: false,
     });
 }
