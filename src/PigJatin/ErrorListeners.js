@@ -29,7 +29,7 @@ export class SyntaxErrorListener extends ErrorListener {
 				explanation = `Expected a ${expectedTokens[0]}. Did you remember to end each line with a semicolon?`;
 			}
 			else if (expected === "'('" || expected === "')'"){
-				explanation = `You're either missing a parenthesis, or you have one too much, or you have forgotton to put an if- or while-condition inside parentheses.`;
+				explanation = `You're either missing a parenthesis, or you have one too much, or you have forgotten to put an if- or while-condition inside parentheses.`;
 			}
 			else {
 				explanation = `Expected ${expected}.`;

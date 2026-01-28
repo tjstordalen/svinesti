@@ -67,7 +67,7 @@ export const ERRORS = {
 	outOfScope: (line, id) => {
 		const err = {}; 
 		err.line = line;
-		err.msg  = `ERROR (line ${line}): The variable '${id}' is not declared. It did exist at some point, but has gone out of scope. If you declare '${id}' inside a block (between '{' and '}') you cannot use it outside the block. without declaring it again.`;
+		err.msg  = `ERROR (line ${line}): The variable '${id}' is not declared. It did exist at some point, but has gone out of scope. If you declare '${id}' inside a block (between '{' and '}') you cannot use it outside the block without declaring it again.`;
 		err.type = ERROR_TYPES.OUT_OF_SCOPE;
 		return err;
 	},
