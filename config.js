@@ -5,7 +5,7 @@
 //
 // Organization:
 //   1. Timing / Animation
-//   2. Colors
+//   2. Colors (JS-only; UI colors in base.css)
 //   3. Sizes / Layout
 //   4. Infinite Loop Detection
 //   5. Keyboard Shortcuts
