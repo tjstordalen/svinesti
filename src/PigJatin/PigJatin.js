@@ -4,8 +4,7 @@ import PigJatinLexer from "./antlr/PigJatinLexer.js";
 import PigJatinParser from "./antlr/PigJatinParser.js";
 import { StaticAnalysisVisitor, TranspilationVisitor } from "./visitors.js";
 import { SyntaxErrorListener, UnrecognizedTokenErrorListener } from "./ErrorListeners.js";
-import { ERRORS, ERROR_TYPES } from "./errors.js";
-import { Token } from "antlr4";
+import { ERRORS, ERROR_TYPES } from "./errors.js";
 
 export function generatePythonCode(program){
 	

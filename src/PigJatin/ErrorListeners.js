@@ -49,10 +49,8 @@ export class SyntaxErrorListener extends ErrorListener {
 			}
 		}
 
-		// highlighting where on the line the error happened		
 		const errorMarker = " ".repeat(charPositionInLine) + "^";
-
-		const message = `Syntax error on line ${line}\n${this.programLines[line-1]}\n${" ".repeat(charPositionInLine) + "^"}\n${explanation}`
+		const message = `Syntax error on line ${line}\n${this.programLines[line-1]}\n${errorMarker}\n${explanation}`
 		this.error = {msg: message, line:line, type: ERROR_TYPES.SYNTAX_ERROR, posInLine: charPositionInLine};
     }
 }
