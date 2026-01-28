@@ -144,9 +144,8 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 			anyNull ||= x === null;
 		}
 
-		//const anyNull = statements.some(c => !this.visit(c));
 		const popped = this.scopeStack.pop();
-		// We keep old scopes around so we can give more helpul error messages
+		// We keep old scopes around so we can give more helpful error messages
 		this.abandonedScopes.push(popped);
 		return anyNull? null : Type.VOID;
 	}
@@ -167,9 +166,7 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 		const varType = this.getVarType(id, this.scopeStack);
 		if (varType) return varType;
 		else {
-			//console.log(this.abandonedScopes);
 			const outOfScope = this.getVarType(id, this.abandonedScopes);
-			//console.log(outOfScope);
 			if (outOfScope) this.error = ERRORS.outOfScope(ctx.start.line, id);
 			else this.error = ERRORS.undeclaredVariable(ctx.start.line, id);
 			return null;
@@ -245,12 +242,12 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 	visitExprNegation(ctx) {
 		const expr = this.visit(ctx.expr(0));
 		if (!expr) return null;
-		
+
 		if (expr === Type.INT) return expr;
 		else {
 			this.error = ERRORS.invalidOperatorArgument(
 				ctx.start.line,
-				`'${op}' (arithmetic negation)`,
+				`'-' (arithmetic negation)`,
 				"int",
 				`${expr}`
 			)

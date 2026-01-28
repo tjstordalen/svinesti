@@ -56,3 +56,5 @@ Never mind, I see it now. append SHORTCUTS or similar.
 
 - I notice that the icon paths are not in the config file. Maybe they should be?
 
+It looks like the code editor doesn't read the variables for tab indent etc)
+

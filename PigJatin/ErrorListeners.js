@@ -57,8 +57,8 @@ export class SyntaxErrorListener extends ErrorListener {
     }
 }
 
-// This is registered only to the lexer, which mostly only throws errors on unrecognized tokens. 
-export class UnrecognizedTokenErrorLister extends ErrorListener {
+// This is registered only to the lexer, which mostly only throws errors on unrecognized tokens.
+export class UnrecognizedTokenErrorListener extends ErrorListener {
 	
 	constructor(program){
 		super();

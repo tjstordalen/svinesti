@@ -3,16 +3,16 @@ import antlr4 from "antlr4";
 import PigJatinLexer from "./antlr/PigJatinLexer.js";
 import PigJatinParser from "./antlr/PigJatinParser.js";
 import { StaticAnalysisVisitor, TranspilationVisitor } from "./visitors.js";
-import { SyntaxErrorListener,  UnrecognizedTokenErrorLister } from "./ErrorListeners.js";
+import { SyntaxErrorListener, UnrecognizedTokenErrorListener } from "./ErrorListeners.js";
 import { ERRORS, ERROR_TYPES } from "./errors.js";
 import { Token } from "antlr4";
 
 export function generatePythonCode(program){
 	
-	const tokenizationErrors = new UnrecognizedTokenErrorLister(program);
+	const tokenizationErrors = new UnrecognizedTokenErrorListener(program);
 	const syntacticErrors    = new SyntaxErrorListener(program);
 	const semanticErrors     = new StaticAnalysisVisitor();
-	const transpilator       = new TranspilationVisitor();
+	const transpiler       = new TranspilationVisitor();
 
 	const chars = new antlr4.InputStream(program);
 
@@ -38,7 +38,7 @@ export function generatePythonCode(program){
 	
 
 	const success = error.type === ERROR_TYPES.OK;
-	const pythonCode = success ? transpilator.visit(parseTree) : "N/A"; 
+	const pythonCode = success ? transpiler.visit(parseTree) : "N/A"; 
 	return [success, error, pythonCode];
 }
 

@@ -2663,6 +2663,11 @@ move();
 int calc = isRed() * 2; // invalid
 turnLeft();
 
+#EXPECT INVALID_ARGUMENT_TYPE test_negation_on_boolean
+// arithmetic negation on boolean
+boolean x = true;
+int y = -x; // cannot negate boolean
+
 #EXPECT VOID_FUNCTION_IN_EXPRESSION
 // use move() in math
 int dist = move() + 1; // move() is void

@@ -35,7 +35,7 @@ export const ERRORS = {
 	warnUnusedExpressionFunction: (line, id) => {
 		const err = {};
 		err.line = line;
-		err.msg  =  `WARNING (line ${line})}: You are calling '${id}' without doing anything with the result. Did you forget an if-statement, or did you want to use another function? `;
+		err.msg  =  `WARNING (line ${line}): You are calling '${id}' without doing anything with the result. Did you forget an if-statement, or did you want to use another function? `;
 		err.type = ERROR_TYPES.UNUSED_EXPRESSION_FUNCTION;
 		return err;
 	},
