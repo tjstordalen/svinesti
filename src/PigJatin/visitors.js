@@ -1,7 +1,7 @@
 import antlr4 from 'antlr4';
 import PigJatinVisitor from "./antlr/PigJatinVisitor.js";
 import { ERRORS } from "./errors.js";
-import { EDITOR_TAB_SIZE } from "../config.js";
+import { EDITOR_TAB_SIZE, PIGJATIN_STATEMENT_FUNCTIONS, PIGJATIN_EXPRESSION_FUNCTIONS } from "../config.js";
 
 const Type = {
 	INT:   "int",
@@ -17,8 +17,8 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 		this.scopeStack = [{}];
 		this.error = ERRORS.OK;
 
-		this.validStatementFunctions = ["move", "turnLeft", "turnRight"];
-		this.validExpressionFunctions = ["isRed", "isBlue", "isGreen"];
+		this.validStatementFunctions = PIGJATIN_STATEMENT_FUNCTIONS;
+		this.validExpressionFunctions = PIGJATIN_EXPRESSION_FUNCTIONS;
 	}
 
 	getVarType(id, scopes){
