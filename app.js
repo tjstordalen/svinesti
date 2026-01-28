@@ -21,6 +21,7 @@ let preferences = {
     showHelpOnStart: true,
     playbackSpeed: 150,
     editorFontSize: 16,
+    communityViewMode: 'thumbnails',
 };
 const levelChangeCallbacks = [];
 
@@ -126,6 +127,7 @@ export const prefs = {
     showHelpOnStart: pref('showHelpOnStart'),
     playbackSpeed: pref('playbackSpeed'),
     editorFontSize: pref('editorFontSize'),
+    communityViewMode: pref('communityViewMode'),
 };
 
 // --- Levels ---
