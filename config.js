@@ -59,37 +59,14 @@ export const CONFETTI_ROTATION_RANGE = [-360, 360];    // degrees
 // 2. COLORS
 // =============================================================================
 
-// Brand/UI palette (CSS variable values)
-export const COLORS = {
-    header: '#7eb09b',
-    headerDark: '#6a9985',
-    interactive: '#5a9178',
-    interactiveLight: '#7eb09b',
-    interactiveDark: '#4a7a68',
-    bg: '#f5f7fa',
-    surface: '#ffffff',
-    border: '#e1e5eb',
-    text: '#2d3748',
-    textMuted: '#718096',
-};
+// UI colors are defined as CSS variables in base.css (source of truth for styling).
+// Only JS-specific colors that can't use CSS variables are defined here.
 
-// Tile colors
-export const TILE_COLORS = {
-    empty: '#FAF7F2',
-    red: '#FF8A8A',
-    green: '#58E0B8',
-    blue: '#85D0FF',
-};
-
-// Notification colors
+// Notification colors (used in JS animations)
 export const NOTIFY_COLOR_INFO = 'rgba(90, 145, 120, 0.95)';   // sage green
 export const NOTIFY_COLOR_ERROR = 'rgba(60, 60, 70, 0.95)';    // dark slate
 
-// Error flash/glow color
-export const ERROR_GLOW_COLOR = 'rgba(255, 80, 80, 0.7)';
-export const ERROR_GLOW_COLOR_STRONG = 'rgba(255, 80, 80, 0.8)';
-
-// Confetti colors
+// Confetti colors (JS-only, not in CSS)
 export const CONFETTI_COLORS = [
     '#FF8A8A',  // pink
     '#58E0B8',  // teal
@@ -98,9 +75,6 @@ export const CONFETTI_COLORS = [
     '#FF6B6B',  // red
     '#4ECDC4',  // cyan
 ];
-
-// Code editor line highlight
-export const LINE_HIGHLIGHT_COLOR = 'rgba(139, 224, 26, 0.25)';
 
 // =============================================================================
 // 3. SIZES / LAYOUT
