@@ -1,6 +1,7 @@
 import antlr4 from 'antlr4';
 import PigJatinVisitor from "./antlr/PigJatinVisitor.js";
 import { ERRORS } from "./errors.js";
+import { EDITOR_TAB_SIZE } from "../config.js";
 
 const Type = {
 	INT:   "int",
@@ -278,10 +279,10 @@ export class StaticAnalysisVisitor extends PigJatinVisitor {
 
 
 export class TranspilationVisitor extends PigJatinVisitor {
-	
+
 	constructor(){
 		super();
-		this.indentChars      = " ".repeat(4);
+		this.indentChars      = " ".repeat(EDITOR_TAB_SIZE);
 		this.indentationLevel = 0;
 		this.indentation      = () => this.indentChars.repeat(this.indentationLevel)
 		this.indent           = () => this.indentationLevel++;

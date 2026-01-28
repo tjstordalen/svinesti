@@ -24,19 +24,15 @@ import {
 
 // --- Sprite helpers ---
 
-/** Returns CSS url() for a pig sprite image */
-function pigSpriteUrl(dir, num = 1) {
-    return `url("pigs/${dir}-${num}.png")`;
-}
-
 /** Generates walk keyframes: cycles through 3 sprite frames (1→2→3→2→1) */
 function makeWalkKeyframes(dir) {
+    const sprite = (n) => `url("pigs/${dir}-${n}.png")`;
     return [
-        { backgroundImage: pigSpriteUrl(dir, 1) },
-        { backgroundImage: pigSpriteUrl(dir, 2) },
-        { backgroundImage: pigSpriteUrl(dir, 3) },
-        { backgroundImage: pigSpriteUrl(dir, 2) },
-        { backgroundImage: pigSpriteUrl(dir, 1) },
+        { backgroundImage: sprite(1) },
+        { backgroundImage: sprite(2) },
+        { backgroundImage: sprite(3) },
+        { backgroundImage: sprite(2) },
+        { backgroundImage: sprite(1) },
     ];
 }
 

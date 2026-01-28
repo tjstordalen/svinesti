@@ -143,6 +143,10 @@ body:not(.editor-mode) .sidebar-tab[data-tab="trash"] {
     justify-content: center;
 }
 
+body:not(.editor-mode) .delete-level-btn {
+    display: none;
+}
+
 .sidebar-level-item:hover .delete-level-btn {
     opacity: 1;
 }

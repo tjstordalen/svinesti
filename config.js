@@ -100,7 +100,7 @@ export const TIMEOUT_NOTIFICATION_DURATION = 10000; // ms
 // 4. KEYBOARD SHORTCUTS
 // =============================================================================
 
-// Default key bindings
+// Default key bindings - game mode
 export const DEFAULT_SHORTCUTS = {
     playPause: 'h',
     step: 'j',
@@ -108,6 +108,28 @@ export const DEFAULT_SHORTCUTS = {
     runCode: 'ctrl+enter',  // non-rebindable
     help: '?',              // non-rebindable
     closeHelp: 'Escape',
+};
+
+// Default key bindings - editor mode
+export const DEFAULT_EDITOR_SHORTCUTS = {
+    edit: {
+        cycleColor:   ' ',
+        toggleTarget: 's',
+        moveUp:       'arrowup',
+        moveDown:     'arrowdown',
+        moveLeft:     'arrowleft',
+        moveRight:    'arrowright',
+        movePig:      'p',
+        enterPaint:   'c',
+    },
+    paint: {
+        paste:     ' ',
+        moveUp:    'arrowup',
+        moveDown:  'arrowdown',
+        moveLeft:  'arrowleft',
+        moveRight: 'arrowright',
+        exitPaint: 'c',
+    },
 };
 
 // Modifier keys (ignored during rebinding until a non-modifier is pressed)
@@ -156,13 +178,13 @@ export const PYODIDE_CDN_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/py
 export const PYODIDE_WORKER_URL = 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/pyodide.mjs';
 export const ANTLR_CDN_URL = 'https://cdn.jsdelivr.net/npm/antlr4@4.13.2/+esm';
 
-// Sprite path pattern: use pigSpritePath(dir, num) to generate
-export const PIG_SPRITE_DIR = 'pigs';
-export const pigSpritePath = (dir, num = 1) => `${PIG_SPRITE_DIR}/${dir}-${num}.png`;
-export const pigSpriteUrl = (dir, num = 1) => `url("${pigSpritePath(dir, num)}")`;
-
-// Target icon
-export const TARGET_ICON_PATH = 'img/golden-apple.png';
+// Icons (for JS-generated elements; HTML uses paths directly)
+const icon = (name) => `icons/${name}.svg`;
+export const ICON = {
+    TRASH:   icon('trash3-fill'),
+    REFRESH: icon('arrow-counterclockwise'),
+    LOCK:    icon('lock'),
+};
 
 // =============================================================================
 // 9. DEFAULT PREFERENCES
@@ -243,8 +265,5 @@ export const SIDEBAR_ENABLE_COMMUNITY_FIRST = 'Enable Community Levels in Help m
 export const PIGJATIN_STATEMENT_FUNCTIONS = ['move', 'turnLeft', 'turnRight'];
 export const PIGJATIN_EXPRESSION_FUNCTIONS = ['isRed', 'isBlue', 'isGreen'];
 
-// Python indentation for transpiled code
-export const PIGJATIN_INDENT = '    '; // 4 spaces
-
-// Tab replacement in student code
-export const TAB_REPLACEMENT = '    '; // 4 spaces
+// Editor tab/indent size (used by CodeMirror and PigJatin transpiler)
+export const EDITOR_TAB_SIZE = 4;

@@ -10,7 +10,7 @@ import { TAB } from "./constants.js";
 import {
     SIDEBAR_LOADING, SIDEBAR_TRASH_EMPTY, SIDEBAR_NO_COMMUNITY_LEVELS,
     SIDEBAR_SEARCH_PLACEHOLDER, SIDEBAR_NO_MATCHES, SIDEBAR_SERVER_ERROR,
-    SIDEBAR_NO_NEW_LEVELS,
+    SIDEBAR_NO_NEW_LEVELS, ICON,
 } from "./config.js";
 
 // --- DOM References ---
@@ -44,7 +44,7 @@ function makeLevelItemCard(level, type, onRefresh) {
     item.querySelector('.sidebar-level-name').textContent = level.name || 'Untitled';
 
     const loadLevel = () => {
-        (mode.isEditor() ? Editor.load : Game.selectLevel)(level);
+        (mode.isEditor() ? Editor.load : Game.load)(level);
         levelList.querySelectorAll('.sidebar-level-item').forEach(i => i.classList.remove('selected'));
         item.classList.add('selected');
         sidebar.classList.add('collapsed');
@@ -61,7 +61,7 @@ function makeLevelItemCard(level, type, onRefresh) {
 
             const deleteBtn = html(`
                 <button class="delete-level-btn" title="Delete level">
-                    <img src="icons/trash3-fill.svg" alt="" width="16" height="16">
+                    <img src="${ICON.TRASH}" alt="" width="16" height="16">
                 </button>
             `);
             deleteBtn.addEventListener('click', (e) => {
@@ -177,10 +177,7 @@ export async function showCommunityTab() {
         return;
     }
 
-    if (community.isLoading()) {
-        levelList.innerHTML = `<div class="community-message">${SIDEBAR_LOADING}</div>`;
-        return;
-    }
+    levelList.innerHTML = `<div class="community-message">${SIDEBAR_LOADING}</div>`;
 
     const result = await community.fetchIfNeeded();
     if (result.error) {
@@ -214,7 +211,7 @@ function showCommunityLevels() {
             </label>
             <span class="community-view-label">Compact</span>
             <button class="community-refresh-btn" title="Refresh levels">
-                <img src="icons/arrow-counterclockwise.svg" alt="">
+                <img src="${ICON.REFRESH}" alt="">
             </button>
             <div class="notification"></div>
         </div>

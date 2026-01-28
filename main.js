@@ -78,7 +78,7 @@ community.startPolling(() => sidebar.refreshActiveTab());
 // Load shared level from URL, or select first level
 const sharedLevel = Editor.importFromURL();
 if (sharedLevel) {
-    Game.selectLevel(sharedLevel);
+    Game.load(sharedLevel);
 } else {
     levelList.querySelector(".sidebar-level-item")?.click();
 }

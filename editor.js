@@ -15,6 +15,7 @@ import {
     STORAGE_KEY_EDITOR_EDIT, STORAGE_KEY_EDITOR_PAINT,
     COMMUNITY_SHARE_TIMEOUT, NOTIFICATION_LINK_COPIED,
     SIDEBAR_ENABLE_COMMUNITY_FIRST, DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS,
+    DEFAULT_EDITOR_SHORTCUTS,
 } from "./config.js";
 
 // --- DOM References ---
@@ -328,54 +329,57 @@ function exitPaintMode() {
 }
 
 function registerShortcuts() {
+    const edit = DEFAULT_EDITOR_SHORTCUTS.edit;
+    const paint = DEFAULT_EDITOR_SHORTCUTS.paint;
+
     // --- Edit mode shortcuts ---
     editShortcuts.register({
         id:     "cycle-color",
         name:   "Change color / Rotate pig",
         action: () => cycleColor(state.cursor),
-        key:    " ",
+        key:    edit.cycleColor,
     });
     editShortcuts.register({
         id:     "toggle-target",
         name:   "Add/remove apple",
         action: () => cycleTarget(state.cursor),
-        key:    "s",
+        key:    edit.toggleTarget,
     });
     editShortcuts.register({
         id:     "move-up",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
-        key:    "arrowup",
+        key:    edit.moveUp,
     });
     editShortcuts.register({
         id:     "move-down",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
-        key:    "arrowdown",
+        key:    edit.moveDown,
     });
     editShortcuts.register({
         id:     "move-left",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
-        key:    "arrowleft",
+        key:    edit.moveLeft,
     });
     editShortcuts.register({
         id:     "move-right",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
-        key:    "arrowright",
+        key:    edit.moveRight,
     });
     editShortcuts.register({
         id:     "move-pig",
         name:   "Place pig at cursor",
         action: () => movePigTo(state.cursor),
-        key:    "p",
+        key:    edit.movePig,
     });
     editShortcuts.register({
         id:     "enter-paint",
         name:   "Copy tile (enter paint mode)",
         action: enterPaintMode,
-        key:    "c",
+        key:    edit.enterPaint,
     });
 
     // --- Paint mode shortcuts ---
@@ -383,37 +387,37 @@ function registerShortcuts() {
         id:     "paste",
         name:   "Paste tile",
         action: () => { state.paintHeld = true; pasteCell(state.cursor); },
-        key:    " ",
+        key:    paint.paste,
     });
     paintShortcuts.register({
         id:     "move-up",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('up'); },
-        key:    "arrowup",
+        key:    paint.moveUp,
     });
     paintShortcuts.register({
         id:     "move-down",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('down'); },
-        key:    "arrowdown",
+        key:    paint.moveDown,
     });
     paintShortcuts.register({
         id:     "move-left",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('left'); },
-        key:    "arrowleft",
+        key:    paint.moveLeft,
     });
     paintShortcuts.register({
         id:     "move-right",
         name:   "Move cursor",
         action: () => { editorGrid.classList.add('keyboard-nav'); moveCursor('right'); },
-        key:    "arrowright",
+        key:    paint.moveRight,
     });
     paintShortcuts.register({
         id:     "exit-paint",
         name:   "Exit paint mode",
         action: exitPaintMode,
-        key:    "c",
+        key:    paint.exitPaint,
     });
 }
 

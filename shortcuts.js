@@ -1,5 +1,7 @@
 // shortcuts.js - Keyboard shortcut management system
 
+import { ICON } from './config.js';
+
 // Module-level flag: true if ANY shortcuts instance is currently rebinding
 // All instances check this before executing shortcuts
 let globalRebinding = false;
@@ -158,7 +160,7 @@ function createShortcuts(storageKey) {
             <span>Enable shortcuts</span>
             <span class="hint">Click to toggle, click key to change</span>
             <button class="shortcuts-reset" title="Reset to defaults">
-                <img src="icons/arrow-counterclockwise.svg" alt="" width="16" height="16">
+                <img src="${ICON.REFRESH}" alt="" width="16" height="16">
                 Reset
             </button>
         `;
@@ -212,7 +214,7 @@ function createShortcuts(storageKey) {
                 // Lock icon for non-rebindable shortcuts
                 if (!shortcut.rebindable) {
                     const lockIcon = document.createElement('img');
-                    lockIcon.src = 'icons/lock.svg';
+                    lockIcon.src = ICON.LOCK;
                     lockIcon.alt = '';
                     lockIcon.className = 'shortcut-lock';
                     shortcut.lockIcon = lockIcon;

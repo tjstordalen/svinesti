@@ -9,7 +9,7 @@ import { EVENT, MSG, STATUS, REASON } from "./constants.js";
 import {
     LINE_PAUSE_MULTIPLIER, TIMEOUT_TRACE_REPLAY, TIMEOUT_NOTIFICATION_DURATION,
     INFINITE_LOOP_OUTPUT_MESSAGE, INFINITE_LOOP_NOTIFICATION_HTML,
-    NOTIFICATION_PAUSED_TO_EDIT,
+    NOTIFICATION_PAUSED_TO_EDIT, EDITOR_TAB_SIZE,
 } from "./config.js";
 
 // --- DOM References ---
@@ -36,8 +36,8 @@ const editor = CodeMirror.fromTextArea($('code-input'), {
     lineWrapping: true,
     mode: "python",
     theme: "default",
-    indentUnit: 4,
-    tabSize: 4,
+    indentUnit: EDITOR_TAB_SIZE,
+    tabSize: EDITOR_TAB_SIZE,
 });
 
 // --- State ---
@@ -161,7 +161,7 @@ function switchLanguage(newLang) {
     }
     const mode = newLang === "java" ? "text/x-java" : "python";
     editor.setOption("mode", mode);
-    editor.setOption("indentUnit", 4);
+    editor.setOption("indentUnit", EDITOR_TAB_SIZE);
 }
 
 // --- State machine ---
@@ -508,7 +508,7 @@ export function exit() {
     enterIdle();
 }
 
-export function selectLevel(level) {
+export function load(level) {
     if (state.level) {
         app.code.set(levelKey(state.level), selectedLanguage(), editor.getValue());
     }
