@@ -42,9 +42,6 @@ const editor = CodeMirror.fromTextArea($('code-input'), {
 
 // --- State ---
 
-// TODO: CTRL+ENTER does not execute code 
-
-
 const state = {
     // Level
     level: null,
@@ -297,11 +294,7 @@ async function processEvent(msg) {
             break;
 
         case EVENT.MOVE:
-			// moves the legs
             animations.walk(pig, msg.dir, getAnimSpeed());
-			// CLAUDO: these checks against animations.ABORT don't matter. I think the only relevant one is
-			// CLAUDO: the one in the moveAnimated function.
-			// moves the pig
             if (await moveAnimated(msg.dir, msg.pos[0], msg.pos[1]) === animations.ABORT) return;
             break;
 
@@ -317,8 +310,7 @@ async function processEvent(msg) {
 
         case EVENT.COLLECTED:
             const [r, c] = msg.pos;
-			// CLAUDO: rename the class target to "apple" accross all files, perhaps?
-            state.grid.tiles[r * state.grid.nCols + c].classList.remove("target");
+            state.grid.getCell(r, c).classList.remove("target");
             break;
 
         case EVENT.GAMEOVER:
@@ -327,7 +319,8 @@ async function processEvent(msg) {
             if (msg.win) {
                 animations.celebrate(pig);
             }
-			// CLAUDO why not check against loss explicitly? I don't renember the msg.reason string but you can find it
+			// Play lose animation for any loss that isn't a timeout
+			// (timeout animation already played in submitAndEnter)
 			else if (msg.reason !== REASON.TIMEOUT) {
                 const gridWrapper = document.getElementById('grid-wrapper');
                 animations.lose(pig, gridWrapper);
@@ -347,7 +340,7 @@ function applyEventSilent(msg) {
             break;
         case EVENT.COLLECTED:
             const [r, c] = msg.pos;
-            state.grid.tiles[r * state.grid.nCols + c].classList.remove('target');
+            state.grid.getCell(r, c).classList.remove('target');
             break;
     }
 }
