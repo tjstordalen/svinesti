@@ -7,9 +7,7 @@ To run it locally you can, for instance, run `python -m http.server 8000` at the
 Opening the file `index.html` directly without an HTTP server will not work.
 The first page load will take some time as it downloads the Pyodide runtime (~10 MB), after which it is cached by the browser.
 
-<!-- TODO: screenshot of game mode -->
-
-<!-- TODO: screenshot of level editor -->
+![Game mode: code editor on the left, colored grid with pig and apples on the right](assets/img/svinesti-example.png)
 
 
 ## How It Works
