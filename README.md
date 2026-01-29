@@ -22,7 +22,7 @@ If the student writes in 'Java', we transpile it to Python and run it through th
 
 The student's code drives the python program, so as a safeguard the engine kills the program after executing ten thousand lines of code, assuming that the submitted code loops infinitely. The last hundred or so events of the trace are simulated to show the student where it went wrong.
 
-There is also a level editor so the student can make their own levels. It works directly on the level format — the character grid is the state, and the grid is fully redrawn on every change. The student can share levels via URL, or via a 'community levels server' hosted using Google Sheets and a simple AppScript server.
+There is also a level editor so the student can make their own levels. It works directly on the level format — the character grid is the state, and the grid is fully redrawn on every change. The student can share levels via URL, or via a 'community levels server' hosted using Google Sheets and a simple AppScript server. Level ownership is tracked client-side via a secret: the client generates a random secret, derives a UID from its SHA-256 hash, and sends both to the server. Resubmitting with the same secret updates the existing level in place.
 
 ## The Transpiler
 
