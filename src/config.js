@@ -147,6 +147,7 @@ export const STORAGE_KEY_CUSTOM_LEVELS = 'svinesti-custom-levels';
 export const STORAGE_KEY_STARRED = 'svinesti-starred';
 export const STORAGE_KEY_PREFERENCES = 'svinesti-preferences';
 export const STORAGE_KEY_CODE = 'svinesti-code';
+export const STORAGE_KEY_SECRETS = 'svinesti-secrets';
 export const STORAGE_KEY_EDITOR_EDIT = 'svinesti-editor-edit-v1';
 export const STORAGE_KEY_EDITOR_PAINT = 'svinesti-editor-paint-v1';
 
@@ -166,7 +167,7 @@ export const COLOR_CYCLE = ['empty', 'blue', 'green', 'red']; // wraps to empty
 // =============================================================================
 
 // Community levels server endpoint (Google Apps Script)
-export const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbxdJIZKtws3OOWncGuvnrDGd8crSCrzwSCfSErzvKrWA_07KNhHpftWtfow6xI3najmgw/exec';
+export const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbwn9Ffm2G9NWMT_sHUkg9ZRLbnNkKO_6Ce-uvTPAOZ2MYTUi9s6CtO_o8brtFLKKg7MOQ/exec';
 export const COMMUNITY_REFRESH_INTERVAL = 3 * 60 * 1000;  // 3 minutes
 export const COMMUNITY_SHARE_TIMEOUT = 60000;             // Server response wait
 

@@ -4,7 +4,7 @@ import { levels as builtInLevels } from './levels.js';
 import { MODE } from './constants.js';
 import {
     STORAGE_KEY_CUSTOM_LEVELS, STORAGE_KEY_STARRED,
-    STORAGE_KEY_PREFERENCES, STORAGE_KEY_CODE,
+    STORAGE_KEY_PREFERENCES, STORAGE_KEY_CODE, STORAGE_KEY_SECRETS,
     DEFAULT_PREFERENCES, SPLASH_FADE_DURATION, ENABLE_SPLASH_SCREEN,
 } from './config.js';
 
@@ -24,6 +24,7 @@ export function init() {
     initialized = true;
     levels._load();
     starred._load();
+    secrets._load();
     prefs._load();
     code._load();
     prefs._apply();
@@ -189,6 +190,34 @@ export const starred = {
     set(uid, value) {
         if (value) this._uids.add(uid);
         else this._uids.delete(uid);
+        this._persist();
+    },
+};
+
+// --- Secrets (community level ownership) ---
+
+export const secrets = {
+    _data: {},
+
+    _load() {
+        const json = localStorage.getItem(STORAGE_KEY_SECRETS);
+        this._data = json ? JSON.parse(json) : {};
+    },
+
+    _persist() {
+        localStorage.setItem(STORAGE_KEY_SECRETS, JSON.stringify(this._data));
+    },
+
+    isOwned(uid) {
+        return uid != null && uid in this._data;
+    },
+
+    secretFor(uid) {
+        return this._data[uid] || null;
+    },
+
+    store(uid, secret) {
+        this._data[uid] = secret;
         this._persist();
     },
 };

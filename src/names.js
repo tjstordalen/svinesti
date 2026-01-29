@@ -1079,14 +1079,12 @@ function isValidLevelName(name) {
     return allWords.includes(word1) && allWords.includes(word2);
 }
 
-function generateUID(length = 8) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let uid = '';
-    for (let i = 0; i < length; i++) {
-        uid += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return uid;
+async function hashSecret(secret) {
+    const data = new TextEncoder().encode(secret);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    const hex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+    return hex.slice(0, 12);
 }
 
-export { generateLevelName, isValidLevelName, generateUID };
+export { generateLevelName, isValidLevelName, hashSecret };
 

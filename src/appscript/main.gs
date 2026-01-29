@@ -11,6 +11,19 @@
 // 6. Copy URL, update COMMUNITY_URL in the JS codebase
 
 // -----------------------------------------------------------------------------
+// SECRET HASHING
+// -----------------------------------------------------------------------------
+
+function hashSecret(secret) {
+    var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, secret);
+    var hex = digest.map(function(b) {
+        // Utilities.computeDigest returns signed bytes (-128 to 127)
+        return ('0' + ((b + 256) % 256).toString(16)).slice(-2);
+    }).join('');
+    return hex.slice(0, 12);
+}
+
+// -----------------------------------------------------------------------------
 // LEVEL VALIDATION
 // -----------------------------------------------------------------------------
 
@@ -147,9 +160,12 @@ function doPost(e) {
             }));
         }
 
-        // --- Submit new level ---
+        // --- Submit / update level ---
         if (!data.level) {
             return ContentService.createTextOutput(JSON.stringify({ error: 'Missing level data' }));
+        }
+        if (!data.secret) {
+            return ContentService.createTextOutput(JSON.stringify({ error: 'Missing secret' }));
         }
 
         var level = decodeLevel(data.level);
@@ -165,18 +181,24 @@ function doPost(e) {
             nameChanged = true;
         }
 
-        // Check/generate UID
-        if (!level.uid || typeof level.uid !== 'string' || level.uid.length < 4) {
-            level.uid = generateUID(8);
-        }
+        // Compute UID from secret (overrides any client-sent uid)
+        var uid = hashSecret(data.secret);
+        level.uid = uid;
+        var encodedLevel = encodeLevel(level);
 
-        // Append: Timestamp | UID | Level | Stars
-        sheet.appendRow([
-            new Date(),
-            level.uid,
-            encodeLevel(level),
-            0
-        ]);
+        // Upsert: update if uid exists, append if not
+        var finder = sheet.getRange('B:B').createTextFinder(uid).matchEntireCell(true);
+        var cell = finder.findNext();
+
+        if (cell) {
+            // Update existing: overwrite timestamp and level data, preserve stars
+            var row = cell.getRow();
+            sheet.getRange(row, 1).setValue(new Date());
+            sheet.getRange(row, 3).setValue(encodedLevel);
+        } else {
+            // New level
+            sheet.appendRow([new Date(), uid, encodedLevel, 0]);
+        }
 
         // Increment version for polling
         var props = PropertiesService.getScriptProperties();
@@ -186,7 +208,7 @@ function doPost(e) {
         var result = {
             success: true,
             name: level.name,
-            uid: level.uid
+            uid: uid
         };
         if (nameChanged) {
             result.nameChanged = true;

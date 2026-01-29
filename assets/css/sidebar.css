@@ -91,8 +91,8 @@
     color: white;
 }
 
-/* In editor mode, only show My Levels and Trash tabs */
-.editor-mode .sidebar-tab:not([data-tab="my-levels"]):not([data-tab="trash"]) {
+/* In editor mode, only show My Levels, Community, and Trash tabs */
+.editor-mode .sidebar-tab:not([data-tab="my-levels"]):not([data-tab="community"]):not([data-tab="trash"]) {
     display: none;
 }
 

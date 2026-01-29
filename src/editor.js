@@ -10,7 +10,7 @@ import * as animations from "./animations.js";
 import * as Shortcuts from "./shortcuts.js";
 import * as community from "./community.js";
 import * as app from "./app.js";
-import { generateLevelName, generateUID } from "./names.js";
+import { generateLevelName } from "./names.js";
 import {
     STORAGE_KEY_EDITOR_EDIT, STORAGE_KEY_EDITOR_PAINT,
     COMMUNITY_SHARE_TIMEOUT, NOTIFICATION_LINK_COPIED,
@@ -220,8 +220,9 @@ function load(level) {
         editorLevelName.value = level.name;
     } else {
         editorLevelName.value = generateLevelName();
-        state.uid = generateUID();
     }
+
+    editorShareCommunity.textContent = app.secrets.isOwned(state.uid) ? 'Update' : 'Submit';
 
     // Build grid from expanded cells
     const expandedLevel = {
@@ -591,19 +592,22 @@ async function handleShareCommunityClick() {
     const compacted = compact(level);
     compacted.name = editorLevelName.value.trim();
     compacted.uid = state.uid;
-    const levelData = btoa(JSON.stringify(compacted));
 
+    const isUpdate = app.secrets.isOwned(state.uid);
     animations.notify(editorNotification, 'Sharing...', false, COMMUNITY_SHARE_TIMEOUT);
 
     try {
-        const result = await community.submitLevel(levelData);
+        const result = await community.submitLevel(compacted);
 
         if (result.error) {
             animations.notify(editorNotification, result.error, true);
             return;
         }
 
-        animations.notify(editorNotification, `Shared as "${result.name}"!`);
+        state.uid = result.uid;
+        autosave();
+        editorShareCommunity.textContent = 'Update';
+        animations.notify(editorNotification, isUpdate ? 'Updated!' : `Shared as "${result.name}"!`);
         window.dispatchEvent(new CustomEvent('community-levels-updated'));
     } catch (e) {
         console.error('Failed to share to community:', e);
@@ -628,7 +632,6 @@ function autosave() {
 
 function handleNameResetClick() {
     editorLevelName.value = generateLevelName();
-    state.uid = generateUID();
     autosave();
 }
 

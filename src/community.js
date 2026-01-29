@@ -4,6 +4,7 @@
 // UI rendering moved to sidebar.js.
 
 import * as app from './app.js';
+import { hashSecret } from './names.js';
 import { COMMUNITY_URL, COMMUNITY_REFRESH_INTERVAL } from './config.js';
 
 // --- State ---
@@ -178,11 +179,25 @@ export function sendStar(uid, starred) {
 
 // --- Submitting ---
 
-export async function submitLevel(levelData) {
+export async function submitLevel(level) {
     requireConsent();
+
+    let secret = app.secrets.secretFor(level.uid);
+    if (!secret) {
+        secret = crypto.randomUUID();
+        level.uid = await hashSecret(secret);
+    }
+
+    const levelData = btoa(JSON.stringify(level));
     const response = await fetch(COMMUNITY_URL, {
         method: 'POST',
-        body: JSON.stringify({ level: levelData }),
+        body: JSON.stringify({ level: levelData, secret }),
     });
-    return response.json();
+    const result = await response.json();
+
+    if (result.success) {
+        app.secrets.store(result.uid, secret);
+    }
+
+    return result;
 }

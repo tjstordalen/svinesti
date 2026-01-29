@@ -129,12 +129,3 @@ function isValidLevelName(name) {
     return allWords.indexOf(word1) !== -1 && allWords.indexOf(word2) !== -1;
 }
 
-function generateUID(length) {
-    length = length || 8;
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var uid = '';
-    for (var i = 0; i < length; i++) {
-        uid += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return uid;
-}
