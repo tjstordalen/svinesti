@@ -1042,6 +1042,15 @@ const VERBS = [
     'tugging',
 ]
 
+window.countWords = () => {
+const all = [...VERBS, ...ADJECTIVES, ...NOUNS]; 
+const distinct = [...new Set(all)]
+console.log(all.length)
+console.log(distinct.length)
+console.log(all.length - distinct.length)
+}
+
+
 function generateLevelName() {
     const patterns = [
         [ADJECTIVES, NOUNS],   // Adj + Noun
