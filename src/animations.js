@@ -21,6 +21,12 @@ import {
     NOTIFY_DURATION_DEFAULT, FLASH_DURATION_DEFAULT, CONFETTI_CLEANUP_DELAY,
     NOTIFY_COLOR_INFO, NOTIFY_COLOR_ERROR, CONFETTI_COLORS,
 } from './config.js';
+import { DIRECTIONS } from './constants.js';
+
+// Pre-decode all pig sprites so CSS class swaps during turns don't flicker
+const _sprites = DIRECTIONS.flatMap(dir =>
+    [1, 2, 3].map(n => Object.assign(new Image(), { src: `assets/pigs/${dir}-${n}.png` }))
+);
 
 // --- Sprite helpers ---
 
