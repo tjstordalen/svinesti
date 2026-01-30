@@ -7,6 +7,7 @@ import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
 import { mode, levels, prefs, starred } from "./app.js";
 import { TAB } from "./constants.js";
+import { isValid } from "./levels.js"; 
 import {
     SIDEBAR_LOADING, SIDEBAR_TRASH_EMPTY, SIDEBAR_NO_COMMUNITY_LEVELS,
     SIDEBAR_SEARCH_PLACEHOLDER, SIDEBAR_NO_MATCHES, SIDEBAR_SERVER_ERROR,
@@ -140,7 +141,8 @@ export function showDefaultTab() {
 
 export function showMyLevelsTab() {
     levelList.innerHTML = '';
-    renderLevels(levels.custom(), TAB.CUSTOM);
+	const levelsToAdd = mode.isGame() ?	levels.custom().filter(isValid) : levels.custom();  
+    renderLevels(levelsToAdd, TAB.CUSTOM);
 }
 
 export function showTrashTab() {

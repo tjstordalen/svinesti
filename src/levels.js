@@ -10,6 +10,53 @@ export const DEFAULT_LEVEL = {
     dir: "right",
 };
 
+export function isValid(level) {
+	return validate(level) === null; 
+}
+export function validate(level) {
+    if (!level.grid || !level.start || !level.nRows || !level.nCols) {
+        return 'Invalid level data';
+    }
+
+    const { nCols, grid, start } = level;
+
+    if (!/[RGB]/.test(grid.join(''))) {
+        return 'Level must have at least one target';
+    }
+
+    // Pad each row with '.' sentinels on left and right.
+    // This lets us use i+1/i-1 for horizontal neighbors without
+    // accidentally wrapping to the adjacent row.
+    const cells = grid.map(row => '.' + row + '.').join('').split('');
+    const stride = nCols + 2; // padded row width
+    const pigIndex = start[0] * stride + start[1] + 1; // +1 for left padding
+
+    if (cells[pigIndex] === '.') {
+        return 'Pig must be on a colored tile';
+    }
+
+    // Flood-fill from pig position, marking visited cells as '.'
+    function dfs(i) {
+        const c = cells[i] || '.';
+        if (c === '.') return;
+        cells[i] = '.';
+        // Horizontal neighbors are safe due to sentinels
+        // Vertical neighbors use stride to skip padding
+        dfs(i + 1);
+        dfs(i - 1);
+        dfs(i + stride);
+        dfs(i - stride);
+    }
+    dfs(pigIndex);
+
+    // If any colored tiles remain, they weren't reachable
+    if (cells.some(c => c !== '.')) {
+        return 'All colored tiles must be reachable from the pig';
+    }
+
+    return null;
+}
+
 export const levels = [
     {
         name: "Level 1",

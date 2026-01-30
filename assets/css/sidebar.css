@@ -170,17 +170,14 @@ body:not(.editor-mode) .delete-level-btn {
 }
 
 .thumbnail-wrapper {
+	/* Make space for the deletion button in editor mode. Apply to all modes for consistency*/
+    margin-top: 24px;
     width: 100%;
-    height: 320px;
+    height: 296px;  
     container-type: size;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.editor-mode .sidebar-level-item .thumbnail-wrapper {
-    margin-top: 24px;
-    height: 296px;
 }
 
 .sidebar-level-item:hover {
