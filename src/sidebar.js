@@ -29,7 +29,10 @@ const html = (str) => parser.parseFromString(str, 'text/html').body.firstElement
 
 // --- State ---
 
-let searchQuery = '';
+const state = {
+    activeTab: 'default',
+    searchQuery: '',
+};
 
 // --- Level Card ---
 
@@ -119,9 +122,8 @@ function makeLevelItemCard(level, type, onRefresh) {
 }
 
 function renderLevels(levelArray, type, container = levelList) {
-    const onRefresh = () => refreshActiveTab();
     for (const level of levelArray) {
-        container.appendChild(makeLevelItemCard(level, type, onRefresh));
+        container.appendChild(makeLevelItemCard(level, type, refreshActiveTab));
     }
 }
 
@@ -197,8 +199,8 @@ export async function showCommunityTab() {
 function showCommunityLevels() {
     const communityLevels = community.getLevels();
     const sorted = [...communityLevels].sort((a, b) => (b.stars || 0) - (a.stars || 0));
-    const filtered = searchQuery
-        ? sorted.filter(l => l.name?.toLowerCase().includes(searchQuery))
+    const filtered = state.searchQuery
+        ? sorted.filter(l => l.name?.toLowerCase().includes(state.searchQuery))
         : sorted;
 
     levelList.innerHTML = '';
@@ -220,9 +222,9 @@ function showCommunityLevels() {
     `);
 
     const search = header.querySelector('.community-search');
-    search.value = searchQuery;
+    search.value = state.searchQuery;
     search.addEventListener('input', (e) => {
-        searchQuery = e.target.value.toLowerCase();
+        state.searchQuery = e.target.value.toLowerCase();
         showCommunityLevels();
     });
 
@@ -255,12 +257,12 @@ function showCommunityLevels() {
         const container = html(`<div class="community-levels-container${prefs.communityViewMode.get() === 'list' ? ' list-view' : ''}"></div>`);
         renderLevels(filtered, TAB.COMMUNITY, container);
         levelList.appendChild(container);
-    } else if (searchQuery) {
+    } else if (state.searchQuery) {
         levelList.appendChild(html(`<div class="community-message">${SIDEBAR_NO_MATCHES}</div>`));
     }
 
     // Re-focus search if actively searching
-    if (searchQuery) {
+    if (state.searchQuery) {
         search.focus();
         search.selectionStart = search.selectionEnd = search.value.length;
     }
@@ -292,11 +294,7 @@ function showConsentRequest() {
 export function init() {
     // Tab click handlers
     sidebarTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            sidebarTabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            TAB_HANDLERS[tab.dataset.tab]?.();
-        });
+        tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
     });
 
     // Collapse behavior
@@ -313,14 +311,16 @@ export function init() {
     community.onChange(refreshActiveTab);
 }
 
-export function setActiveTab(name) {
-    sidebarTabs.forEach(t => t.classList.remove('active'));
-    document.querySelector(`[data-tab="${name}"]`)?.classList.add('active');
+function setActiveTab(name) {
+    state.activeTab = name;
+    sidebarTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
     TAB_HANDLERS[name]?.();
 }
 
 export function refreshActiveTab() {
-    const tabName = document.querySelector('.sidebar-tab.active')?.dataset.tab;
-    if (tabName === 'community') showCommunityLevels(); // Skip fetch, just re-render
-    else TAB_HANDLERS[tabName]?.();
+    let tab = state.activeTab;
+    if (tab === 'trash' && mode.isGame()) tab = 'default';
+    else if (tab === 'default' && mode.isEditor()) tab = 'my-levels';
+    if (tab === state.activeTab && tab === 'community') showCommunityLevels();
+    else setActiveTab(tab);
 }

@@ -128,11 +128,7 @@ modePlay.onclick = () => {
     app.mode.set(MODE.GAME);
     modePlay.classList.add("active");
     modeEdit.classList.remove("active");
-    // Switch away from Trash tab (not visible in play mode)
-    const activeTab = document.querySelector('.sidebar-tab.active');
-    if (activeTab?.dataset.tab === 'trash') {
-        sidebar.setActiveTab('default');
-    }
+    sidebar.refreshActiveTab();
     Game.enter();
 };
 
@@ -141,8 +137,7 @@ modeEdit.onclick = () => {
     app.mode.set(MODE.EDITOR);
     modePlay.classList.remove("active");
     modeEdit.classList.add("active");
-    // Switch to My Levels tab
-    sidebar.setActiveTab('my-levels');
+    sidebar.refreshActiveTab();
     Editor.enter();
 };
 
