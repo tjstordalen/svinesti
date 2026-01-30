@@ -139,22 +139,33 @@ body.editor-mode .tile.cursor::after {
     width: 45%;
     height: 45%;
     font-size: 24px; /* Base for em-based patterns */
-    background-color: var(--ghost-color);
-    background-image: var(--ghost-pig, var(--ghost-star));
+    background-image: var(--ghost-star, none);
     background-size: 60%;
     background-position: center;
     background-repeat: no-repeat;
-    visibility: var(--ghost-visible, hidden);
+    visibility: hidden;
     pointer-events: none;
     border-radius: 4px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     opacity: 0.9;
 }
 
+/* Star is a variable (not a class rule) because the colorblind patterns use
+   the background shorthand, which resets background-image. Those rules must
+   include the star in their layered background declaration. A variable lets
+   them write var(--ghost-star, none) once per color, rather than duplicating
+   every colorblind rule for target vs non-target (2 rules instead of 6). */
+.ghost-target { --ghost-star: url(../img/golden-apple.png); }
+
+body.editor-mode .ghost-empty .tile.cursor::after  { visibility: visible; }
+body.editor-mode .ghost-red .tile.cursor::after     { visibility: visible; background-color: var(--tile-red); }
+body.editor-mode .ghost-green .tile.cursor::after   { visibility: visible; background-color: var(--tile-green); }
+body.editor-mode .ghost-blue .tile.cursor::after    { visibility: visible; background-color: var(--tile-blue); }
+
 /* Colorblind patterns for ghost preview */
 body.colorblind-mode .ghost-red .tile.cursor::after {
     background:
-        var(--ghost-star) center / 60% no-repeat,
+        var(--ghost-star, none) center / 60% no-repeat,
         repeating-linear-gradient(
             45deg,
             transparent,
@@ -167,7 +178,7 @@ body.colorblind-mode .ghost-red .tile.cursor::after {
 
 body.colorblind-mode .ghost-green .tile.cursor::after {
     background:
-        var(--ghost-star) center / 60% no-repeat,
+        var(--ghost-star, none) center / 60% no-repeat,
         radial-gradient(
             circle,
             rgba(0, 0, 0, 0.25) 0.1em,

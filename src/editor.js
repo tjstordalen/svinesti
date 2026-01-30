@@ -82,29 +82,19 @@ const isTarget = (c) => c !== '.' && c === c.toUpperCase();
 // --- Rendering ---
 
 function render() {
+    const pigAt = state.isDraggingPig ? state.cursor : state.pigIndex;
     state.cells.forEach((char, i) => {
         const tile = state.grid.tiles[i];
         tile.className = 'tile ' + TILE_CLASSES[char];
         if (i === state.cursor) tile.classList.add('cursor');
-        if (i === state.pigIndex) tile.classList.add('pig-' + state.pigDir);
+        if (i === pigAt) tile.classList.add('pig-' + state.pigDir);
     });
 
-    const g = editorGrid.style;
-    editorGrid.classList.remove('ghost-red', 'ghost-green', 'ghost-blue');
-    if (state.isDraggingPig && state.cursor !== state.pigIndex) {
-        g.setProperty('--ghost-pig', `url(../img/${state.pigDir}-1.png)`);
-        g.setProperty('--ghost-color', 'transparent');
-        g.setProperty('--ghost-visible', 'visible');
-    } else if (state.clipboard) {
-        g.removeProperty('--ghost-pig');
+    editorGrid.classList.remove('ghost-red', 'ghost-green', 'ghost-blue', 'ghost-empty', 'ghost-target');
+    if (state.clipboard) {
         const color = CHAR_TO_COLOR[state.clipboard.toLowerCase()];
-        if (color !== 'empty') editorGrid.classList.add('ghost-' + color);
-        g.setProperty('--ghost-color', `var(--tile-${color})`);
-        g.setProperty('--ghost-star', isTarget(state.clipboard) ? 'url(../img/golden-apple.png)' : 'none');
-        g.setProperty('--ghost-visible', 'visible');
-    } else {
-        g.removeProperty('--ghost-pig');
-        g.setProperty('--ghost-visible', 'hidden');
+        editorGrid.classList.add('ghost-' + color);
+        if (isTarget(state.clipboard)) editorGrid.classList.add('ghost-target');
     }
 }
 

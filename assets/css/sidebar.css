@@ -91,6 +91,20 @@
     color: white;
 }
 
+.sidebar-tab[data-tab="trash"] {
+    background: color-mix(in srgb, var(--tile-red) 25%, var(--color-bg));
+    color: white;
+}
+
+.sidebar-tab[data-tab="trash"]:hover {
+    background: color-mix(in srgb, var(--tile-red) 40%, var(--color-bg));
+}
+
+.sidebar-tab[data-tab="trash"].active {
+    background: #c0392b;
+    color: white;
+}
+
 /* In editor mode, only show My Levels, Community, and Trash tabs */
 .editor-mode .sidebar-tab:not([data-tab="my-levels"]):not([data-tab="community"]):not([data-tab="trash"]) {
     display: none;
@@ -163,6 +177,11 @@ body:not(.editor-mode) .delete-level-btn {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.editor-mode .sidebar-level-item .thumbnail-wrapper {
+    margin-top: 24px;
+    height: 296px;
 }
 
 .sidebar-level-item:hover {
