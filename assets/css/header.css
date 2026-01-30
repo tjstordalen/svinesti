@@ -81,3 +81,32 @@
 .icon-btn:active {
     background: rgba(255,255,255,0.35);
 }
+
+.header-bug-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin-right: 12px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.header-bug-link:hover {
+    color: white;
+    background: rgba(255,255,255,0.15);
+}
+
+.header-bug-link img {
+    filter: brightness(0) invert(1);
+}
+
+.header-bug-note {
+    font-size: 0.75rem;
+    font-weight: 400;
+    opacity: 0.6;
+}
