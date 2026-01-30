@@ -93,7 +93,6 @@
 
 .sidebar-tab[data-tab="trash"] {
     background: color-mix(in srgb, var(--tile-red) 25%, var(--color-bg));
-    color: white;
 }
 
 .sidebar-tab[data-tab="trash"]:hover {
