@@ -147,6 +147,10 @@
     margin-top: 16px;
 }
 
+.editor-buttons .btn {
+    flex: 1;
+}
+
 #editor-share,
 #editor-share-community {
     width: 175px;

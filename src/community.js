@@ -201,3 +201,15 @@ export async function submitLevel(level) {
 
     return result;
 }
+
+export async function unpublishLevel(uid) {
+    requireConsent();
+    const secret = app.secrets.secretFor(uid);
+    if (!secret) return { error: 'Not owned' };
+
+    const response = await fetch(COMMUNITY_URL, {
+        method: 'POST',
+        body: JSON.stringify({ level: btoa('UNPUBLISHED'), secret }),
+    });
+    return response.json();
+}

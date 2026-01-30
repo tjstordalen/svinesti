@@ -5,7 +5,7 @@ import * as Editor from "./editor.js";
 import * as Game from "./game.js";
 import * as community from "./community.js";
 import { spin, notify } from "./animations.js";
-import { mode, levels, prefs, starred } from "./app.js";
+import { mode, levels, prefs, starred, secrets } from "./app.js";
 import { TAB } from "./constants.js";
 import { isValid } from "./levels.js"; 
 import {
@@ -70,6 +70,13 @@ function makeLevelItemCard(level, type, onRefresh) {
             `);
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (secrets.isOwned(level.uid) &&
+                    !confirm('This level is published. Deleting it will also remove it from community levels.')) {
+                    return;
+                }
+                if (secrets.isOwned(level.uid)) {
+                    community.unpublishLevel(level.uid);
+                }
                 levels.delete(level.id);
                 onRefresh?.();
             });

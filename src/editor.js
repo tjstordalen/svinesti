@@ -26,6 +26,7 @@ const editorLevelName = $('editor-level-name');
 const editorNameReset = $('editor-name-reset');
 const editorShare = $('editor-share');
 const editorShareCommunity = $('editor-share-community');
+const editorUnpublish = $('editor-unpublish');
 const editorNotification = $('editor-notification');
 const editorEditShortcuts = $('editor-edit-shortcuts');
 const editorPaintShortcuts = $('editor-paint-shortcuts');
@@ -212,7 +213,9 @@ function load(level) {
         editorLevelName.value = generateLevelName();
     }
 
-    editorShareCommunity.textContent = app.secrets.isOwned(state.uid) ? 'Update' : 'Submit';
+    const published = app.secrets.isPublished(state.uid);
+    editorShareCommunity.textContent = published ? 'Update' : 'Submit';
+    editorUnpublish.disabled = !published;
 
     // Build grid from expanded cells
     const expandedLevel = {
@@ -552,13 +555,40 @@ async function handleShareCommunityClick() {
         }
 
         state.uid = result.uid;
+        app.secrets.setPublished(state.uid, true);
         autosave();
         editorShareCommunity.textContent = 'Update';
+        editorUnpublish.disabled = false;
         animations.notify(editorNotification, isUpdate ? 'Updated!' : `Shared as "${result.name}"!`);
         window.dispatchEvent(new CustomEvent('community-levels-updated'));
     } catch (e) {
         console.error('Failed to share to community:', e);
         animations.notify(editorNotification, 'Failed to share. Try again.', true);
+    }
+}
+
+async function handleUnpublishClick() {
+    if (!app.secrets.isPublished(state.uid)) return;
+    if (!app.prefs.communityConsent.get()) {
+        animations.notify(editorNotification, SIDEBAR_ENABLE_COMMUNITY_FIRST, true);
+        return;
+    }
+
+    animations.notify(editorNotification, 'Unpublishing...', false, COMMUNITY_SHARE_TIMEOUT);
+    try {
+        const result = await community.unpublishLevel(state.uid);
+        if (result.error) {
+            animations.notify(editorNotification, result.error, true);
+            return;
+        }
+        app.secrets.setPublished(state.uid, false);
+        editorShareCommunity.textContent = 'Submit';
+        editorUnpublish.disabled = true;
+        animations.notify(editorNotification, 'Unpublished.');
+        window.dispatchEvent(new CustomEvent('community-levels-updated'));
+    } catch (e) {
+        console.error('Failed to unpublish:', e);
+        animations.notify(editorNotification, 'Failed to unpublish. Try again.', true);
     }
 }
 
@@ -601,6 +631,7 @@ function enter() {
     editorGrid.addEventListener('contextmenu', handleContextMenu);
     editorShare.addEventListener('click', handleShareClick);
     editorShareCommunity.addEventListener('click', handleShareCommunityClick);
+    editorUnpublish.addEventListener('click', handleUnpublishClick);
     editorNameReset.addEventListener('click', handleNameResetClick);
 }
 
@@ -614,6 +645,7 @@ function exit() {
     editorGrid.removeEventListener('contextmenu', handleContextMenu);
     editorShare.removeEventListener('click', handleShareClick);
     editorShareCommunity.removeEventListener('click', handleShareCommunityClick);
+    editorUnpublish.removeEventListener('click', handleUnpublishClick);
     editorNameReset.removeEventListener('click', handleNameResetClick);
 }
 

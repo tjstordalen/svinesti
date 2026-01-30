@@ -198,18 +198,34 @@ export const starred = {
 
 export const secrets = {
     _data: {},
+    _unpublished: new Set(),
 
     _load() {
         const json = localStorage.getItem(STORAGE_KEY_SECRETS);
-        this._data = json ? JSON.parse(json) : {};
+        const parsed = json ? JSON.parse(json) : {};
+        this._data = parsed.secrets || parsed;
+        this._unpublished = new Set(parsed.unpublished || []);
     },
 
     _persist() {
-        localStorage.setItem(STORAGE_KEY_SECRETS, JSON.stringify(this._data));
+        localStorage.setItem(STORAGE_KEY_SECRETS, JSON.stringify({
+            secrets: this._data,
+            unpublished: [...this._unpublished],
+        }));
     },
 
     isOwned(uid) {
         return uid != null && uid in this._data;
+    },
+
+    isPublished(uid) {
+        return this.isOwned(uid) && !this._unpublished.has(uid);
+    },
+
+    setPublished(uid, value) {
+        if (value) this._unpublished.delete(uid);
+        else this._unpublished.add(uid);
+        this._persist();
     },
 
     secretFor(uid) {
@@ -218,6 +234,7 @@ export const secrets = {
 
     store(uid, secret) {
         this._data[uid] = secret;
+        this._unpublished.delete(uid);
         this._persist();
     },
 };

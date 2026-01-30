@@ -167,7 +167,7 @@ export const COLOR_CYCLE = ['empty', 'blue', 'green', 'red']; // wraps to empty
 // =============================================================================
 
 // Community levels server endpoint (Google Apps Script)
-export const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbwn9Ffm2G9NWMT_sHUkg9ZRLbnNkKO_6Ce-uvTPAOZ2MYTUi9s6CtO_o8brtFLKKg7MOQ/exec';
+export const COMMUNITY_URL = 'https://script.google.com/macros/s/AKfycbx7E3orvYuZP38EOtsprrnSGlYzvLiryftHpLw-SAHKxsqIlL1TdmxsYWhhKIscia5reg/exec';
 export const COMMUNITY_REFRESH_INTERVAL = 3 * 60 * 1000;  // 3 minutes
 export const COMMUNITY_SHARE_TIMEOUT = 60000;             // Server response wait
 
