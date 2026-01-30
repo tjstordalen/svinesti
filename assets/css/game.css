@@ -309,10 +309,10 @@ body.colorblind-mode :is(.mini-tile, #comparison-tile).green {
     background-position: center;
 }
 
-.pig-right { --pig-bg: url('../pigs/right-1.png'); background-image: var(--pig-bg); }
-.pig-down  { --pig-bg: url('../pigs/down-1.png'); background-image: var(--pig-bg); }
-.pig-left  { --pig-bg: url('../pigs/left-1.png'); background-image: var(--pig-bg); }
-.pig-up    { --pig-bg: url('../pigs/up-1.png'); background-image: var(--pig-bg); }
+.pig-right { --pig-bg: url('../img/right-1.png'); background-image: var(--pig-bg); }
+.pig-down  { --pig-bg: url('../img/down-1.png'); background-image: var(--pig-bg); }
+.pig-left  { --pig-bg: url('../img/left-1.png'); background-image: var(--pig-bg); }
+.pig-up    { --pig-bg: url('../img/up-1.png'); background-image: var(--pig-bg); }
 
 /* Color Comparison HUD */
 #color-comparison-hud {

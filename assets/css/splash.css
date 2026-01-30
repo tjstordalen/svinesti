@@ -75,7 +75,7 @@
 .splash-screen-pig {
     width: 450px;
     height: 225px;
-    background-image: url("../pigs/right-1.png");
+    background-image: url("../img/right-1.png");
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
@@ -94,9 +94,9 @@
 }
 
 @keyframes splash-walk {
-    0%, 100% { background-image: url("../pigs/right-1.png"); }
-    25%, 75% { background-image: url("../pigs/right-2.png"); }
-    50% { background-image: url("../pigs/right-3.png"); }
+    0%, 100% { background-image: url("../img/right-1.png"); }
+    25%, 75% { background-image: url("../img/right-2.png"); }
+    50% { background-image: url("../img/right-3.png"); }
 }
 
 @keyframes splash-shadow {

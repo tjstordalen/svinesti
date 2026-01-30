@@ -25,14 +25,14 @@ import { DIRECTIONS } from './constants.js';
 
 // Pre-decode all pig sprites so CSS class swaps during turns don't flicker
 const _sprites = DIRECTIONS.flatMap(dir =>
-    [1, 2, 3].map(n => Object.assign(new Image(), { src: `assets/pigs/${dir}-${n}.png` }))
+    [1, 2, 3].map(n => Object.assign(new Image(), { src: `assets/img/${dir}-${n}.png` }))
 );
 
 // --- Sprite helpers ---
 
 /** Generates walk keyframes: cycles through 3 sprite frames (1→2→3→2→1) */
 function makeWalkKeyframes(dir) {
-    const sprite = (n) => `url("assets/pigs/${dir}-${n}.png")`;
+    const sprite = (n) => `url("assets/img/${dir}-${n}.png")`;
     return [
         { backgroundImage: sprite(1) },
         { backgroundImage: sprite(2) },

@@ -92,7 +92,7 @@ function render() {
     const g = editorGrid.style;
     editorGrid.classList.remove('ghost-red', 'ghost-green', 'ghost-blue');
     if (state.isDraggingPig && state.cursor !== state.pigIndex) {
-        g.setProperty('--ghost-pig', `url(../pigs/${state.pigDir}-1.png)`);
+        g.setProperty('--ghost-pig', `url(../img/${state.pigDir}-1.png)`);
         g.setProperty('--ghost-color', 'transparent');
         g.setProperty('--ghost-visible', 'visible');
     } else if (state.clipboard) {
