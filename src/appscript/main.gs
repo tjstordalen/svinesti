@@ -27,14 +27,13 @@ function hashSecret(secret) {
 // LEVEL VALIDATION
 // -----------------------------------------------------------------------------
 
+// Returns null on bad base64, the parsed level object on valid JSON,
+// or the raw decoded string (e.g. 'UNPUBLISHED') on non-JSON input.
 function decodeLevel(base64) {
-    try {
-        var bytes = Utilities.base64Decode(base64);
-        var json = Utilities.newBlob(bytes).getDataAsString();
-        return JSON.parse(json);
-    } catch (e) {
-        return null;
-    }
+    var bytes, str;
+    try { bytes = Utilities.base64Decode(base64); } catch (e) { return null; }
+    str = Utilities.newBlob(bytes).getDataAsString();
+    try { return JSON.parse(str); } catch (e) { return str === 'UNPUBLISHED' ? str : null; }
 }
 
 function encodeLevel(level) {
@@ -45,6 +44,7 @@ function encodeLevel(level) {
 
 function validateLevel(level) {
     if (!level) return 'Invalid base64 or JSON';
+    if (level === 'UNPUBLISHED') return null;
     if (typeof level.nRows !== 'number' || level.nRows < 1) return 'Invalid nRows';
     if (typeof level.nCols !== 'number' || level.nCols < 1) return 'Invalid nCols';
     if (!Array.isArray(level.grid)) return 'Invalid grid';
@@ -116,7 +116,7 @@ function doGet(e) {
         var lines = [];
         for (var i = 1; i < data.length; i++) {
             var level = data[i][2];
-            if (!level) continue;
+            if (!level || level === 'UNPUBLISHED') continue;
             var rawStars = data[i][3];
             var stars = (typeof rawStars === 'number') ? rawStars : 0;
             lines.push(level + '\t' + stars);
@@ -174,17 +174,20 @@ function doPost(e) {
             return ContentService.createTextOutput(JSON.stringify({ error: validationError }));
         }
 
-        // Check/fix name (uses functions from names.gs)
-        var nameChanged = false;
-        if (!isValidLevelName(level.name)) {
-            level.name = generateLevelName();
-            nameChanged = true;
-        }
-
         // Compute UID from secret (overrides any client-sent uid)
         var uid = hashSecret(data.secret);
-        level.uid = uid;
-        var encodedLevel = encodeLevel(level);
+        var encodedLevel = 'UNPUBLISHED';
+        var nameChanged = false;
+
+        if (level !== 'UNPUBLISHED') {
+            // Check/fix name (uses functions from names.gs)
+            if (!isValidLevelName(level.name)) {
+                level.name = generateLevelName();
+                nameChanged = true;
+            }
+            level.uid = uid;
+            encodedLevel = encodeLevel(level);
+        }
 
         // Upsert: update if uid exists, append if not
         var finder = sheet.getRange('B:B').createTextFinder(uid).matchEntireCell(true);
@@ -195,7 +198,7 @@ function doPost(e) {
             var row = cell.getRow();
             sheet.getRange(row, 1).setValue(new Date());
             sheet.getRange(row, 3).setValue(encodedLevel);
-        } else {
+        } else if (level !== 'UNPUBLISHED') {
             // New level
             sheet.appendRow([new Date(), uid, encodedLevel, 0]);
         }
