@@ -182,9 +182,12 @@ export const ANTLR_CDN_URL = 'https://cdn.jsdelivr.net/npm/antlr4@4.13.2/+esm';
 // Icons (for JS-generated elements; HTML uses paths directly)
 const icon = (name) => `assets/icons/${name}.svg`;
 export const ICON = {
-    TRASH:   icon('trash3-fill'),
-    REFRESH: icon('arrow-counterclockwise'),
-    LOCK:    icon('lock'),
+    TRASH:      icon('trash3-fill'),
+    REFRESH:    icon('arrow-counterclockwise'),
+    LOCK:       icon('lock'),
+    EYE:        icon('eye-fill'),
+    EYE_SLASH:  icon('eye-slash-fill'),
+    GLOBE:      icon('globe'),
 };
 
 // =============================================================================
@@ -257,6 +260,9 @@ export const SIDEBAR_NO_MATCHES = 'No levels match your search.';
 export const SIDEBAR_SERVER_ERROR = 'Could not reach server';
 export const SIDEBAR_NO_NEW_LEVELS = 'No new levels';
 export const SIDEBAR_ENABLE_COMMUNITY_FIRST = 'Enable Community Levels in Help menu first';
+export const SIDEBAR_BADGE_PUBLIC = 'Your public level';
+export const SIDEBAR_BADGE_PRIVATE = 'Your private level';
+export const SIDEBAR_BADGE_COMMUNITY = 'Community level';
 
 // =============================================================================
 // 13. PIGJATIN CONFIGURATION

@@ -11,7 +11,8 @@ import { isValid } from "./levels.js";
 import {
     SIDEBAR_LOADING, SIDEBAR_TRASH_EMPTY, SIDEBAR_NO_COMMUNITY_LEVELS,
     SIDEBAR_SEARCH_PLACEHOLDER, SIDEBAR_NO_MATCHES, SIDEBAR_SERVER_ERROR,
-    SIDEBAR_NO_NEW_LEVELS, ICON,
+    SIDEBAR_NO_NEW_LEVELS, SIDEBAR_BADGE_PUBLIC, SIDEBAR_BADGE_PRIVATE,
+    SIDEBAR_BADGE_COMMUNITY, ICON,
 } from "./config.js";
 
 // --- DOM References ---
@@ -36,9 +37,24 @@ const state = {
 
 // --- Level Card ---
 
+function badgeHTML(level, type) {
+    if (type === TAB.DEFAULT || type === TAB.TRASH) return '';
+    const owned = type === TAB.CUSTOM || secrets.isOwned(level.uid);
+    const published = owned && secrets.isPublished(level.uid);
+    const icon = owned ? (published ? ICON.EYE : ICON.EYE_SLASH) : ICON.GLOBE;
+    const label = owned ? (published ? SIDEBAR_BADGE_PUBLIC : SIDEBAR_BADGE_PRIVATE) : SIDEBAR_BADGE_COMMUNITY;
+    const cls = owned ? (published ? 'published' : 'unpublished') : 'community';
+    return `
+        <div class="ownership-badge ${cls}">
+            <img src="${icon}" alt="" width="14" height="14">
+            <span>${label}</span>
+        </div>`;
+}
+
 function makeLevelItemCard(level, type, onRefresh) {
     const item = html(`
         <div class="sidebar-level-item">
+            ${badgeHTML(level, type)}
             <div class="thumbnail-wrapper"><div class="grid"></div></div>
             <div class="sidebar-level-name"></div>
         </div>
