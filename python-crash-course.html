@@ -479,6 +479,13 @@ print(age + 10)       <span class="code-comment"># TypeError: can't add string a
 <pre><code>if x > 5:
 print("big")          <span class="code-comment"># IndentationError: should be indented</span></code></pre>
 
+    <p><strong>IndexError</strong> — You tried to access a list element that doesn't exist:</p>
+
+<pre><code>fruits = ["apple", "banana", "cherry"]
+print(fruits[3])      <span class="code-comment"># IndexError: list index out of range</span></code></pre>
+
+    <p>The list has 3 elements, but because indexing starts at 0, the last valid index is 2, not 3.</p>
+
     <p>When you see an error, don't panic! Read it from the bottom up, look at the line number it mentions, and check if it's one of these common problems.</p>
 
     <h2 id="next-steps">Where to Go Next</h2>
