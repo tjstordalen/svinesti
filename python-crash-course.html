@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Crash Course</title>
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/wiki.css">
+    <style>
+        /* Override wiki.css body to let the flex wrapper handle centering */
+        body {
+            max-width: none;
+            padding: 0;
+        }
+
+        .page-wrapper {
+            display: flex;
+            max-width: 1100px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            width: 200px;
+            flex-shrink: 0;
+            padding: 2rem 0;
+            border-right: 1px solid var(--color-border);
+            font-size: 0.9rem;
+        }
+
+        .sidebar-header {
+            padding: 0 1rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-nav li {
+            margin: 0;
+        }
+
+        .sidebar-nav > li > a {
+            display: block;
+            padding: 0.4rem 1rem;
+            color: var(--color-text);
+        }
+
+        .sidebar-nav > li > a:hover {
+            color: var(--color-interactive);
+        }
+
+        .sidebar-nav > li > ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-nav > li > ul > li > a {
+            display: block;
+            padding: 0.25rem 1rem 0.25rem 1.75rem;
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+        }
+
+        .sidebar-nav > li > ul > li > a:hover {
+            color: var(--color-interactive);
+        }
+
+        .page-content {
+            flex: 1;
+            min-width: 0;
+            max-width: 800px;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="page-wrapper">
+    <nav class="sidebar">
+        <div class="sidebar-header">Contents</div>
+        <ul class="sidebar-nav">
+            <li><a href="#installing-python">Installing Python</a></li>
+            <li><a href="#first-program">Your First Program</a></li>
+            <li><a href="#python-basics">Python Basics</a></li>
+            <li><a href="#loops-and-lists">Loops and Lists</a></li>
+            <li><a href="#functions">Functions</a></li>
+            <li><a href="#debugging">Debugging</a></li>
+            <li><a href="#common-mistakes">Common Mistakes</a></li>
+            <li><a href="#error-messages">Error Messages</a></li>
+            <li><a href="#next-steps">Next Steps</a></li>
+        </ul>
+    </nav>
+
+    <main class="page-content">
+    <a href="./" class="back-link">&larr; Back to Svinesti</a>
+
+    <h1>Python Crash Course</h1>
+
+    <p>
+		This short guide is meant to get you writing simple Python programs as quickly as possible. It should get you familiar with the basics of programming and how to fix errors in your code. 
+    </p>
+
+    <h2 id="installing-python">Installing Python</h2>
+	<p> On Mac, go to <a href="https://www.python.org/downloads/">python.org/downloads</a>, click the yellow download button, run the downloaded file, 
+and follow the installer. On Windows, do exactly the same but <strong>check "add python.exe to PATH"</strong> at the bottom of the first screen of the installer </p>
+
+
+
+    <h2 id="first-program">Writing Your First Program</h2>
+    <p>Python comes with a program called <em>IDLE</em> that covers the essentials so you can start programming immediately. Search for "IDLE" in the Start Menu on Windows or in Applications on Mac and run the program. You'll see something like this:</p>
+
+
+    <img src="assets/img/02-shell-interactive.png" alt="IDLE shell: x=1, y=2, x+y gives 3">
+
+    <p>
+	 This is the <em>shell</em> where you can type and run lines of python code and immediately see the result. In the example above, <code> x = 1</code> and <code> y = 2</code> don't show a result (these lines do not produce values) and <code> x + y </code> has the result <code> 3 </code>.
+    </p>
+    <p>
+		The shell is useful for quick tests, but for real programs you want to write them in separate files you store on your computer. Create a new file: 
+    </p>
+    <img src="assets/img/03-file-menu.png" alt="IDLE File menu showing New File">
+	<p> Write some code (we'll see what <code>print</code> does very soon): </p>
+		<img src="assets/img/06-editor-code.png" alt="IDLE editor with x=1, y=2, print(x+y)">
+	<p> Save the file using a filename that ends in <code>.py</code>: </p>
+		<img src="assets/img/05-editor-file-menu.png" alt="IDLE editor with x=1, y=2, print(x+y)">
+ <p>	and run your program (here you can see that <code>F5</code> is a shortcut key to run your program. If that doesn't work for you, try to hold down the <code>Fn</code> key when you press <code>F5</code>)</p>
+    <img src="assets/img/07-run-menu.png" alt="IDLE Run menu showing Run Module (F5)">
+<p>This runs your program and writes any output or error messages to the shell:</p>
+<img src="assets/img/08-shell-output.png" alt="Shell showing output after running the program">
+<p>And now you see what <code>print</code> does; it writes text to the output!</p>
+
+
+
+    <h2 id="python-basics">Python Basics</h2>
+
+    <p>
+        Anything after a <code>#</code> is a <strong>comment</strong> — Python ignores it.
+        Use comments to explain tricky parts of your code, or to temporarily "remove" a line without deleting it. We will use comments to show what our examples below print:
+    </p>
+
+<pre><code><span class="code-comment"># This is a comment</span>
+print("Hello!")              <span class="code-comment"># Hello!</span>
+print(2 + 3)                 <span class="code-comment"># 5</span>
+who = "Alice"
+print("Hello, " + who)      <span class="code-comment"># Hello, Alice</span>
+who = "Bob"
+print("Hello, " + who)      <span class="code-comment"># Hello, Bob</span>
+</code></pre>
+
+<p><strong>Variables</strong> — In the example above, <code>who</code> is what we call a <em>variable</em>. It is just an <em>identifier</em> (a name) that we use to refer to a value, and we can change the value by <em>assigning</em> a new one using the equals sign. Note that 'who' is just a name I chose. I could've chosen any name, <a href="https://docs.python.org/3/reference/lexical_analysis.html#keywords">except a few</a>. Choose names that makes it easy to understand your code, like 'who' or 'name' instead of 'w' or 'n'.</p>
+
+<p><strong>Types</strong> — In Python, every value has a type. The most common ones are</p>
+    <ul>
+        <li><em>integers</em> — whole numbers like <code>0</code>, <code>42</code>, <code>-7</code></li>
+        <li><em>floating point numbers</em> — decimals like <code>3.14</code>, <code>0.5</code></li>
+        <li><em>strings</em> — texts like <code>"hello"</code>, <code>"42"</code></li>
+        <li><em>booleans</em> — <code>True</code> or <code>False</code></li>
+    </ul>
+Those names are too long (programmers use them all the time) so in most languages they are named <code>int</code>, <code>float</code>, <code>str</code>, and <code>bool</code> instead. 
+</p>
+
+<p>Knowing the type of your values is very important, because the string <code>"42"</code> and the int <code>42</code> are completely different, and so is the string <code>"True"</code> and the bool <code>True</code>. In Python, <code>1 + 2</code> is <code>3</code> and <code>"1" + "2"</code> is <code>"12"</code> (this last one is called <em> concatenation</em>). If you try to run <code>"1" + 2</code>, Python will complain that you can't concatenate a string and an int.</p> 
+
+<p>If you want to check the type of anything (such as a variable) you can use <code>type()</code>.</p>
+<pre><code>who = "Alice"
+type_of_who = type(who)
+print(type_of_who)      <span class="code-comment"># &lt;class 'str'&gt; (don't worry about the 'class')</span>
+</code></pre>
+
+<p><strong>Operators</strong> — Here are the most common operations you can do with different types:</p>
+
+<pre><code><span class="code-comment"># Arithmetic (works on ints and floats)</span>
+print(7 + 3)                 <span class="code-comment"># 10   addition</span>
+print(7 - 3)                 <span class="code-comment"># 4    subtraction</span>
+print(7 * 3)                 <span class="code-comment"># 21   multiplication</span>
+print(7 / 3)                 <span class="code-comment"># 2.33 division (always gives a float!)</span>
+print(7 // 3)                <span class="code-comment"># 2    integer division (rounds down)</span>
+print(7 % 3)                 <span class="code-comment"># 1    remainder (called "modulo")</span>
+print(2 ** 3)                <span class="code-comment"># 8    exponentiation (2 to the power of 3)</span>
+
+<span class="code-comment"># Comparison (gives you a bool)</span>
+print(3 == 3)                <span class="code-comment"># True   equal</span>
+print(3 != 4)                <span class="code-comment"># True   not equal</span>
+print(3 < 5)                 <span class="code-comment"># True   less than</span>
+print(3 > 5)                 <span class="code-comment"># False  greater than</span>
+print(3 <= 3)                <span class="code-comment"># True   less than or equal</span>
+print(3 >= 5)                <span class="code-comment"># False  greater than or equal</span>
+
+<span class="code-comment"># Logical (combine bools)</span>
+print(True and False)        <span class="code-comment"># False  both must be true</span>
+print(True or False)         <span class="code-comment"># True   at least one must be true</span>
+print(not True)              <span class="code-comment"># False  flips the value</span>
+
+<span class="code-comment"># Strings</span>
+print("Hello" + " " + "world")  <span class="code-comment"># Hello world  (concatenation)</span>
+print("ha" * 3)                  <span class="code-comment"># hahaha  (repetition)</span></code></pre>
+
+<p><strong>Operator precedence</strong> — Just like in math, some operators are evaluated before others. Multiplication and division happen before addition and subtraction:</p>
+
+<pre><code>print(2 + 3 * 4)             <span class="code-comment"># 14 (not 20!)</span>
+print((2 + 3) * 4)           <span class="code-comment"># 20 (parentheses first)</span></code></pre>
+
+<p>When in doubt, use parentheses to make your intent clear. Writing <code>(2 + 3) * 4</code> is easier to read than relying on anyone remembering whether <code>*</code> or <code>+</code> goes first. The full precedence order (highest to lowest) is: <code>**</code>, then <code>*</code> <code>/</code> <code>//</code> <code>%</code>, then <code>+</code> <code>-</code>, then comparisons (<code>==</code> <code><</code> etc.), then <code>not</code>, then <code>and</code>, then <code>or</code>.</p>
+
+<p><strong>Reading input</strong> — Most programs need to get information from the user. The <code>input()</code> function asks the user to type something and gives you back what they typed:</p>
+
+<pre><code>name = input("What is your name? ")
+print("Hello, " + name)      <span class="code-comment"># If they typed "Alice", prints: Hello, Alice</span></code></pre>
+
+<p>The <code>input()</code> function always gives you a string, even if the user types a number. To do math with the output you can convert it using the <code>int()</code> or <code>float()</code> functions:</p>
+
+<pre><code>age_text = input("How old are you? ")  <span class="code-comment"># User types "15"</span>
+print(age_text + 10)                   <span class="code-comment"># Error! Can't add string and int</span>
+
+age = int(input("How old are you? "))  <span class="code-comment"># User types "15"</span>
+print(age + 10)                        <span class="code-comment"># 25</span></code></pre>
+
+<p><strong>Conditionals</strong> — This is when programs begin to be interesting. You can check conditions and run different code depending on whether they're true or false:</p>
+
+<pre><code>temperature = 25
+if temperature > 20:
+    print("Warm")            <span class="code-comment"># Warm (this is what runs)</span>
+else:
+    print("Not warm")        <span class="code-comment"># Only runs if the condition was false</span></code></pre>
+
+<p>If you want to check multiple conditions, you can nest <code>if</code> statements inside the <code>else</code>:</p>
+
+<pre><code>temperature = 15
+if temperature > 20:
+    print("Warm")
+else:
+    if temperature > 10:
+        print("Cool")        <span class="code-comment"># Cool (this is what runs)</span>
+    else:
+        print("Cold")</code></pre>
+
+<p>This pattern is so common that Python has a shorthand for it: <code>elif</code> (short for "else if"). These two programs do exactly the same thing:</p>
+
+<pre><code><span class="code-comment"># With nested if/else:</span>
+if temperature > 20:
+    print("Warm")
+else:
+    if temperature > 10:
+        print("Cool")
+    else:
+        print("Cold")
+
+<span class="code-comment"># With elif (much cleaner!):</span>
+if temperature > 20:
+    print("Warm")
+elif temperature > 10:
+    print("Cool")
+else:
+    print("Cold")</code></pre>
+
+<p>You can have as many <code>elif</code> branches as you want. Python checks them top to bottom and runs the first one that's true, then skips the rest.</p>
+
+    <h2 id="loops-and-lists">Loops and Lists</h2>
+
+<p><strong>While loops</strong> — The while loop keeps running as long as the condition is true:</p>
+
+<pre><code>count = 0
+while count < 5:
+    print(count)             <span class="code-comment"># Prints 0, then 1, then 2, then 3, then 4</span>
+    count = count + 1        <span class="code-comment"># Don't forget this! Otherwise it loops forever</span>
+print("Done")                <span class="code-comment"># Prints 'Done'</span>
+</code></pre>
+
+<p><strong>Lists</strong> — A list is an ordered collection of values. You create one with square brackets:</p>
+
+<pre><code>fruits = ["apple", "banana", "cherry"]
+print(fruits[0])             <span class="code-comment"># apple  (first element)</span>
+print(fruits[1])             <span class="code-comment"># banana (second element)</span>
+print(fruits[2])             <span class="code-comment"># cherry (third element)</span>
+print(len(fruits))           <span class="code-comment"># 3 (number of elements)</span></code></pre>
+
+<p>Notice that the first element is at position 0, not 1. This is called <em>zero-indexing</em>.</p>
+
+<p>You can add elements to a list with <code>append()</code> and change existing elements by assigning to a position:</p>
+
+<pre><code>fruits.append("date")        <span class="code-comment"># ["apple", "banana", "cherry", "date"]</span>
+fruits[0] = "avocado"        <span class="code-comment"># ["avocado", "banana", "cherry", "date"]</span>
+print(len(fruits))           <span class="code-comment"># 4</span></code></pre>
+
+<p><strong>Iterating over a list</strong> — You can use a while loop to go through every element:</p>
+
+<pre><code>fruits = ["apple", "banana", "cherry"]
+i = 0
+while i < len(fruits):
+    print(fruits[i])
+    i = i + 1</code></pre>
+
+<p>This prints each fruit on its own line. The variable <code>i</code> counts from 0 up to (but not including) the length of the list, so <code>fruits[i]</code> hits every element in order.</p>
+
+    <h2 id="functions">Functions</h2>
+
+<p>A function is a way to package up code so you can reuse it. You define a function like this:</p>
+
+<pre><code>def greet(name):
+    print("Hello, " + name)
+
+greet("Alice")               <span class="code-comment"># Hello, Alice</span>
+greet("Bob")                 <span class="code-comment"># Hello, Bob</span></code></pre>
+
+
+<p> The variable <code>name</code> in the parentheses is called a <strong>parameter</strong> — it's a placeholder that gets filled in with whatever value you pass when you call the function. When we called <code>greet("Alice")</code>, the parameter <code>name</code> became <code>"Alice"</code> inside the function. This way we don't have to code multiple times if we want to use it on multiple different values.</p> 
+
+<p>In Svinesti we have provided you with six functions in addition to what Python has by default: <code>move()</code>, <code>turnLeft()</code>, <code>turnRight()</code>, <code>isRed()</code>, <code>isGreen()</code>, and <code>isBlue()</code>. These functions don't take any arguments, which is why the parentheses are empty.</p>
+<p>Functions can return values using <code>return</code>:</p>
+
+<pre><code>def add(a, b):
+    return a + b
+
+result = add(3, 5)
+print(result)                <span class="code-comment"># 8</span></code></pre>
+
+<p>The difference between <code>print</code> and <code>return</code> confuses many beginners. <code>print</code> shows something on the screen. <code>return</code> gives a value back to whoever called the function. You can use that value in calculations, store it in a variable, pass it to other functions, etc. Most functions you write will use <code>return</code>, not <code>print</code>.</p>
+
+    <h2 id="debugging">Debugging</h2>
+
+	<p>When something goes wrong in your program, we say that your program has a <em>bug</em>. Finding and fixing this mistake is called <em>debugging</em>, and it is one of the harder parts of programming. In Svinesti you can immediately see when something goes wrong since you are watching the pig carry out your instructions in real time. In regular programs, you're not so lucky. Instead, you'll use <code>print()</code> to look inside your program and see what's actually happening.</p>
+
+    <p>Here's a common debugging scenario. You write a program that's supposed to add up the numbers 0 through 4 (which should give you 10), but it gives you 4 instead. What went wrong?</p>
+
+<pre><code>total = 0
+i = 0
+while i < 5:
+    total = i
+    i = i + 1
+
+print(total)                 <span class="code-comment"># 4 (wrong! should be 10)</span></code></pre>
+
+    <p>To figure it out, add a <code>print()</code> statement inside the loop to see what's happening each step:</p>
+
+<pre><code>total = 0
+i = 0
+while i < 5:
+    print("i is", i, "total is", total)
+    total = i
+    i = i + 1
+
+print(total)</code></pre>
+
+    <p>This prints:</p>
+
+<pre><code>i is 0 total is 0
+i is 1 total is 0
+i is 2 total is 1
+i is 3 total is 2
+i is 4 total is 3
+4</code></pre>
+
+    <p>Now you can see the problem: <code>total = i</code> <em>replaces</em> the total with i instead of <em>adding</em> i to it. The fix is <code>total = total + i</code>.</p>
+
+    <p>This is the basic debugging strategy: when your program does something wrong, add <code>print()</code> statements to check what your variables actually contain at different points. Sometimes its useful to use <code>input()</code> to make the program pause while you think about what was just printed. The program will wait for your input, and continue running when you hit the enter key.</p> <p>The challenge with this approach  is finding out what to print to narrow down the search without getting too much information.  If you print too much, it is going to be difficult to understand what is happening.</p> 
+
+    <h2 id="common-mistakes">Common Mistakes</h2>
+
+    <p>Here are the mistakes that trip up everyone when they're learning Python. If you see an error you don't understand, check this list first:</p>
+
+    <p><strong>Forgetting the colon</strong> — <code>if</code>, <code>elif</code>, <code>else</code>, <code>while</code>, <code>for</code>, and <code>def</code> all need a colon at the end of the line:</p>
+
+<pre><code><span class="code-comment"># Wrong:</span>
+if x > 5
+    print("big")
+
+<span class="code-comment"># Right:</span>
+if x > 5:
+    print("big")</code></pre>
+
+    <p><strong>Using = when you meant ==</strong> — One equals sign (<code>=</code>) assigns a value to a variable. Two equals signs (<code>==</code>) check if two things are equal:</p>
+
+<pre><code>x = 5                        <span class="code-comment"># Sets x to 5</span>
+if x == 5:                   <span class="code-comment"># Checks if x equals 5</span>
+    print("x is five")</code></pre>
+
+    <p>If you write <code>if x = 5:</code> Python will give you a SyntaxError. In some other languages this mistake doesn't cause an error, which results in bugs that can be very hard to find.</p>
+
+    <p><strong>Indentation errors</strong> — Python uses indentation (the spaces at the start of a line) to figure out which lines belong together. Every line in the same <em>block</em> must be indented by exactly the same amount:</p>
+
+<pre><code><span class="code-comment"># Wrong - second line isn't indented:</span>
+if x > 5:
+print("big")
+
+<span class="code-comment"># Wrong - inconsistent indentation:</span>
+if x > 5:
+    print("big")
+      print("number")      <span class="code-comment"># Too many spaces!</span>
+
+<span class="code-comment"># Right:</span>
+if x > 5:
+    print("big")
+    print("number")</code></pre>
+
+    <p>Use four spaces for each level of indentation. Don't use tabs, and don't mix tabs and spaces — that causes errors that are very hard to spot.</p>
+
+    <p><strong>Unmatched parentheses</strong> — Every opening parenthesis needs a closing one. This is especially easy to mess up when you nest function calls like <code>int(input("age? "))</code>:</p>
+
+<pre><code><span class="code-comment"># Wrong - missing closing parenthesis:</span>
+age = int(input("How old are you? ")
+print(age + 10)
+
+<span class="code-comment"># Wrong - extra closing parenthesis:</span>
+print("hello"))
+
+<span class="code-comment"># Right:</span>
+age = int(input("How old are you? "))
+print("hello")</code></pre>
+
+    <p>Count the parentheses: every <code>(</code> needs exactly one <code>)</code>. IDLE helps with this — when you type a closing parenthesis, it briefly highlights the opening one it matches.</p>
+
+    <p><strong>Forgetting that input() gives you text</strong> — This one catches everyone at least once:</p>
+
+<pre><code>age = input("How old are you? ")
+print(age + 10)              <span class="code-comment"># Error! Can't add string and int</span></code></pre>
+
+    <p>Even if the user types a number, <code>input()</code> gives you text. Wrap it in <code>int()</code> to convert it: <code>age = int(input("How old are you? "))</code></p>
+
+    <p><strong>Infinite loops</strong> — In Svinesti, if your loop runs for too long the system stops it automatically. On your own computer, the program just freezes. Press <strong>Ctrl+C</strong> in the shell to force it to stop. If that doesn't work, close IDLE and reopen it.</p>
+
+<pre><code><span class="code-comment"># This loop never ends because count never changes:</span>
+count = 0
+while count < 5:
+    print(count)
+    <span class="code-comment"># Forgot: count = count + 1</span></code></pre>
+
+    <h2 id="error-messages">Reading Error Messages</h2>
+
+    <p>When something goes wrong, Python's error messages give you lots of useful information that helps you in debugging.</p>
+
+<pre><code>Traceback (most recent call last):
+  File "my_program.py", line 3, in &lt;module&gt;
+    print(greeting)
+          ^^^^^^^^
+NameError: name 'greeting' is not defined</code></pre>
+
+    <p>Read error messages from the <strong>bottom up</strong>:</p>
+
+    <ol>
+        <li><strong>Last line</strong> tells you what went wrong: <code>NameError: name 'greeting' is not defined</code> — you used a variable that doesn't exist. Probably a typo.</li>
+        <li><strong>The caret line</strong> (the <code>^^^^^^^^</code>) points to where Python got confused.</li>
+        <li><strong>The line of code</strong> above that shows what you wrote: <code>print(greeting)</code></li>
+        <li><strong>The file and line number</strong>: <code>File "my_program.py", line 3</code> — tells you exactly where to look.</li>
+    </ol>
+
+	<p>This information is very helpful, but not always bulletproof. For example, Python tells you the line number where the <em>error</em> happened, but the cause for the error might be on a different line, such as forgetting to use <code>int()</code> to convert the <code>input()</code> to a number. </p>
+
+    <p>Here are the most common error types you'll see:</p>
+
+    <p><strong>SyntaxError</strong> — Your code isn't valid Python. Usually means you forgot a colon, have an unmatched parenthesis, or have a typo in a keyword (those special words like <code>if</code> and <code>while</code>):</p>
+
+<pre><code>if x > 5              <span class="code-comment"># SyntaxError: missing colon</span></code></pre>
+
+<pre><code>print("hello"))       <span class="code-comment"># SyntaxError: unmatched parenthesis</span></code></pre>
+
+    <p><strong>NameError</strong> — You used a variable or function name that doesn't exist. Usually a typo, or you forgot to define the variable:</p>
+
+<pre><code>print(greetting)      <span class="code-comment"># NameError: typo - should be 'greeting'</span></code></pre>
+
+    <p><strong>TypeError</strong> — You tried to use a value in a way that doesn't work for its type. Often means you tried to do math with text:</p>
+
+<pre><code>age = "25"
+print(age + 10)       <span class="code-comment"># TypeError: can't add string and int</span></code></pre>
+
+    <p><strong>IndentationError</strong> — Your indentation is inconsistent or missing:</p>
+
+<pre><code>if x > 5:
+print("big")          <span class="code-comment"># IndentationError: should be indented</span></code></pre>
+
+    <p>When you see an error, don't panic! Read it from the bottom up, look at the line number it mentions, and check if it's one of these common problems.</p>
+
+    <h2 id="next-steps">Where to Go Next</h2>
+
+    <p>You now know the fundamentals of Python. The best way to learn more is to start building things that interest you. Along the way, you'll run into things you don't know how to do — that's normal! Here are some resources to help:</p>
+
+    <p><strong><a href="https://docs.python.org/3/tutorial/">The Official Python Tutorial</a></strong> — This is the most thorough and reliable resource, written by the people who make Python. It covers everything from the basics to more advanced topics like classes and modules. Start with the chapters on data structures (lists and dictionaries are incredibly useful) and then explore whatever interests you.</p>
+
+    <p><strong><a href="https://automatetheboringstuff.com/">Automate the Boring Stuff with Python</a></strong> — A free online book with practical projects. Learn how to rename hundreds of files at once, scrape information from websites, automate spreadsheets, and more. Great if you learn best by building real things.</p>
+
+    <p><strong><a href="https://www.pythontutor.com/">Python Tutor</a></strong> — Paste in any Python code and watch it execute step by step, with diagrams showing what's happening to your variables. Like Svinesti, but for any Python program. Extremely helpful for understanding how your code actually works.</p>
+
+    <p>The most important thing: don't try to learn everything at once. Pick a small project that sounds fun, start building it, and look things up as you need them. Making mistakes and fixing them is how you learn.</p>
+
+    <p style="margin-top: 2rem;">
+        <a href="./">&larr; Back to Svinesti</a>
+    </p>
+
+    </main>
+</div>
+</body>
+</html>
