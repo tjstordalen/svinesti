@@ -149,20 +149,6 @@ export const levels = [
     },
     {
         name: "Level 7",
-        nRows: 5,
-        nCols: 8,
-        grid: [
-            "bR......",
-            ".b......",
-            ".bbR..RB",
-            "...b..b.",
-            "...bbbb."
-        ],
-        start: [0, 0],
-        dir: "right"
-    },
-    {
-        name: "Level 8",
         nRows: 8,
         nCols: 8,
         grid: [
@@ -176,6 +162,20 @@ export const levels = [
             "...G...."
         ],
         start: [4, 3],
+        dir: "right"
+    },
+	{
+        name: "Level 8",
+        nRows: 5,
+        nCols: 8,
+        grid: [
+            "bR......",
+            ".b......",
+            ".bbR..RB",
+            "...b..b.",
+            "...bbbb."
+        ],
+        start: [0, 0],
         dir: "right"
     },
     {
