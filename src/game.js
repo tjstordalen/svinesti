@@ -1,16 +1,16 @@
 // game.js - Game mode (grid, code editor, playback)
 
-import * as PigJatin from "./PigJatin/PigJatin.js";
-import * as animations from "./animations.js";
-import * as Shortcuts from "./shortcuts.js";
-import * as app from "./app.js";
-import { createGrid } from "./grid.js";
-import { EVENT, MSG, STATUS, REASON } from "./constants.js";
+import * as PigJatin from "./PigJatin/PigJatin.js?v=@version-placeholder@";
+import * as animations from "./animations.js?v=@version-placeholder@";
+import * as Shortcuts from "./shortcuts.js?v=@version-placeholder@";
+import * as app from "./app.js?v=@version-placeholder@";
+import { createGrid } from "./grid.js?v=@version-placeholder@";
+import { EVENT, MSG, STATUS, REASON } from "./constants.js?v=@version-placeholder@";
 import {
     LINE_PAUSE_MULTIPLIER, TIMEOUT_TRACE_REPLAY, TIMEOUT_NOTIFICATION_DURATION,
     INFINITE_LOOP_OUTPUT_MESSAGE, INFINITE_LOOP_NOTIFICATION_HTML,
     NOTIFICATION_PAUSED_TO_EDIT, EDITOR_TAB_SIZE,
-} from "./config.js";
+} from "./config.js?v=@version-placeholder@";
 
 // --- DOM References ---
 

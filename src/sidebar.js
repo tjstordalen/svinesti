@@ -1,19 +1,19 @@
 // sidebar.js - Sidebar level list rendering
 
-import { createGrid } from "./grid.js";
-import * as Editor from "./editor.js";
-import * as Game from "./game.js";
-import * as community from "./community.js";
-import { spin, notify } from "./animations.js";
-import { mode, levels, prefs, starred, secrets } from "./app.js";
-import { TAB } from "./constants.js";
-import { isValid } from "./levels.js"; 
+import { createGrid } from "./grid.js?v=@version-placeholder@";
+import * as Editor from "./editor.js?v=@version-placeholder@";
+import * as Game from "./game.js?v=@version-placeholder@";
+import * as community from "./community.js?v=@version-placeholder@";
+import { spin, notify } from "./animations.js?v=@version-placeholder@";
+import { mode, levels, prefs, starred, secrets } from "./app.js?v=@version-placeholder@";
+import { TAB } from "./constants.js?v=@version-placeholder@";
+import { isValid } from "./levels.js?v=@version-placeholder@"; 
 import {
     SIDEBAR_LOADING, SIDEBAR_TRASH_EMPTY, SIDEBAR_NO_COMMUNITY_LEVELS,
     SIDEBAR_SEARCH_PLACEHOLDER, SIDEBAR_NO_MATCHES, SIDEBAR_SERVER_ERROR,
     SIDEBAR_NO_NEW_LEVELS, SIDEBAR_BADGE_PUBLIC, SIDEBAR_BADGE_PRIVATE,
     SIDEBAR_BADGE_COMMUNITY, ICON,
-} from "./config.js";
+} from "./config.js?v=@version-placeholder@";
 
 // --- DOM References ---
 

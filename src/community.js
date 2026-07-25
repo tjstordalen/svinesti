@@ -3,9 +3,9 @@
 // Fetching, submitting, starring levels. Consent management.
 // UI rendering moved to sidebar.js.
 
-import * as app from './app.js';
-import { hashSecret } from './names.js';
-import { COMMUNITY_URL, COMMUNITY_REFRESH_INTERVAL } from './config.js';
+import * as app from './app.js?v=@version-placeholder@';
+import { hashSecret } from './names.js?v=@version-placeholder@';
+import { COMMUNITY_URL, COMMUNITY_REFRESH_INTERVAL } from './config.js?v=@version-placeholder@';
 
 // --- State ---
 

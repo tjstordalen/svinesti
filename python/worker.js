@@ -1,8 +1,8 @@
 // Web Worker that runs student code in Pyodide (Python in WebAssembly).
 // Loads once, then executes each submission in an isolated namespace.
 
-import { MSG } from '../src/constants.js';
-import { PYODIDE_WORKER_URL, SVINESTI_PY_NO_CACHE } from '../src/config.js';
+import { MSG } from '../src/constants.js?v=@version-placeholder@';
+import { PYODIDE_WORKER_URL, SVINESTI_PY_NO_CACHE } from '../src/config.js?v=@version-placeholder@';
 
 let pyodide = null;
 let engineCode = null;

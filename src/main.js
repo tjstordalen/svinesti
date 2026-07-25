@@ -1,12 +1,12 @@
 // main.js - App shell (help pane, mode switching)
 
-import * as app from "./app.js";
-import * as Editor from "./editor.js";
-import * as Game from "./game.js";
-import * as community from "./community.js";
-import * as sidebar from "./sidebar.js";
-import * as PigJatin from "./PigJatin/PigJatin.js";
-import { MODE } from "./constants.js";
+import * as app from "./app.js?v=@version-placeholder@";
+import * as Editor from "./editor.js?v=@version-placeholder@";
+import * as Game from "./game.js?v=@version-placeholder@";
+import * as community from "./community.js?v=@version-placeholder@";
+import * as sidebar from "./sidebar.js?v=@version-placeholder@";
+import * as PigJatin from "./PigJatin/PigJatin.js?v=@version-placeholder@";
+import { MODE } from "./constants.js?v=@version-placeholder@";
 
 // Dev console: await runPigJatinTests()
 window.runPigJatinTests = async () => {

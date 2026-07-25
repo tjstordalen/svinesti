@@ -84,6 +84,10 @@ assets/
 
 Lowercase letters (r)ed, (g)reen, and (b)lue are colored tiles (the uppercase variants also have apples) and `.` is empty. Starting position is given as [row,column] and direction is "right", "down", "left", or "up". 
 
+## Deploying
+
+Merge `main` into `publish` and push. A GitHub Action automatically replaces the `?v=@version-...@` placeholders in HTML files with the current commit hash so browsers load updated CSS and JS.
+
 ## External Dependencies
 
 All loaded from CDNs — no npm, no bundler:

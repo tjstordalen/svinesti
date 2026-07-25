@@ -1,12 +1,12 @@
 // app.js - Central app state and coordination
 
-import { levels as builtInLevels } from './levels.js';
-import { MODE } from './constants.js';
+import { levels as builtInLevels } from './levels.js?v=@version-placeholder@';
+import { MODE } from './constants.js?v=@version-placeholder@';
 import {
     STORAGE_KEY_CUSTOM_LEVELS, STORAGE_KEY_STARRED,
     STORAGE_KEY_PREFERENCES, STORAGE_KEY_CODE, STORAGE_KEY_SECRETS,
     DEFAULT_PREFERENCES, SPLASH_FADE_DURATION, ENABLE_SPLASH_SCREEN,
-} from './config.js';
+} from './config.js?v=@version-placeholder@';
 
 // --- DOM References ---
 

@@ -1,7 +1,7 @@
 import antlr4 from 'antlr4';
-import PigJatinVisitor from "./antlr/PigJatinVisitor.js";
-import { ERRORS } from "./errors.js";
-import { EDITOR_TAB_SIZE, PIGJATIN_STATEMENT_FUNCTIONS, PIGJATIN_EXPRESSION_FUNCTIONS } from "../config.js";
+import PigJatinVisitor from "./antlr/PigJatinVisitor.js?v=@version-placeholder@";
+import { ERRORS } from "./errors.js?v=@version-placeholder@";
+import { EDITOR_TAB_SIZE, PIGJATIN_STATEMENT_FUNCTIONS, PIGJATIN_EXPRESSION_FUNCTIONS } from "../config.js?v=@version-placeholder@";
 
 const Type = {
 	INT:   "int",

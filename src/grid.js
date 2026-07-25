@@ -1,6 +1,6 @@
 // grid.js - Unified grid rendering
 
-import { TILE_CLASSES } from './constants.js';
+import { TILE_CLASSES } from './constants.js?v=@version-placeholder@';
 
 /**
  * Create a grid with tiles and a pig element.

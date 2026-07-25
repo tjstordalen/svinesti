@@ -3,20 +3,20 @@
 // State-driven editor using the level format's character representation.
 // A single render() function syncs state to DOM on every change.
 
-import { DEFAULT_LEVEL, validate} from "./levels.js";
-import { createGrid } from "./grid.js";
-import { TILE_CLASSES, DIRECTIONS } from "./constants.js";
-import * as animations from "./animations.js";
-import * as Shortcuts from "./shortcuts.js";
-import * as community from "./community.js";
-import * as app from "./app.js";
-import { generateLevelName } from "./names.js";
+import { DEFAULT_LEVEL, validate} from "./levels.js?v=@version-placeholder@";
+import { createGrid } from "./grid.js?v=@version-placeholder@";
+import { TILE_CLASSES, DIRECTIONS } from "./constants.js?v=@version-placeholder@";
+import * as animations from "./animations.js?v=@version-placeholder@";
+import * as Shortcuts from "./shortcuts.js?v=@version-placeholder@";
+import * as community from "./community.js?v=@version-placeholder@";
+import * as app from "./app.js?v=@version-placeholder@";
+import { generateLevelName } from "./names.js?v=@version-placeholder@";
 import {
     STORAGE_KEY_EDITOR_EDIT, STORAGE_KEY_EDITOR_PAINT,
     COMMUNITY_SHARE_TIMEOUT, NOTIFICATION_LINK_COPIED,
     SIDEBAR_ENABLE_COMMUNITY_FIRST, DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS,
     DEFAULT_EDITOR_SHORTCUTS,
-} from "./config.js";
+} from "./config.js?v=@version-placeholder@";
 
 // --- DOM References ---
 
