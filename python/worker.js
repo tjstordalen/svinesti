@@ -18,7 +18,7 @@ async function init() {
 
 	console.time("[worker] fetch svinesti.py");
 	const fetchOptions = SVINESTI_PY_NO_CACHE ? { cache: 'no-store' } : {};
-	const response = await fetch("./svinesti.py", fetchOptions);
+	const response = await fetch("./svinesti.py?v=@version-placeholder@", fetchOptions);
 	if (!response.ok) {
 		throw new Error(`Failed to fetch svinesti.py: ${response.status}`);
 	}
