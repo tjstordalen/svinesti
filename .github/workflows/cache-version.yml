@@ -1,11 +1,19 @@
-name: Update cache version
+name: Deploy with cache versioning
 on:
   push:
     branches: [publish]
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
-  update-version:
+  deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -14,8 +22,17 @@ jobs:
           VERSION=$(git rev-parse --short HEAD)
           find . -name '*.html' -o -name '*.js' | xargs sed -i "s/@version-[^@]*@/@version-$VERSION@/g"
 
-      - name: Commit
+      - name: Commit versioned files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git diff --quiet || (git add -A && git commit -m "Update cache version" && git push)
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
