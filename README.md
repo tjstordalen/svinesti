@@ -86,7 +86,7 @@ Lowercase letters (r)ed, (g)reen, and (b)lue are colored tiles (the uppercase va
 
 ## Deploying
 
-Merge `main` into `publish` and push. A GitHub Action automatically replaces the `?v=@version-...@` placeholders in HTML files with the current commit hash so browsers load updated CSS and JS.
+Merge `main` into `publish` and push, or run `./deploy.sh`. A GitHub Action then replaces the `?v=@version-...@` placeholders in HTML and JS files with the current commit hash so browsers load updated CSS and JS. This means `publish` will have commits that `main` doesn't, so you may need to reset your local `publish` to `origin/publish` before merging.
 
 ## External Dependencies
 
