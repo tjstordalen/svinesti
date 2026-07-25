@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/wiki.css?v=@version-placeholder@">
 </head>
 <body>
-    <a href="../" class="back-link">&larr; Back to Svinesti</a>
+    <a href="./" class="back-link">&larr; Back to Svinesti</a>
 
     <h1>What is an Infinite Loop?</h1>
 
@@ -52,11 +52,8 @@ while (count < 5) {
 
     <p>
         We forgot to increase <code>count</code> inside the loop! It stays zero forever,
-        so it will be less than five forever. In the case of Svinesti, this program
-        would actually stop when the pig steps on an empty tile or tries to leave the
-        level. But if it just stayed in the same position if it could not go
-        forwards, the program would run forever. Doing <code>count = count + 1</code>
-        inside the loops fixes the code.
+        so it will always be less than five. Adding <code>count = count + 1</code>
+        inside the loop fixes the code.
     </p>
 
     <p>
@@ -146,7 +143,7 @@ while (count != 0 &amp;&amp; count != 5) {
 	
 	<p>Happy coding!</p>
     <p style="margin-top: 2rem;">
-        <a href="../">&larr; Back to Svinesti</a>
+        <a href="./">&larr; Back to Svinesti</a>
     </p>
 
 </body>
