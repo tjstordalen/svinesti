@@ -3,20 +3,20 @@
 // State-driven editor using the level format's character representation.
 // A single render() function syncs state to DOM on every change.
 
-import { DEFAULT_LEVEL, validate} from "./levels.js?v=@version-placeholder@";
-import { createGrid } from "./grid.js?v=@version-placeholder@";
-import { TILE_CLASSES, DIRECTIONS } from "./constants.js?v=@version-placeholder@";
-import * as animations from "./animations.js?v=@version-placeholder@";
-import * as Shortcuts from "./shortcuts.js?v=@version-placeholder@";
-import * as community from "./community.js?v=@version-placeholder@";
-import * as app from "./app.js?v=@version-placeholder@";
-import { generateLevelName } from "./names.js?v=@version-placeholder@";
+import { DEFAULT_LEVEL, validate} from "./levels.js?v=@version-7455f6f@";
+import { createGrid } from "./grid.js?v=@version-7455f6f@";
+import { TILE_CLASSES, DIRECTIONS } from "./constants.js?v=@version-7455f6f@";
+import * as animations from "./animations.js?v=@version-7455f6f@";
+import * as Shortcuts from "./shortcuts.js?v=@version-7455f6f@";
+import * as community from "./community.js?v=@version-7455f6f@";
+import * as app from "./app.js?v=@version-7455f6f@";
+import { generateLevelName } from "./names.js?v=@version-7455f6f@";
 import {
     STORAGE_KEY_EDITOR_EDIT, STORAGE_KEY_EDITOR_PAINT,
     COMMUNITY_SHARE_TIMEOUT, NOTIFICATION_LINK_COPIED,
     SIDEBAR_ENABLE_COMMUNITY_FIRST, DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS,
     DEFAULT_EDITOR_SHORTCUTS,
-} from "./config.js?v=@version-placeholder@";
+} from "./config.js?v=@version-7455f6f@";
 
 // --- DOM References ---
 

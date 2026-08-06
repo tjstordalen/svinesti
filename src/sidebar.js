@@ -1,19 +1,19 @@
 // sidebar.js - Sidebar level list rendering
 
-import { createGrid } from "./grid.js?v=@version-placeholder@";
-import * as Editor from "./editor.js?v=@version-placeholder@";
-import * as Game from "./game.js?v=@version-placeholder@";
-import * as community from "./community.js?v=@version-placeholder@";
-import { spin, notify } from "./animations.js?v=@version-placeholder@";
-import { mode, levels, prefs, starred, secrets } from "./app.js?v=@version-placeholder@";
-import { TAB } from "./constants.js?v=@version-placeholder@";
-import { isValid } from "./levels.js?v=@version-placeholder@"; 
+import { createGrid } from "./grid.js?v=@version-7455f6f@";
+import * as Editor from "./editor.js?v=@version-7455f6f@";
+import * as Game from "./game.js?v=@version-7455f6f@";
+import * as community from "./community.js?v=@version-7455f6f@";
+import { spin, notify } from "./animations.js?v=@version-7455f6f@";
+import { mode, levels, prefs, starred, secrets } from "./app.js?v=@version-7455f6f@";
+import { TAB } from "./constants.js?v=@version-7455f6f@";
+import { isValid } from "./levels.js?v=@version-7455f6f@"; 
 import {
     SIDEBAR_LOADING, SIDEBAR_TRASH_EMPTY, SIDEBAR_NO_COMMUNITY_LEVELS,
     SIDEBAR_SEARCH_PLACEHOLDER, SIDEBAR_NO_MATCHES, SIDEBAR_SERVER_ERROR,
     SIDEBAR_NO_NEW_LEVELS, SIDEBAR_BADGE_PUBLIC, SIDEBAR_BADGE_PRIVATE,
     SIDEBAR_BADGE_COMMUNITY, ICON,
-} from "./config.js?v=@version-placeholder@";
+} from "./config.js?v=@version-7455f6f@";
 
 // --- DOM References ---
 

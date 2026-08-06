@@ -2,9 +2,9 @@
 import antlr4 from "antlr4";
 import PigJatinLexer from "./antlr/PigJatinLexer.js";
 import PigJatinParser from "./antlr/PigJatinParser.js";
-import { StaticAnalysisVisitor, TranspilationVisitor } from "./visitors.js?v=@version-placeholder@";
-import { SyntaxErrorListener, UnrecognizedTokenErrorListener } from "./ErrorListeners.js?v=@version-placeholder@";
-import { ERRORS, ERROR_TYPES } from "./errors.js?v=@version-placeholder@";
+import { StaticAnalysisVisitor, TranspilationVisitor } from "./visitors.js?v=@version-7455f6f@";
+import { SyntaxErrorListener, UnrecognizedTokenErrorListener } from "./ErrorListeners.js?v=@version-7455f6f@";
+import { ERRORS, ERROR_TYPES } from "./errors.js?v=@version-7455f6f@";
 
 export function generatePythonCode(program){
 	

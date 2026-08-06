@@ -1,8 +1,8 @@
 // Web Worker that runs student code in Pyodide (Python in WebAssembly).
 // Loads once, then executes each submission in an isolated namespace.
 
-import { MSG } from '../src/constants.js?v=@version-placeholder@';
-import { PYODIDE_WORKER_URL, SVINESTI_PY_NO_CACHE } from '../src/config.js?v=@version-placeholder@';
+import { MSG } from '../src/constants.js?v=@version-7455f6f@';
+import { PYODIDE_WORKER_URL, SVINESTI_PY_NO_CACHE } from '../src/config.js?v=@version-7455f6f@';
 
 let pyodide = null;
 let engineCode = null;
@@ -18,7 +18,7 @@ async function init() {
 
 	console.time("[worker] fetch svinesti.py");
 	const fetchOptions = SVINESTI_PY_NO_CACHE ? { cache: 'no-store' } : {};
-	const response = await fetch("./svinesti.py?v=@version-placeholder@", fetchOptions);
+	const response = await fetch("./svinesti.py?v=@version-7455f6f@", fetchOptions);
 	if (!response.ok) {
 		throw new Error(`Failed to fetch svinesti.py: ${response.status}`);
 	}

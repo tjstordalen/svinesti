@@ -1,16 +1,16 @@
 // game.js - Game mode (grid, code editor, playback)
 
-import * as PigJatin from "./PigJatin/PigJatin.js?v=@version-placeholder@";
-import * as animations from "./animations.js?v=@version-placeholder@";
-import * as Shortcuts from "./shortcuts.js?v=@version-placeholder@";
-import * as app from "./app.js?v=@version-placeholder@";
-import { createGrid } from "./grid.js?v=@version-placeholder@";
-import { EVENT, MSG, STATUS, REASON } from "./constants.js?v=@version-placeholder@";
+import * as PigJatin from "./PigJatin/PigJatin.js?v=@version-7455f6f@";
+import * as animations from "./animations.js?v=@version-7455f6f@";
+import * as Shortcuts from "./shortcuts.js?v=@version-7455f6f@";
+import * as app from "./app.js?v=@version-7455f6f@";
+import { createGrid } from "./grid.js?v=@version-7455f6f@";
+import { EVENT, MSG, STATUS, REASON } from "./constants.js?v=@version-7455f6f@";
 import {
     LINE_PAUSE_MULTIPLIER, TIMEOUT_TRACE_REPLAY, TIMEOUT_NOTIFICATION_DURATION,
     INFINITE_LOOP_OUTPUT_MESSAGE, INFINITE_LOOP_NOTIFICATION_HTML,
     NOTIFICATION_PAUSED_TO_EDIT, EDITOR_TAB_SIZE,
-} from "./config.js?v=@version-placeholder@";
+} from "./config.js?v=@version-7455f6f@";
 
 // --- DOM References ---
 
@@ -354,7 +354,7 @@ function resolveExecution(result) {
 
 function initWorker() {
     enterIdle();
-    state.worker = new Worker("python/worker.js?v=@version-placeholder@", { type: "module" });
+    state.worker = new Worker("python/worker.js?v=@version-7455f6f@", { type: "module" });
     state.worker.onmessage = ({ data }) => {
         switch (data.type) {
             case MSG.READY:

@@ -1,6 +1,6 @@
 // shortcuts.js - Keyboard shortcut management system
 
-import { ICON } from './config.js?v=@version-placeholder@';
+import { ICON } from './config.js?v=@version-7455f6f@';
 
 // Module-level flag: true if ANY shortcuts instance is currently rebinding
 // All instances check this before executing shortcuts

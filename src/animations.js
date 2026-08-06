@@ -20,8 +20,8 @@ import {
     TIMEOUT_PIG_DURATION, TIMEOUT_PIG_ITERATIONS,
     NOTIFY_DURATION_DEFAULT, FLASH_DURATION_DEFAULT, CONFETTI_CLEANUP_DELAY,
     NOTIFY_COLOR_INFO, NOTIFY_COLOR_ERROR, CONFETTI_COLORS,
-} from './config.js?v=@version-placeholder@';
-import { DIRECTIONS } from './constants.js?v=@version-placeholder@';
+} from './config.js?v=@version-7455f6f@';
+import { DIRECTIONS } from './constants.js?v=@version-7455f6f@';
 
 // Pre-decode all pig sprites so CSS class swaps during turns don't flicker
 const _sprites = DIRECTIONS.flatMap(dir =>

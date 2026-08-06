@@ -1,5 +1,5 @@
 import { ErrorListener } from 'antlr4';
-import { ERRORS } from "./errors.js?v=@version-placeholder@";
+import { ERRORS } from "./errors.js?v=@version-7455f6f@";
 
 export class SyntaxErrorListener extends ErrorListener {
 

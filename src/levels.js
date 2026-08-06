@@ -1,4 +1,4 @@
-import { DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS } from './config.js?v=@version-placeholder@';
+import { DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS } from './config.js?v=@version-7455f6f@';
 
 // Empty grid for new levels in editor
 export const DEFAULT_LEVEL = {
